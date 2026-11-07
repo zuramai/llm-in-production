@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 470" font-family="Helvetica, Arial, sans-serif" font-size="13">
+  <rect width="760" height="470" rx="12" fill="#ffffff"/>
+  <text x="380" y="28" text-anchor="middle" font-size="17" font-weight="bold" fill="#1f2937">PagedAttention: KV cache in small blocks, like virtual memory</text>
+
+  <!-- Left: contiguous -->
+  <text x="20" y="62" font-size="14" font-weight="bold" fill="#1f2937">Contiguous reservation (naive)</text>
+  <text x="20" y="80" fill="#374151">every request reserves room for max_len tokens up front</text>
+  <g stroke="#1f2937">
+    <rect x="20" y="96" width="330" height="34" fill="#e5e7eb" stroke-dasharray="4 3"/>
+    <rect x="20" y="96" width="90" height="34" fill="#60a5fa"/>
+    <rect x="20" y="144" width="330" height="34" fill="#e5e7eb" stroke-dasharray="4 3"/>
+    <rect x="20" y="144" width="180" height="34" fill="#34d399"/>
+    <rect x="20" y="192" width="330" height="34" fill="#e5e7eb" stroke-dasharray="4 3"/>
+    <rect x="20" y="192" width="50" height="34" fill="#fbbf24"/>
+  </g>
+  <g fill="#111827">
+    <text x="28" y="118">A: used</text><text x="28" y="166">B: used</text><text x="28" y="214" font-size="11">C</text>
+    <text x="200" y="118" fill="#6b7280">reserved, empty</text><text x="240" y="166" fill="#6b7280">reserved, empty</text><text x="150" y="214" fill="#6b7280">reserved, empty</text>
+  </g>
+  <text x="20" y="250" fill="#b91c1c" font-weight="bold">Most of the reservation is never used, and a</text>
+  <text x="20" y="268" fill="#b91c1c" font-weight="bold">4th request does not fit although memory is "free".</text>
+
+  <!-- Right: paged -->
+  <text x="400" y="62" font-size="14" font-weight="bold" fill="#1f2937">Paged: fixed blocks (e.g. 16 tokens) from a shared pool</text>
+  <text x="400" y="80" fill="#374151">blocks are allocated as tokens arrive, in any order</text>
+  <!-- pool 4x3 -->
+  <g stroke="#1f2937">
+    <rect x="400" y="96" width="62" height="40" fill="#60a5fa"/>
+    <rect x="466" y="96" width="62" height="40" fill="#34d399"/>
+    <rect x="532" y="96" width="62" height="40" fill="#60a5fa"/>
+    <rect x="598" y="96" width="62" height="40" fill="#fbbf24"/>
+    <rect x="400" y="140" width="62" height="40" fill="#34d399"/>
+    <rect x="466" y="140" width="62" height="40" fill="#e5e7eb" stroke-dasharray="4 3"/>
+    <rect x="532" y="140" width="62" height="40" fill="#34d399"/>
+    <rect x="598" y="140" width="62" height="40" fill="#e5e7eb" stroke-dasharray="4 3"/>
+    <rect x="400" y="184" width="62" height="40" fill="#e5e7eb" stroke-dasharray="4 3"/>
+    <rect x="466" y="184" width="62" height="40" fill="#fb923c"/>
+    <rect x="532" y="184" width="62" height="40" fill="#e5e7eb" stroke-dasharray="4 3"/>
+    <rect x="598" y="184" width="62" height="40" fill="#e5e7eb" stroke-dasharray="4 3"/>
+  </g>
+  <g fill="#111827" text-anchor="middle" font-size="12">
+    <text x="431" y="121">A0</text><text x="497" y="121">B0</text><text x="563" y="121">A1</text><text x="629" y="121">C0</text>
+    <text x="431" y="165">B1</text><text x="563" y="165">B2</text><text x="497" y="209">D0</text>
+  </g>
+  <text x="530" y="244" text-anchor="middle" fill="#374151" font-size="12">physical block pool in GPU memory (grey = free)</text>
+
+  <!-- block tables -->
+  <text x="400" y="282" font-weight="bold" fill="#1f2937">Block tables (per request: logical block → physical block)</text>
+  <g stroke="#1f2937" fill="#f3f4f6">
+    <rect x="400" y="294" width="170" height="26"/>
+    <rect x="400" y="324" width="250" height="26"/>
+    <rect x="400" y="354" width="90" height="26"/>
+  </g>
+  <g fill="#111827" font-size="12">
+    <text x="408" y="311">A:  0 → #0   1 → #2</text>
+    <text x="408" y="341">B:  0 → #1   1 → #4   2 → #6</text>
+    <text x="408" y="371">C:  0 → #3</text>
+  </g>
+
+  <text x="20" y="420" fill="#374151">Waste drops to at most one partly-filled block per request. The vLLM paper reports near-zero KV cache waste and</text>
+  <text x="20" y="438" fill="#374151">flexible sharing across requests (Kwon et al., SOSP 2023): two requests with the same prefix can point at the same physical blocks.</text>
+</svg>

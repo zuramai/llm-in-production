@@ -1,0 +1,128 @@
+{
+  "base": "main",
+  "clean_head": "chore/cleanup",
+  "buggy_head": "feature/order-fixes",
+  "line_refers_to": "line numbers in the head version of the file (new side of the diff); start..end is the region a reviewer may point at",
+  "bugs": [
+    {
+      "id": "secret_in_code",
+      "file": "service/config.py",
+      "line": 13,
+      "start": 13,
+      "end": 13,
+      "categories": [
+        "security"
+      ],
+      "description": "Live Stripe key hard-coded instead of read from the environment"
+    },
+    {
+      "id": "race_condition",
+      "file": "service/inventory.py",
+      "start": 19,
+      "line": 24,
+      "end": 24,
+      "categories": [
+        "concurrency",
+        "correctness"
+      ],
+      "description": "check-then-update on on_hand lets two buyers oversell; was one atomic UPDATE"
+    },
+    {
+      "id": "sql_injection",
+      "file": "service/orders.py",
+      "line": 27,
+      "end": 28,
+      "start": 27,
+      "categories": [
+        "security"
+      ],
+      "description": "status is interpolated into SQL with an f-string"
+    },
+    {
+      "id": "off_by_one",
+      "file": "service/orders.py",
+      "line": 34,
+      "start": 34,
+      "end": 34,
+      "categories": [
+        "correctness"
+      ],
+      "description": "page is 1-based but offset = page * PAGE_SIZE skips the first page"
+    },
+    {
+      "id": "wrong_timezone",
+      "file": "service/orders.py",
+      "line": 44,
+      "start": 44,
+      "end": 44,
+      "categories": [
+        "correctness"
+      ],
+      "description": "'today' starts at naive UTC midnight, not America/New_York midnight"
+    },
+    {
+      "id": "n_plus_one",
+      "file": "service/orders.py",
+      "start": 57,
+      "line": 58,
+      "end": 59,
+      "categories": [
+        "performance"
+      ],
+      "description": "one query per customer inside a loop instead of one GROUP BY query"
+    },
+    {
+      "id": "unchecked_none",
+      "file": "service/orders.py",
+      "line": 67,
+      "start": 67,
+      "end": 67,
+      "categories": [
+        "correctness"
+      ],
+      "description": "get_order() may return None; describe_order indexes it without a check"
+    },
+    {
+      "id": "missing_await",
+      "file": "service/payments.py",
+      "line": 15,
+      "start": 15,
+      "end": 15,
+      "categories": [
+        "correctness",
+        "concurrency"
+      ],
+      "description": "send_receipt() is a coroutine; without await it never runs"
+    }
+  ],
+  "innocuous": [
+    {
+      "file": "README.md",
+      "description": "docs: how to run tests"
+    },
+    {
+      "file": "service/db.py",
+      "description": "docstring on connect()"
+    },
+    {
+      "file": "service/orders.py",
+      "description": "refactor: extract _row_to_order helper"
+    },
+    {
+      "file": "service/orders.py",
+      "description": "type hints and f-string in format_money"
+    },
+    {
+      "file": "service/inventory.py",
+      "description": "named constant LOW_STOCK_THRESHOLD"
+    },
+    {
+      "file": "service/payments.py",
+      "description": "logging line after a successful capture"
+    },
+    {
+      "file": "tests/test_orders.py",
+      "description": "new unit test for format_money"
+    }
+  ]
+}

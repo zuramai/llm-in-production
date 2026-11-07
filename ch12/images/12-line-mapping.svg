@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 360" font-family="Helvetica, Arial, sans-serif">
+  <rect width="960" height="360" rx="12" fill="#ffffff"/>
+  <text x="480" y="30" text-anchor="middle" font-size="18" font-weight="bold" fill="#222">One changed line, three different numbers</text>
+  <text x="480" y="52" text-anchor="middle" font-size="12" fill="#555">Real rows from service/orders.py in the sample PR (git diff -U5 main...feature/order-fixes)</text>
+
+  <!-- header -->
+  <rect x="30" y="68" width="620" height="28" fill="#dddddd" stroke="#888"/>
+  <text x="70" y="87" text-anchor="middle" font-size="12" font-weight="bold" fill="#222">old line</text>
+  <text x="150" y="87" text-anchor="middle" font-size="12" font-weight="bold" fill="#222">new line</text>
+  <text x="240" y="87" text-anchor="middle" font-size="12" font-weight="bold" fill="#222">position</text>
+  <text x="290" y="87" font-size="12" font-weight="bold" fill="#222">diff text</text>
+
+  <!-- rows: y = 96 + 30*i -->
+  <rect x="30" y="96" width="620" height="30" fill="#f6f6f6" stroke="#ccc"/>
+  <text x="70" y="116" text-anchor="middle" font-size="13" fill="#222" font-family="Menlo, monospace">29</text>
+  <text x="150" y="116" text-anchor="middle" font-size="13" fill="#222" font-family="Menlo, monospace">32</text>
+  <text x="240" y="116" text-anchor="middle" font-size="13" fill="#222" font-family="Menlo, monospace">36</text>
+  <text x="290" y="116" font-size="11" fill="#222" font-family="Menlo, monospace">def page_of_orders(customer_id: int, page: int) -&gt; ...</text>
+
+  <rect x="30" y="126" width="620" height="30" fill="#f6f6f6" stroke="#ccc"/>
+  <text x="70" y="146" text-anchor="middle" font-size="13" fill="#222" font-family="Menlo, monospace">30</text>
+  <text x="150" y="146" text-anchor="middle" font-size="13" fill="#222" font-family="Menlo, monospace">33</text>
+  <text x="240" y="146" text-anchor="middle" font-size="13" fill="#222" font-family="Menlo, monospace">37</text>
+  <text x="290" y="146" font-size="11" fill="#222" font-family="Menlo, monospace">    """Return one page of a customer's orders..."""</text>
+
+  <rect x="30" y="156" width="620" height="30" fill="#f6c9c9" stroke="#b04a4a"/>
+  <text x="70" y="176" text-anchor="middle" font-size="13" fill="#400d0d" font-family="Menlo, monospace">31</text>
+  <text x="150" y="176" text-anchor="middle" font-size="13" fill="#400d0d" font-family="Menlo, monospace">-</text>
+  <text x="240" y="176" text-anchor="middle" font-size="13" fill="#400d0d" font-family="Menlo, monospace">38</text>
+  <text x="290" y="176" font-size="11" fill="#400d0d" font-family="Menlo, monospace">- offset = (page - 1) * PAGE_SIZE</text>
+
+  <rect x="30" y="186" width="620" height="30" fill="#d6f0d0" stroke="#4f8a45"/>
+  <text x="70" y="206" text-anchor="middle" font-size="13" fill="#173a12" font-family="Menlo, monospace">-</text>
+  <text x="150" y="206" text-anchor="middle" font-size="13" fill="#173a12" font-family="Menlo, monospace" font-weight="bold">34</text>
+  <text x="240" y="206" text-anchor="middle" font-size="13" fill="#173a12" font-family="Menlo, monospace" font-weight="bold">39</text>
+  <text x="290" y="206" font-size="11" fill="#173a12" font-family="Menlo, monospace">+ offset = page * PAGE_SIZE      &#8592; the bug</text>
+
+  <rect x="30" y="216" width="620" height="30" fill="#f6f6f6" stroke="#ccc"/>
+  <text x="70" y="236" text-anchor="middle" font-size="13" fill="#222" font-family="Menlo, monospace">32</text>
+  <text x="150" y="236" text-anchor="middle" font-size="13" fill="#222" font-family="Menlo, monospace">35</text>
+  <text x="240" y="236" text-anchor="middle" font-size="13" fill="#222" font-family="Menlo, monospace">40</text>
+  <text x="290" y="236" font-size="11" fill="#222" font-family="Menlo, monospace">    with connect() as conn:</text>
+
+  <!-- legend -->
+  <rect x="680" y="68" width="250" height="178" rx="8" fill="#fff7e0" stroke="#b08a2a"/>
+  <text x="805" y="92" text-anchor="middle" font-size="13" font-weight="bold" fill="#3d2d00">Which number do we use?</text>
+  <text x="696" y="116" font-size="12" fill="#3d2d00">new line  34 : shown to the model,</text>
+  <text x="696" y="132" font-size="12" fill="#3d2d00">  sent to GitHub as line + side=RIGHT</text>
+  <text x="696" y="156" font-size="12" fill="#3d2d00">position 39 : legacy GitHub API field;</text>
+  <text x="696" y="172" font-size="12" fill="#3d2d00">  counts rows below the first @@</text>
+  <text x="696" y="196" font-size="12" fill="#3d2d00">old line 31 : only for removed lines</text>
+  <text x="696" y="212" font-size="12" fill="#3d2d00">  (side=LEFT)</text>
+
+  <rect x="30" y="268" width="900" height="70" rx="8" fill="#e9f0fb" stroke="#4a78b5"/>
+  <text x="48" y="292" font-size="13" fill="#10243f" font-weight="bold">The classic bug:</text>
+  <text x="48" y="312" font-size="12" fill="#10243f">a model that counts lines in the diff text, or a bot that sends the file line as a position, is off by 5 here (34 vs 39), and by more further down.</text>
+  <text x="48" y="328" font-size="12" fill="#10243f">We print the new-file number in front of every line, so the model copies a number instead of counting. Tests pin the mapping.</text>
+</svg>

@@ -1,0 +1,273 @@
+{
+ "model": "anthropic/claude-haiku-5.5",
+ "provider": "hosted",
+ "granularity": "hunk",
+ "guidelines": true,
+ "runs": [
+  {
+   "buggy": {
+    "comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "critical",
+      "category": "security",
+      "body": "The diff replaces the environment lookup with a hardcoded Stripe live secret key, which violates the team rule that secrets come from environment variables. Anyone with read access to the repo or its history can use the key to make live Stripe API calls, so it should be treated as compromised and rotated. Restore `STRIPE_API_KEY = os.environ.get(\"STRIPE_API_KEY\", \"\")` and load the key from the deployment environment.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 19,
+      "severity": "critical",
+      "category": "concurrency",
+      "body": "reserve() now reads on_hand with a separate SELECT and then writes back an absolute value (`SET on_hand = %s`), which is a lost-update race. Two concurrent requests that both read 10 units for qty 6 will both succeed and leave on_hand at 4, overselling stock. Restore the single atomic statement `UPDATE ... SET on_hand = on_hand - %s ... AND on_hand >= %s` and check rowcount, or use SELECT ... FOR UPDATE inside one transaction.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "critical",
+      "category": "security",
+      "body": "The status value is interpolated into the SQL with an f-string, so a crafted status such as `x' OR '1'='1` changes the query and can read or alter other rows. Pass status as a parameter again, using `WHERE status = %s` with `(status,)` as the second argument to execute.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 34,
+      "severity": "high",
+      "category": "correctness",
+      "body": "`page` is documented as 1-based, but the offset is now `page * PAGE_SIZE`, so page 1 skips the first PAGE_SIZE orders and returns the second page. Restore `offset = (page - 1) * PAGE_SIZE`.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "high",
+      "category": "correctness",
+      "body": "`datetime.utcnow()` makes 'today' the UTC calendar day, which violates the team rule that periods use America/New_York (BUSINESS_TZ). Orders placed in the evening Eastern time are counted on the wrong day, and the result is also naive. Use `datetime.now(ZoneInfo(BUSINESS_TZ)).replace(...)` as the original code did.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 57,
+      "severity": "medium",
+      "category": "performance",
+      "body": "`customer_totals` now runs one query per customer ID, so a long list causes many round trips and the per-request cost grows linearly. Restore the single `WHERE customer_id = ANY(%s) GROUP BY customer_id` query and fill zeros for missing IDs.",
+      "confidence": 0.8
+     },
+     {
+      "path": "service/orders.py",
+      "line": 67,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "`get_order` returns None for unknown IDs, so `order['id']` raises TypeError when `describe_order` is called with a missing order. Check for None and handle it, for example by raising a clear not-found error or returning a placeholder string.",
+      "confidence": 0.8
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The receipt call lost its `await`: `notify.send_receipt(order_id)` now creates a coroutine that is never scheduled, so no receipt is sent for any successful capture and Python only emits a 'coroutine was never awaited' warning. Restore `await notify.send_receipt(order_id)`.",
+      "confidence": 0.9
+     }
+    ],
+    "raw_count": 8,
+    "n_units": 9,
+    "latency_ms": 49544,
+    "usage": {
+     "prompt_tokens": 13501,
+     "completion_tokens": 2579,
+     "cost_usd": 0.0026132039999999996
+    },
+    "errors": []
+   },
+   "clean": {
+    "comments": [],
+    "raw_count": 0,
+    "n_units": 8,
+    "latency_ms": 8470,
+    "usage": {
+     "prompt_tokens": 10750,
+     "completion_tokens": 474,
+     "cost_usd": 0.00129888
+    },
+    "errors": []
+   }
+  },
+  {
+   "buggy": {
+    "comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "critical",
+      "category": "security",
+      "body": "The Stripe live secret key is hardcoded in source, replacing the environment-variable lookup. Anyone with read access to the repo or its history can use the key to make live charges and access Stripe data. Restore `STRIPE_API_KEY = os.environ.get(\"STRIPE_API_KEY\", \"\")` and rotate the exposed key in the Stripe dashboard.",
+      "confidence": 0.97
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 24,
+      "severity": "critical",
+      "category": "concurrency",
+      "body": "reserve() now reads on_hand in a separate query, checks it in Python, then writes an absolute value, so two concurrent requests can both pass the check and both write the same result. For example, with on_hand=1 and two concurrent reserve(product, 1) calls, both read 1, both write 0, and both return True, so one unit is oversold. Restore the single atomic statement with a guarded decrement: UPDATE inventory SET on_hand = on_hand - %s WHERE product_id = %s AND warehouse = %s AND on_hand >= %s, and return cur.rowcount == 1.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "critical",
+      "category": "security",
+      "body": "find_orders_by_status interpolates `status` directly into the SQL with an f-string, so a value like `x' OR '1'='1` returns every order and a crafted value can run arbitrary SQL. Pass `status` as a `%s` parameter as the original code did.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 34,
+      "severity": "high",
+      "category": "correctness",
+      "body": "page is documented as 1-based, but the offset is now `page * PAGE_SIZE`, so page 1 skips the first PAGE_SIZE orders and returns the second page. Restore `offset = (page - 1) * PAGE_SIZE`.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The day boundary is now computed from UTC via datetime.utcnow(), but the team convention requires the calendar day in BUSINESS_TZ (America/New_York). An order placed at 9pm ET is UTC the next day, so it is counted in tomorrow's total and today's count is wrong for the evening hours. Compute start with datetime.now(ZoneInfo(BUSINESS_TZ)) as before.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 57,
+      "severity": "medium",
+      "category": "performance",
+      "body": "customer_totals now issues one SQL query per customer ID, which is an N+1 pattern that makes latency grow linearly with the list length. Restore the single grouped query using `customer_id = ANY(%s)` and fill the missing IDs with 0.",
+      "confidence": 0.8
+     },
+     {
+      "path": "service/orders.py",
+      "line": 67,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "get_order returns None for an unknown order_id, so describe_order raises TypeError on `order['id']` instead of handling the missing order. Check for None and either return a clear message or raise a specific not-found error.",
+      "confidence": 0.85
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The change drops the `await` from `notify.send_receipt(order_id)`, which was awaited before the diff. Because `send_receipt` is async, this call only creates a coroutine that is never run, so receipts are silently not sent after every successful capture, and Python emits a 'coroutine was never awaited' warning. Restore the `await` on this line.",
+      "confidence": 0.9
+     }
+    ],
+    "raw_count": 8,
+    "n_units": 9,
+    "latency_ms": 12483,
+    "usage": {
+     "prompt_tokens": 13501,
+     "completion_tokens": 2611,
+     "cost_usd": 0.002629044
+    },
+    "errors": []
+   },
+   "clean": {
+    "comments": [],
+    "raw_count": 0,
+    "n_units": 8,
+    "latency_ms": 11147,
+    "usage": {
+     "prompt_tokens": 10750,
+     "completion_tokens": 547,
+     "cost_usd": 0.0013350150000000002
+    },
+    "errors": []
+   }
+  },
+  {
+   "buggy": {
+    "comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "critical",
+      "category": "security",
+      "body": "The Stripe live API key is hardcoded in source, replacing the environment variable lookup that the team's conventions require. Anyone with read access to the repository or its history can use the key to make live charges, and the key must be treated as compromised. Restore `STRIPE_API_KEY = os.environ.get(\"STRIPE_API_KEY\", \"\")`, rotate the exposed key in Stripe, and purge it from git history.",
+      "confidence": 0.97
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 24,
+      "severity": "critical",
+      "category": "concurrency",
+      "body": "The reserve logic now reads stock with available() and then writes an absolute value, which is a lost-update race. If two requests for qty=1 run concurrently while on_hand is 1, both read 1, both pass the check, and both write on_hand = 0, so two units are sold from one. Restore the single atomic statement `UPDATE ... SET on_hand = on_hand - %s ... WHERE ... AND on_hand >= %s` and check cur.rowcount, or use SELECT ... FOR UPDATE inside one transaction.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "critical",
+      "category": "security",
+      "body": "The status value is interpolated into the SQL with an f-string, so a status such as `x' OR '1'='1` changes the query and can leak or alter other rows. Pass it as a parameter instead: `conn.execute(\"SELECT id, customer_id, total_cents FROM orders WHERE status = %s ORDER BY id\", (status,))`.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 34,
+      "severity": "high",
+      "category": "correctness",
+      "body": "With 1-based pages, `offset = page * PAGE_SIZE` skips the first page: page 1 now returns rows starting at PAGE_SIZE instead of 0. The offset should be `(page - 1) * PAGE_SIZE`, as in the removed line.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "high",
+      "category": "correctness",
+      "body": "`datetime.utcnow()` makes 'today' the UTC calendar day, which violates the team rule that calendar periods use BUSINESS_TZ (America/New_York). Orders placed between local midnight and 00:00 UTC are counted under the wrong day. Restore `tz = ZoneInfo(BUSINESS_TZ)` and `datetime.now(tz).replace(...)`, and make sure the comparison against `placed_at` uses a timezone-aware value.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 57,
+      "severity": "medium",
+      "category": "performance",
+      "body": "`customer_totals` now runs one SELECT per customer ID, so N customers cost N round trips where the old version used a single grouped query. Restore the `customer_id = ANY(%s) GROUP BY customer_id` query and fill in zeros for customers with no orders.",
+      "confidence": 0.85
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The `await` was dropped from `notify.send_receipt(order_id)`, which was awaited before this change, so it is an async call. Without `await` the coroutine is created and never run, so no receipt is sent after a successful capture and Python emits a 'coroutine was never awaited' warning. Restore `await notify.send_receipt(order_id)`.",
+      "confidence": 0.9
+     }
+    ],
+    "raw_count": 7,
+    "n_units": 9,
+    "latency_ms": 15863,
+    "usage": {
+     "prompt_tokens": 13501,
+     "completion_tokens": 2540,
+     "cost_usd": 0.0025938989999999998
+    },
+    "errors": []
+   },
+   "clean": {
+    "comments": [],
+    "raw_count": 0,
+    "n_units": 8,
+    "latency_ms": 6087,
+    "usage": {
+     "prompt_tokens": 10750,
+     "completion_tokens": 550,
+     "cost_usd": 0.0013365000000000002
+    },
+    "errors": []
+   }
+  }
+ ]
+}

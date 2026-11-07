@@ -1,0 +1,335 @@
+# 40 questions about the ShopFlow document corpus (datasets/shopflow/docs, 36 Markdown files).
+#
+# category: keyword      exact identifiers / commands / metric names (favours word matching)
+#           paraphrase   the question shares almost no words with the answer (favours meaning)
+#           multi        the answer needs facts from two different documents
+#           direct       plain fact lookup, wording close to the document
+#           unanswerable the corpus does not contain the answer (the system must say so)
+#
+# evidence: a list of "slots". A slot is satisfied by retrieving ANY chunk from one of its paths
+#           (the corpus restates policies in several documents, so several paths are valid).
+#           `verify` is a regex over the whitespace-normalised document text. `paths: auto` means
+#           "every document that matches `verify`" (used where the fact is restated everywhere);
+#           an explicit list is checked against `verify` by a test, and
+#           `python -m ch04_rag.evalset audit` prints documents that match but aren't listed.
+# reference: the short human-written correct answer the judge compares against.
+
+- id: q01
+  category: keyword
+  question: "Which command rolls the checkout service back to an earlier version?"
+  reference: "`deployctl rollback checkout --to <version>`"
+  evidence:
+    - verify: 'deployctl rollback checkout'
+      paths: [runbooks/checkout-bad-deploy.md, runbooks/checkout-db-pool-exhaustion.md, handbook/on-call.md, handbook/incident-severity.md]
+
+- id: q02
+  category: keyword
+  question: "Which feature flag do we flip to fail over between payment providers?"
+  reference: "`payments.primary_provider`"
+  evidence:
+    - verify: 'payments\.primary_provider'
+      paths: [runbooks/payment-provider-timeout.md, handbook/on-call.md, handbook/incident-severity.md]
+
+- id: q03
+  category: keyword
+  question: "What pattern do ShopFlow SKUs follow?"
+  reference: "SF-<CAT>-<number>, for example SF-ELE-0073."
+  evidence:
+    - verify: 'SF-<CAT>-<number>'
+      paths: [handbook/warehouse-operations.md]
+
+- id: q04
+  category: keyword
+  question: "Which channel is used to get approval for refunds above $500?"
+  reference: "The `finance-approvals` channel (Finance approves refunds above $500)."
+  evidence:
+    - verify: 'finance-approvals'
+      paths: auto
+
+- id: q05
+  category: keyword
+  question: "Which database role do analytics and LLM tools have to use, and which column can it not read?"
+  reference: "The read-only role `shopflow_ro`; it cannot read `customers.email`."
+  evidence:
+    - verify: 'shopflow_ro'
+      paths: auto
+
+- id: q06
+  category: keyword
+  question: "What is the Loki query that finds 'db pool exhausted' errors?"
+  reference: '`{service="checkout", level="error"} |= "db pool exhausted"`'
+  evidence:
+    - verify: '\|= "db pool exhausted"'
+      paths: [runbooks/checkout-db-pool-exhaustion.md]
+
+- id: q07
+  category: keyword
+  question: "Which PromQL expression gives the checkout 5xx error ratio?"
+  reference: 'sum(rate(http_requests_total{job="checkout",status=~"5.."}[5m])) / sum(rate(http_requests_total{job="checkout"}[5m]))'
+  evidence:
+    - verify: 'sum\(rate\(http_requests_total\{job="checkout",status=~"5\.\."\}\[5m\]\)\)'
+      paths: [runbooks/checkout-bad-deploy.md]
+
+- id: q08
+  category: keyword
+  question: "How is net revenue defined in the metrics glossary?"
+  reference: "Gross revenue minus refunds created in the period."
+  evidence:
+    - verify: 'Gross revenue minus refunds'
+      paths: [handbook/metrics-glossary.md]
+
+- id: q09
+  category: keyword
+  question: "What is the default db_pool_size, and what does the runbook suggest raising it to?"
+  reference: "The default is 10; raise it in small steps, for example to 20."
+  evidence:
+    - verify: 'db_pool_size` from 10'
+      paths: [runbooks/checkout-db-pool-exhaustion.md]
+
+- id: q10
+  category: keyword
+  question: "What are the six support ticket categories?"
+  reference: "shipping, refund, product_defect, account, payment, other."
+  evidence:
+    - verify: 'Categories: `shipping`'
+      paths: [handbook/support-escalation.md]
+
+- id: q11
+  category: keyword
+  question: "What makes an incident a SEV1, and how fast must the status page be updated?"
+  reference: "Checkout is down or payments are failing for more than 20% of attempts; the status page is updated within 15 minutes."
+  evidence:
+    - verify: '(?i)status page.{0,40}15 min'
+      paths: auto
+
+- id: q12
+  category: paraphrase
+  question: "My wireless earbuds are getting dangerously hot while charging. What should I do right now?"
+  reference: "Stop using them immediately and unplug them, move them away from flammable items, do not charge again, and contact support with a photo; safety reports are urgent."
+  evidence:
+    - verify: '(?i)unplug'
+      paths: auto
+
+- id: q13
+  category: paraphrase
+  question: "I got my leather boots soaked in a downpour. How should I dry them?"
+  reference: "Stuff them with plain paper or use boot trees, dry at room temperature away from radiators, heaters and direct sun, and swap damp paper after a few hours."
+  evidence:
+    - verify: 'Drying Wet Boots'
+      paths: [care/leather-boots.md]
+
+- id: q14
+  category: paraphrase
+  question: "Can I swap an item I bought for the same thing in a different size?"
+  reference: "No, ShopFlow doesn't process direct exchanges: return the original item for a refund and place a new order."
+  evidence:
+    - verify: "don't process direct exchanges"
+      paths: [policies/returns-policy.md]
+
+- id: q15
+  category: paraphrase
+  question: "A customer wants their refund sent to their new credit card because the old one expired. What do we tell them?"
+  reference: "Refunds only go to the original payment method; the bank handles routing if the card was replaced, so they should contact their card issuer."
+  evidence:
+    - verify: '(?i)(been replaced|new card|replaced cards)'
+      paths: auto
+
+- id: q16
+  category: paraphrase
+  question: "How do I fix a sticky, tacky surface on my cast iron pan?"
+  reference: "The oil layer was too thick: bake the skillet upside down at 450°F for 1 hour to harden it."
+  evidence:
+    - verify: 'Sticky or tacky'
+      paths: [care/cast-iron-skillet.md]
+
+- id: q17
+  category: paraphrase
+  question: "I bought a blender two days ago and now it's cheaper on your site. Can I get the difference back?"
+  reference: "Yes: if the price drops within 7 days of purchase you can request a one-time price adjustment for the difference, refunded to the original payment method."
+  evidence:
+    - verify: 'one-time price adjustment'
+      paths: [policies/price-adjustment-policy.md]
+
+- id: q18
+  category: paraphrase
+  question: "Will I have to pay customs charges on an order sent to Germany?"
+  reference: "Possibly: import duties, VAT and customs fees depend on the country and are the customer's responsibility; ShopFlow doesn't collect them."
+  evidence:
+    - verify: "customer's responsibility"
+      paths: [policies/international-shipping.md]
+
+- id: q19
+  category: paraphrase
+  question: "Is it okay to run my yoga mat through the washing machine?"
+  reference: "No: machine washing or tumble drying breaks down the foam and surface; wipe it with mild soap and water and air dry."
+  evidence:
+    - verify: 'Machine wash or tumble dry'
+      paths: [care/yoga-mats.md]
+
+- id: q20
+  category: paraphrase
+  question: "How long does ShopFlow's coverage last if my headphones stop working?"
+  reference: "Electronics have a 1-year limited warranty from the delivery date."
+  evidence:
+    - verify: '\*\*1 year\*\*'
+      paths: [policies/warranty-policy.md]
+
+- id: q21
+  category: paraphrase
+  question: "There is an order on my account that I never placed. How do I stop it?"
+  reference: "If it hasn't shipped, cancel it for free under Account → Orders → Cancel (a paid order is refunded in full); if it already shipped, contact support as soon as possible. Ask support to lock the account if you suspect access by someone else."
+  evidence:
+    - verify: "(?i)order you didn't place"
+      paths: [policies/account-security.md]
+
+- id: q22
+  category: paraphrase
+  question: "Can I pay with Bitcoin?"
+  reference: "No: ShopFlow does not accept cryptocurrency or cash on delivery (cards via Stripe and PayPal only)."
+  evidence:
+    - verify: '(?i)crypto'
+      paths: auto
+
+- id: q23
+  category: direct
+  question: "How long can a pending order stay open before it is cancelled automatically?"
+  reference: "48 hours."
+  evidence:
+    - verify: '48 hours'
+      paths: auto
+
+- id: q24
+  category: direct
+  question: "How much does express shipping cost?"
+  reference: "$14.99 (US addresses only)."
+  evidence:
+    - verify: '\$14\.99'
+      paths: [faq.md, policies/shipping-policy.md, policies/international-shipping.md, policies/gift-cards-and-promotions.md, policies/payment-methods.md, policies/price-adjustment-policy.md, policies/vip-program.md]
+
+- id: q25
+  category: direct
+  question: "Which warehouse serves Australia and Indonesia?"
+  reference: "CA-01 (Ontario, California)."
+  evidence:
+    - verify: 'CA-01 \| Ontario, CA'
+      paths: [handbook/warehouse-operations.md]
+
+- id: q26
+  category: direct
+  question: "At what oven temperature do I season a cast iron skillet, and for how long?"
+  reference: "450°F (230°C), upside down, for 1 hour."
+  evidence:
+    - verify: '450°F'
+      paths: [care/cast-iron-skillet.md]
+
+- id: q27
+  category: direct
+  question: "How many business days do we have to publish a postmortem after an incident is resolved?"
+  reference: "Within 5 business days of resolution."
+  evidence:
+    - verify: 'within \*\*5 business days\*\* of resolution'
+      paths: [handbook/on-call.md]
+
+- id: q28
+  category: direct
+  question: "When does the Black Friday change freeze begin?"
+  reference: "Monday, November 16."
+  evidence:
+    - verify: 'Change freeze begins'
+      paths: [handbook/holiday-peak-playbook.md]
+
+- id: q29
+  category: direct
+  question: "What should I do if my face serum gives me a rash?"
+  reference: "Stop using it, rinse with lukewarm water, see a doctor or pharmacist if symptoms persist (emergency care for severe symptoms), then contact support with order number, SKU and photos."
+  evidence:
+    - verify: 'If You Have a Reaction'
+      paths: [care/skincare-products.md]
+
+- id: q30
+  category: direct
+  question: "How long can the password reset email take to arrive?"
+  reference: "Up to 10 minutes (check spam)."
+  evidence:
+    - verify: '(?i)reset email.{0,40}10 minutes'
+      paths: auto
+
+- id: q31
+  category: multi
+  question: "A bad deploy broke checkout during the Black Friday change freeze. Can we ship a fix, and what is the first mitigation step?"
+  reference: "Only fixes for SEV1/SEV2 issues may ship during the freeze, with sign-off from the engineering on-call lead and a rollback plan; the first step is to roll back with `deployctl rollback checkout --to <version>`."
+  evidence:
+    - verify: 'Only fixes for SEV1/SEV2'
+      paths: [handbook/holiday-peak-playbook.md]
+    - verify: 'deployctl rollback'
+      paths: auto
+
+- id: q32
+  category: multi
+  question: "Checkout p95 latency has been 3 seconds for 15 minutes and db_pool_connections_in_use equals db_pool_size. What severity is this and what is the first mitigation to consider?"
+  reference: "SEV2 (p95 above 2s sustained for 10 minutes; SEV1 if checkout is effectively down). Mitigation depends on the cause: kill long-running queries, temporarily raise the pool size for a traffic spike, or roll back if a deploy leaks connections."
+  evidence:
+    - verify: '(?i)p95[^.|]{0,60}(>|above) ?2s'
+      paths: auto
+    - verify: 'db_pool_connections_in_use'
+      paths: auto
+
+- id: q33
+  category: multi
+  question: "A VIP customer has an $60 cart with a 10% discount code. Is standard shipping free?"
+  reference: "Yes: VIP members always get free standard shipping regardless of order total or codes (non-VIP customers would pay $5.99 because the discounted total is below $75)."
+  evidence:
+    - verify: '(?i)vip[^.]{0,80}free (standard )?shipping|free (standard )?shipping[^.]{0,60}vip'
+      paths: auto
+    - verify: '(?i)discount code'
+      paths: [policies/gift-cards-and-promotions.md]
+
+- id: q34
+  category: multi
+  question: "A customer returned a defective power bank with a swollen battery. How should the warehouse handle the item, and what first-response time applies to the customer's ticket?"
+  reference: "Quarantine it in a fire-safe area and never restock it; the safety ticket is urgent with a 1-hour first response."
+  evidence:
+    - verify: '(?i)(fire-safe|quarantine)'
+      paths: [handbook/warehouse-operations.md]
+    - verify: '(?i)urgent[^a-z0-9]{1,12}1.hour|1.hour first|first response[^.]{0,30}1 hour'
+      paths: auto
+
+- id: q35
+  category: multi
+  question: "A $450 refund is requested for a delivered order. Who approves it, and how long until the customer sees the money?"
+  reference: "A team lead approves refunds from $100.01 to $500; the customer gets it on the original payment method within 5-7 business days after we receive and inspect the return."
+  evidence:
+    - verify: '(?i)(\$100\.01 to \$500|up to \$500|team lead[^.]{0,40}\$500)'
+      paths: auto
+    - verify: '(?i)refund[^.]{0,100}5.7 business days after we receive'
+      paths: auto
+
+- id: q36
+  category: unanswerable
+  question: "What is ShopFlow's customer support phone number?"
+  reference: "NOT_IN_DOCS"
+  evidence: []
+
+- id: q37
+  category: unanswerable
+  question: "Does ShopFlow offer same-day delivery in Manhattan?"
+  reference: "NOT_IN_DOCS"
+  evidence: []
+
+- id: q38
+  category: unanswerable
+  question: "How many loyalty points do I earn per dollar spent?"
+  reference: "NOT_IN_DOCS"
+  evidence: []
+
+- id: q39
+  category: unanswerable
+  question: "How much extra pay do on-call engineers get for a weekend shift?"
+  reference: "NOT_IN_DOCS"
+  evidence: []
+
+- id: q40
+  category: unanswerable
+  question: "Is there a ShopFlow mobile app for iOS and Android?"
+  reference: "NOT_IN_DOCS"
+  evidence: []

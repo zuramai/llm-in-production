@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 470" font-family="Helvetica, Arial, sans-serif">
+  <rect width="960" height="470" rx="14" fill="#ffffff"/>
+  <text x="480" y="30" text-anchor="middle" font-size="18" font-weight="bold" fill="#1f2937">Chapter 4: RAG over ShopFlow docs, one Postgres for everything</text>
+
+  <text x="30" y="62" font-size="13" font-weight="bold" fill="#374151">INGEST (once, or when docs change)</text>
+  <rect x="30" y="72" width="130" height="64" rx="8" fill="#fde68a" stroke="#888"/>
+  <text x="95" y="98" text-anchor="middle" font-size="13" fill="#1f2937">36 Markdown</text>
+  <text x="95" y="116" text-anchor="middle" font-size="13" fill="#1f2937">docs (read-only)</text>
+  <rect x="205" y="72" width="170" height="64" rx="8" fill="#bfdbfe" stroke="#888"/>
+  <text x="290" y="97" text-anchor="middle" font-size="13" fill="#1f2937">2 chunkers</text>
+  <text x="290" y="116" text-anchor="middle" font-size="12" fill="#1f2937">fixed 512/64 · by heading</text>
+  <rect x="420" y="72" width="170" height="64" rx="8" fill="#bbf7d0" stroke="#888"/>
+  <text x="505" y="97" text-anchor="middle" font-size="13" fill="#1f2937">embed (Ollama)</text>
+  <text x="505" y="116" text-anchor="middle" font-size="12" fill="#1f2937">nomic-embed-text · 768-d</text>
+  <rect x="635" y="62" width="295" height="84" rx="8" fill="#ddd6fe" stroke="#888"/>
+  <text x="782" y="86" text-anchor="middle" font-size="13" font-weight="bold" fill="#1f2937">Postgres: ch04_doc_chunks</text>
+  <text x="782" y="106" text-anchor="middle" font-size="12" fill="#1f2937">vector(768) + HNSW (cosine)</text>
+  <text x="782" y="124" text-anchor="middle" font-size="12" fill="#1f2937">tsvector + GIN (words)</text>
+  <path d="M160 104H205M375 104H420M590 104H635" stroke="#888" stroke-width="2" fill="none" marker-end="url(#a)"/>
+
+  <line x1="30" y1="170" x2="930" y2="170" stroke="#888" stroke-dasharray="5 4"/>
+  <text x="30" y="196" font-size="13" font-weight="bold" fill="#374151">ASK (every question)</text>
+
+  <rect x="30" y="215" width="130" height="64" rx="8" fill="#fde68a" stroke="#888"/>
+  <text x="95" y="242" text-anchor="middle" font-size="13" fill="#1f2937">Question</text>
+  <text x="95" y="260" text-anchor="middle" font-size="12" fill="#1f2937">"search_query: …"</text>
+
+  <rect x="215" y="195" width="150" height="48" rx="8" fill="#bbf7d0" stroke="#888"/>
+  <text x="290" y="224" text-anchor="middle" font-size="13" fill="#1f2937">vector top-30</text>
+  <rect x="215" y="255" width="150" height="48" rx="8" fill="#bfdbfe" stroke="#888"/>
+  <text x="290" y="284" text-anchor="middle" font-size="13" fill="#1f2937">full-text top-30</text>
+
+  <rect x="410" y="215" width="130" height="64" rx="8" fill="#fbcfe8" stroke="#888"/>
+  <text x="475" y="242" text-anchor="middle" font-size="13" fill="#1f2937">RRF fusion</text>
+  <text x="475" y="260" text-anchor="middle" font-size="12" fill="#1f2937">1 / (60 + rank)</text>
+
+  <rect x="580" y="215" width="140" height="64" rx="8" fill="#fed7aa" stroke="#888"/>
+  <text x="650" y="242" text-anchor="middle" font-size="13" fill="#1f2937">cross-encoder</text>
+  <text x="650" y="260" text-anchor="middle" font-size="12" fill="#1f2937">rerank → top 5</text>
+
+  <rect x="765" y="215" width="165" height="64" rx="8" fill="#bbf7d0" stroke="#888"/>
+  <text x="847" y="242" text-anchor="middle" font-size="13" fill="#1f2937">LLM (gpt-6-luna)</text>
+  <text x="847" y="260" text-anchor="middle" font-size="12" fill="#1f2937">cites [doc:path#N] or refuses</text>
+
+  <path d="M160 247H190L190 219H215M160 247H190L190 279H215M365 219H388L388 247H410M365 279H388L388 247H410M540 247H580M720 247H765" stroke="#888" stroke-width="2" fill="none" marker-end="url(#a)"/>
+
+  <rect x="215" y="345" width="715" height="96" rx="10" fill="#f3f4f6" stroke="#888"/>
+  <text x="235" y="372" font-size="13" font-weight="bold" fill="#1f2937">Four retrieval modes we compare (× 2 chunkers = 8 configurations)</text>
+  <text x="235" y="396" font-size="12" fill="#1f2937">vector = meaning only · fts = words only · hybrid = both fused with RRF</text>
+  <text x="235" y="416" font-size="12" fill="#1f2937">hybrid_rerank = hybrid, then a cross-encoder re-scores the 30 best candidates</text>
+  <text x="235" y="434" font-size="12" fill="#1f2937">Every answer is checked: each cited chunk must be one we actually retrieved.</text>
+  <defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8z" fill="#888"/></marker></defs>
+</svg>

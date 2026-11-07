@@ -1,0 +1,52 @@
+[project]
+name = "llm-in-production"
+version = "0.1.0"
+description = "Companion code for the open-source book 'LLM in Production'"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "openai>=3.46",
+    "pydantic>=2.14",
+    "python-dotenv>=1.2",
+    "httpx",
+    "psycopg[binary]>=3.3",
+    "pandas",
+    "matplotlib",
+    "jupyterlab>=4.6",
+    "ipykernel",
+    "rich",
+    "tiktoken>=0.14",
+    "faker>=40",
+    "pyyaml",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/llmprod"]
+
+[dependency-groups]
+dev = ["pytest>=9", "nbmake>=1.5", "ruff>=0.17", "playwright"]
+ch01 = ["fastapi>=0.162", "uvicorn>=0.54", "sse-starlette>=3.6"]
+ch06 = ["sqlglot>=30.30", "slack-bolt>=1.30", "pytest-timeout"]
+ch02 = ["scikit-learn"]
+ch03 = ["scikit-learn"]
+ch04 = ["pgvector>=0.5", "sentence-transformers>=6.2"]
+ch08 = ["pypdf", "reportlab", "pillow"]
+ch09 = ["mcp>=2.3"]
+ch11 = ["fastapi>=0.162", "uvicorn>=0.54", "prometheus-client"]
+
+[tool.uv]
+default-groups = "all"
+
+[tool.pytest.ini_options]
+markers = ["llm: calls a real model", "docker: needs docker services"]
+testpaths = ["datasets", "src", "ch01", "ch06"]
+addopts = "-m 'not llm'"
+
+[tool.ruff]
+line-length = 100
+extend-exclude = ["*.ipynb"]

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" font-family="Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="900" height="400" rx="12" fill="#ffffff"/>
+  <text x="30" y="38" font-size="20" font-weight="bold" fill="#1d2433">Defense in depth: what stops "DELETE FROM orders"</text>
+  <text x="30" y="62" font-size="14" fill="#4a5163">Each layer assumes the one above it has failed.</text>
+
+  <g font-size="14">
+    <rect x="30" y="80" width="840" height="52" rx="8" fill="#eef3fd" stroke="#2f6fde"/>
+    <text x="50" y="104" font-weight="bold" fill="#1d3f80">1. Prompt rules + structured plan</text>
+    <text x="50" y="122" font-size="12" fill="#4a5163">The model is told it is read-only and can return a refusal instead of SQL. Stops honest mistakes, not attackers.</text>
+    <text x="850" y="112" font-size="12" fill="#c0392b" text-anchor="end">bypassed by injection</text>
+
+    <rect x="60" y="142" width="810" height="52" rx="8" fill="#fff6e5" stroke="#f2a541"/>
+    <text x="80" y="166" font-weight="bold" fill="#7a4a00">2. AST guard (sqlglot)</text>
+    <text x="80" y="184" font-size="12" fill="#4a5163">One statement, SELECT only, allowed tables, no pg_sleep/dblink/INTO, LIMIT added. Deterministic, unit-tested.</text>
+    <text x="850" y="174" font-size="12" fill="#c0392b" text-anchor="end">parser gaps</text>
+
+    <rect x="90" y="204" width="780" height="52" rx="8" fill="#fdecea" stroke="#c0392b"/>
+    <text x="110" y="228" font-weight="bold" fill="#7a1f16">3. Database role shopflow_ro</text>
+    <text x="110" y="246" font-size="12" fill="#4a5163">SELECT grants only; column grant hides customers.email; read-only default; 5 s statement timeout.</text>
+    <text x="850" y="236" font-size="12" fill="#2e8b57" text-anchor="end">enforced by Postgres</text>
+
+    <rect x="120" y="266" width="750" height="52" rx="8" fill="#e3f4ea" stroke="#2e8b57"/>
+    <text x="140" y="290" font-weight="bold" fill="#1d5c3a">4. Replica / separate database (production)</text>
+    <text x="140" y="308" font-size="12" fill="#4a5163">Point the bot at a read replica or warehouse copy, so even a slow query can't hurt checkout.</text>
+
+    <rect x="150" y="328" width="720" height="52" rx="8" fill="#f1f1f4" stroke="#888888"/>
+    <text x="170" y="352" font-weight="bold" fill="#1d2433">5. Audit log + human review</text>
+    <text x="170" y="370" font-size="12" fill="#4a5163">Every question, SQL and answer is logged with the Slack user (Chapter 14), and wrong answers get reported.</text>
+  </g>
+</svg>

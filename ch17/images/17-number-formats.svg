@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 500" font-family="Helvetica, Arial, sans-serif" font-size="13">
+  <rect width="760" height="500" rx="12" fill="#ffffff"/>
+  <text x="380" y="28" text-anchor="middle" font-size="17" font-weight="bold" fill="#1f2937">Number formats: fewer bits per weight, same model</text>
+
+  <!-- legend -->
+  <rect x="20" y="42" width="14" height="14" fill="#f87171" stroke="#1f2937"/><text x="40" y="54" fill="#1f2937">sign</text>
+  <rect x="90" y="42" width="14" height="14" fill="#fbbf24" stroke="#1f2937"/><text x="110" y="54" fill="#1f2937">exponent (range)</text>
+  <rect x="230" y="42" width="14" height="14" fill="#60a5fa" stroke="#1f2937"/><text x="250" y="54" fill="#1f2937">mantissa (precision)</text>
+  <rect x="400" y="42" width="14" height="14" fill="#a78bfa" stroke="#1f2937"/><text x="420" y="54" fill="#1f2937">shared scale factor</text>
+
+  <!-- rows: each bit 14px wide. x0=150 -->
+  <g fill="#1f2937"><text x="20" y="92">FP16</text><text x="20" y="128">BF16</text><text x="20" y="164">FP8 (E4M3)</text><text x="20" y="200">FP4 (E2M1)</text></g>
+  <g stroke="#1f2937">
+    <!-- FP16: 1,5,10 -->
+    <rect x="150" y="76" width="14" height="22" fill="#f87171"/>
+    <rect x="164" y="76" width="70" height="22" fill="#fbbf24"/>
+    <rect x="234" y="76" width="140" height="22" fill="#60a5fa"/>
+    <!-- BF16: 1,8,7 -->
+    <rect x="150" y="112" width="14" height="22" fill="#f87171"/>
+    <rect x="164" y="112" width="112" height="22" fill="#fbbf24"/>
+    <rect x="276" y="112" width="98" height="22" fill="#60a5fa"/>
+    <!-- FP8: 1,4,3 -->
+    <rect x="150" y="148" width="14" height="22" fill="#f87171"/>
+    <rect x="164" y="148" width="56" height="22" fill="#fbbf24"/>
+    <rect x="220" y="148" width="42" height="22" fill="#60a5fa"/>
+    <!-- FP4: 1,2,1 -->
+    <rect x="150" y="184" width="14" height="22" fill="#f87171"/>
+    <rect x="164" y="184" width="28" height="22" fill="#fbbf24"/>
+    <rect x="192" y="184" width="14" height="22" fill="#60a5fa"/>
+  </g>
+  <g fill="#374151" font-size="12">
+    <text x="390" y="92">16 bits = 2 bytes. Small range, fine precision.</text>
+    <text x="390" y="128">16 bits = 2 bytes. fp32's range, coarser steps; the default for LLMs.</text>
+    <text x="390" y="164">8 bits = 1 byte. Hopper+ runs it natively; halves weights and KV.</text>
+    <text x="390" y="200">4 bits = 0.5 byte, only 16 values: needs a scale (below).</text>
+  </g>
+
+  <!-- block scaling -->
+  <text x="20" y="246" font-size="14" font-weight="bold" fill="#1f2937">4-bit values are only usable with a shared scale per small block of weights</text>
+  <g fill="#1f2937"><text x="20" y="284">MXFP4</text><text x="20" y="344">NVFP4</text></g>
+  <!-- MXFP4: 32 values + 8bit scale -->
+  <g stroke="#1f2937">
+    <rect x="100" y="266" width="448" height="26" fill="#bfdbfe"/>
+    <rect x="548" y="266" width="64" height="26" fill="#a78bfa"/>
+  </g>
+  <text x="324" y="284" text-anchor="middle" fill="#111827">32 values × 4 bits</text>
+  <text x="580" y="284" text-anchor="middle" fill="#111827">E8M0</text>
+  <text x="630" y="284" fill="#374151" font-size="12">= 4.25 bits/value</text>
+  <!-- NVFP4: 16 values + 8bit scale -->
+  <g stroke="#1f2937">
+    <rect x="100" y="326" width="224" height="26" fill="#bfdbfe"/>
+    <rect x="324" y="326" width="64" height="26" fill="#a78bfa"/>
+  </g>
+  <text x="212" y="344" text-anchor="middle" fill="#111827">16 values × 4 bits</text>
+  <text x="356" y="344" text-anchor="middle" fill="#111827">E4M3</text>
+  <text x="400" y="344" fill="#374151" font-size="12">= 4.5 bits/value (+ one FP32 scale per tensor)</text>
+  <text x="20" y="378" fill="#374151">Smaller blocks adapt to local ranges, and an FP8 (E4M3) scale is finer than a power-of-two (E8M0) scale, so NVFP4 loses less</text>
+  <text x="20" y="396" fill="#374151">accuracy than MXFP4 for 0.25 bits more per value (NVIDIA, June 2025). gpt-oss ships its MoE experts in MXFP4.</text>
+
+  <!-- footprint -->
+  <text x="20" y="432" font-size="14" font-weight="bold" fill="#1f2937">Weights of an 8.19B-parameter model (Qwen3-8B)</text>
+  <g stroke="#1f2937">
+    <rect x="20" y="444" width="328" height="22" fill="#60a5fa"/>
+    <rect x="360" y="444" width="164" height="22" fill="#34d399"/>
+    <rect x="536" y="444" width="99" height="22" fill="#fbbf24"/>
+    <rect x="647" y="444" width="92" height="22" fill="#f87171"/>
+  </g>
+  <g fill="#111827" font-size="12" text-anchor="middle">
+    <text x="184" y="460">bf16: 15.3 GiB</text><text x="442" y="460">fp8: 7.6 GiB</text><text x="585" y="460">q4_K_M: 4.6 GiB</text><text x="693" y="460">nvfp4: 4.3 GiB</text>
+  </g>
+</svg>

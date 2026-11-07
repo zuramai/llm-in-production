@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 380" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#888888"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="960" height="380" rx="12" fill="#ffffff"/>
+  <text x="30" y="38" font-size="20" font-weight="bold" fill="#1d2433">ShopFlow data bot: architecture</text>
+
+  <!-- Slack -->
+  <rect x="30" y="140" width="130" height="80" rx="10" fill="#e8dcf5" stroke="#7b4bb7"/>
+  <text x="95" y="175" font-size="15" font-weight="bold" fill="#3d1f66" text-anchor="middle">Slack</text>
+  <text x="95" y="196" font-size="12" fill="#3d1f66" text-anchor="middle">@shopflow-data</text>
+
+  <!-- bot -->
+  <rect x="220" y="80" width="420" height="250" rx="12" fill="#eef3fd" stroke="#2f6fde"/>
+  <text x="235" y="104" font-size="14" font-weight="bold" fill="#1d3f80">slack_app.py → sqlbot.answer()  (Socket Mode, no public URL)</text>
+  <rect x="240" y="122" width="120" height="56" rx="8" fill="#ffffff" stroke="#2f6fde"/>
+  <text x="300" y="146" font-size="13" font-weight="bold" fill="#1d2433" text-anchor="middle">1. plan</text>
+  <text x="300" y="164" font-size="11" fill="#4a5163" text-anchor="middle">SqlPlan JSON</text>
+  <rect x="380" y="122" width="120" height="56" rx="8" fill="#ffffff" stroke="#c0392b"/>
+  <text x="440" y="146" font-size="13" font-weight="bold" fill="#1d2433" text-anchor="middle">2. guard</text>
+  <text x="440" y="164" font-size="11" fill="#4a5163" text-anchor="middle">sqlglot AST checks</text>
+  <rect x="380" y="200" width="120" height="56" rx="8" fill="#ffffff" stroke="#2f6fde"/>
+  <text x="440" y="224" font-size="13" font-weight="bold" fill="#1d2433" text-anchor="middle">3. run</text>
+  <text x="440" y="242" font-size="11" fill="#4a5163" text-anchor="middle">read-only, 5 s timeout</text>
+  <rect x="240" y="200" width="120" height="56" rx="8" fill="#ffffff" stroke="#2f6fde"/>
+  <text x="300" y="224" font-size="13" font-weight="bold" fill="#1d2433" text-anchor="middle">4. phrase</text>
+  <text x="300" y="242" font-size="11" fill="#4a5163" text-anchor="middle">numbers verbatim</text>
+  <rect x="520" y="122" width="105" height="56" rx="8" fill="#fff6e5" stroke="#f2a541"/>
+  <text x="572" y="146" font-size="12" font-weight="bold" fill="#1d2433" text-anchor="middle">semantic</text>
+  <text x="572" y="164" font-size="12" font-weight="bold" fill="#1d2433" text-anchor="middle">context</text>
+  <text x="430" y="300" font-size="12" fill="#c0392b" text-anchor="middle">error message fed back to step 1, max 3 attempts</text>
+  <path d="M 440 178 L 440 198" stroke="#888888" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M 360 150 L 378 150" stroke="#888888" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M 380 228 L 362 228" stroke="#888888" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M 440 256 L 440 280 L 228 280 L 228 160 L 238 160" fill="none" stroke="#c0392b" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+  <path d="M 520 150 L 502 150" stroke="#f2a541" stroke-width="2" stroke-dasharray="4 3"/>
+
+  <!-- LLM -->
+  <rect x="700" y="70" width="230" height="90" rx="10" fill="#e3f4ea" stroke="#2e8b57"/>
+  <text x="815" y="102" font-size="15" font-weight="bold" fill="#1d5c3a" text-anchor="middle">LLM</text>
+  <text x="815" y="124" font-size="12" fill="#1d5c3a" text-anchor="middle">OpenRouter or Ollama</text>
+  <text x="815" y="142" font-size="12" fill="#1d5c3a" text-anchor="middle">Chat Completions API</text>
+
+  <!-- DB -->
+  <rect x="700" y="210" width="230" height="110" rx="10" fill="#fdecea" stroke="#c0392b"/>
+  <text x="815" y="242" font-size="15" font-weight="bold" fill="#7a1f16" text-anchor="middle">Postgres (ShopFlow)</text>
+  <text x="815" y="264" font-size="12" fill="#7a1f16" text-anchor="middle">role shopflow_ro: SELECT only</text>
+  <text x="815" y="282" font-size="12" fill="#7a1f16" text-anchor="middle">no customers.email</text>
+  <text x="815" y="300" font-size="12" fill="#7a1f16" text-anchor="middle">statement_timeout 5 s</text>
+
+  <path d="M 160 170 L 218 170" stroke="#888888" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M 218 192 L 162 192" stroke="#888888" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="189" y="160" font-size="11" fill="#4a5163" text-anchor="middle">question</text>
+  <text x="189" y="210" font-size="11" fill="#4a5163" text-anchor="middle">thread reply</text>
+  <path d="M 640 120 L 698 112" stroke="#888888" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="668" y="106" font-size="11" fill="#4a5163" text-anchor="middle">1, 4</text>
+  <path d="M 640 245 L 698 255" stroke="#888888" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="668" y="240" font-size="11" fill="#4a5163" text-anchor="middle">3</text>
+</svg>

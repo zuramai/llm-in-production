@@ -1,0 +1,265 @@
+{
+ "model": "openai/gpt-6-luna",
+ "provider": "hosted",
+ "granularity": "hunk",
+ "guidelines": false,
+ "runs": [
+  {
+   "buggy": {
+    "comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "This replaces the environment-configured Stripe key with a literal placeholder (`...NotARealKey...`), so Stripe API calls will fail authentication even when deployments provide a valid `STRIPE_API_KEY`. Read the key from the environment as before.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 24,
+      "severity": "high",
+      "category": "concurrency",
+      "body": "The stock check and update are no longer atomic: two concurrent reservations can both read the same `on_hand`, both pass the check, and each write the same reduced value while both return `True`. This can confirm more reservations than the inventory can fulfill; use a conditional decrement (`on_hand >= qty`) and return success only when exactly one row was updated.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "high",
+      "category": "security",
+      "body": "Interpolating `status` into the SQL lets a value such as `x' OR 1=1 --` change the query and return orders of other statuses. Pass `status` as a bound parameter, as the previous implementation did.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/orders.py",
+      "line": 34,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "`page` is documented as 1-based, but this offset makes page 1 skip the first `PAGE_SIZE` orders. Use `(page - 1) * PAGE_SIZE` so the first page starts at offset 0.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "This changes the count boundary from midnight in `BUSINESS_TZ` to midnight UTC, so orders near the business-day boundary are counted on the wrong day. Compute the start of today in `BUSINESS_TZ` as before.",
+      "confidence": 0.98
+     },
+     {
+      "path": "service/orders.py",
+      "line": 56,
+      "severity": "medium",
+      "category": "performance",
+      "body": "This issues one database query per customer ID instead of the previous single grouped query. For a large `customer_ids` list, this adds substantial round trips and latency; restore a batched aggregate query.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "high",
+      "category": "correctness",
+      "body": "`notify.send_receipt` is async, but this call neither awaits nor schedules its coroutine, so the receipt is never sent and Python may emit an unawaited-coroutine warning. Await it (or explicitly schedule it) before returning success.",
+      "confidence": 0.99
+     }
+    ],
+    "raw_count": 7,
+    "n_units": 9,
+    "latency_ms": 22213,
+    "usage": {
+     "prompt_tokens": 6178,
+     "completion_tokens": 1901,
+     "cost_usd": 0.00158753925
+    },
+    "errors": []
+   },
+   "clean": {
+    "comments": [],
+    "raw_count": 0,
+    "n_units": 8,
+    "latency_ms": 24176,
+    "usage": {
+     "prompt_tokens": 4656,
+     "completion_tokens": 784,
+     "cost_usd": 0.0008490240000000001
+    },
+    "errors": []
+   }
+  },
+  {
+   "buggy": {
+    "comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "high",
+      "category": "correctness",
+      "body": "This hardcodes a placeholder Stripe key and ignores `STRIPE_API_KEY` from the environment, so deployments using a valid configured key will send requests with this invalid key and Stripe calls will fail authentication. Read the key from the environment instead of fixing it in source.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 24,
+      "severity": "high",
+      "category": "concurrency",
+      "body": "The stock check happens before the update, and this unconditional write can overwrite changes made by another reservation in between. For example, two callers can both read 10 units and reserve 7; both return `True`, although stock is decremented only once. Keep the availability condition in an atomic `UPDATE` (and return success based on its affected-row count).",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "high",
+      "category": "security",
+      "body": "Interpolating `status` directly into SQL allows SQL injection; for example, a value like `' OR 1=1 --` can alter the query. Keep the status as a bound parameter, as the previous implementation did.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 34,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "`page` is documented as 1-based, but this offset makes page 1 start after the first `PAGE_SIZE` rows, skipping the first page. Restore `(page - 1) * PAGE_SIZE`.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "This now counts orders since UTC midnight rather than the configured business timezone's midnight, so around timezone boundaries the dashboard reports the wrong business-day total. Compute the start of day using `BUSINESS_TZ` as before.",
+      "confidence": 0.98
+     },
+     {
+      "path": "service/orders.py",
+      "line": 56,
+      "severity": "medium",
+      "category": "performance",
+      "body": "This changes one grouped query into one query per customer, causing database round trips to grow linearly with `customer_ids`. Restore a grouped query (or otherwise batch the IDs) to avoid this N+1 performance regression.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "`send_receipt` was previously awaited, so it is asynchronous; calling it without `await` only creates a coroutine and does not send the receipt. Restore `await notify.send_receipt(order_id)` so successful captures deliver receipts.",
+      "confidence": 0.99
+     }
+    ],
+    "raw_count": 7,
+    "n_units": 9,
+    "latency_ms": 22264,
+    "usage": {
+     "prompt_tokens": 6178,
+     "completion_tokens": 2366,
+     "cost_usd": 0.0016570718999999999
+    },
+    "errors": []
+   },
+   "clean": {
+    "comments": [],
+    "raw_count": 0,
+    "n_units": 8,
+    "latency_ms": 10516,
+    "usage": {
+     "prompt_tokens": 4656,
+     "completion_tokens": 708,
+     "cost_usd": 0.0008114039999999999
+    },
+    "errors": []
+   }
+  },
+  {
+   "buggy": {
+    "comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "high",
+      "category": "correctness",
+      "body": "This hardcoded placeholder replaces the environment lookup, so deployments cannot supply their Stripe API key and Stripe requests will fail authentication. Read `STRIPE_API_KEY` from the environment as before, and keep credentials out of source.",
+      "confidence": 0.98
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 24,
+      "severity": "high",
+      "category": "concurrency",
+      "body": "The stock check and update are separate operations, and this update has no `on_hand >= qty` condition. If stock is 1, two concurrent callers can both read 1, both set it to 0, and both return `True`, reserving the same unit twice. Use a conditional atomic decrement and return success only when it updates a row, or lock the row while checking and updating.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "high",
+      "category": "security",
+      "body": "Interpolating `status` directly into the SQL lets a caller alter the query; for example, `status = \"' OR 1=1 --\"` can return orders of every status. Keep the value parameterized as in the previous query.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/orders.py",
+      "line": 34,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "With 1-based pages, this offset makes page 1 skip the first `PAGE_SIZE` orders and return the second page. Use `(page - 1) * PAGE_SIZE` so page 1 starts at offset 0.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "This changes the day boundary from `BUSINESS_TZ` to UTC, so orders near midnight can be counted for the wrong business day. Compute the start of today in the business timezone, as before.",
+      "confidence": 0.97
+     },
+     {
+      "path": "service/orders.py",
+      "line": 56,
+      "severity": "medium",
+      "category": "performance",
+      "body": "This executes one database query per customer ID instead of the previous single aggregate query. For a large `customer_ids` list, the added round trips can substantially increase latency; restore a batched aggregate query.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/orders.py",
+      "line": 67,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "`get_order` returns `None` when the ID does not exist, so `describe_order` raises `TypeError` when it indexes `order['id']`. Handle the missing-order case before formatting the summary.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "high",
+      "category": "correctness",
+      "body": "`send_receipt` was previously awaited, so this call creates a coroutine but never runs it; successful captures will not send receipts (and may emit an unawaited-coroutine warning). Restore `await notify.send_receipt(order_id)`.",
+      "confidence": 0.99
+     }
+    ],
+    "raw_count": 8,
+    "n_units": 9,
+    "latency_ms": 20945,
+    "usage": {
+     "prompt_tokens": 6178,
+     "completion_tokens": 1986,
+     "cost_usd": 0.0014689719000000002
+    },
+    "errors": []
+   },
+   "clean": {
+    "comments": [],
+    "raw_count": 0,
+    "n_units": 8,
+    "latency_ms": 16665,
+    "usage": {
+     "prompt_tokens": 4656,
+     "completion_tokens": 700,
+     "cost_usd": 0.000807444
+    },
+    "errors": []
+   }
+  }
+ ]
+}

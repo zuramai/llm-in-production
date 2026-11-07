@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 330" font-family="Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="900" height="330" rx="12" fill="#ffffff"/>
+  <text x="30" y="38" font-size="20" font-weight="bold" fill="#1d2433">Fitting a conversation into a token budget</text>
+  <text x="30" y="62" font-size="14" fill="#4a5163">Every turn we resend the whole history. trim_history() keeps it under our budget by dropping the oldest whole turns.</text>
+
+  <!-- full history -->
+  <text x="30" y="100" font-size="14" font-weight="bold" fill="#1d2433">Full history (31 turns)</text>
+  <rect x="30" y="110" width="140" height="44" rx="6" fill="#2f6fde"/>
+  <text x="100" y="137" font-size="13" fill="#ffffff" text-anchor="middle">system + FAQ</text>
+  <g fill="#c9cfdb">
+    <rect x="176" y="110" width="52" height="44" rx="6"/>
+    <rect x="232" y="110" width="52" height="44" rx="6"/>
+    <rect x="288" y="110" width="52" height="44" rx="6"/>
+    <rect x="344" y="110" width="52" height="44" rx="6"/>
+    <rect x="400" y="110" width="52" height="44" rx="6"/>
+    <rect x="456" y="110" width="52" height="44" rx="6"/>
+  </g>
+  <g font-size="12" fill="#4a5163" text-anchor="middle">
+    <text x="202" y="137">turn 1</text><text x="258" y="137">turn 2</text><text x="314" y="137">turn 3</text>
+    <text x="370" y="137">…</text><text x="426" y="137">…</text><text x="482" y="137">…</text>
+  </g>
+  <rect x="512" y="110" width="80" height="44" rx="6" fill="#7fa6ec"/>
+  <text x="552" y="137" font-size="12" fill="#1d2433" text-anchor="middle">turn 29</text>
+  <rect x="596" y="110" width="80" height="44" rx="6" fill="#7fa6ec"/>
+  <text x="636" y="137" font-size="12" fill="#1d2433" text-anchor="middle">turn 30</text>
+  <rect x="680" y="110" width="110" height="44" rx="6" fill="#f2a541"/>
+  <text x="735" y="137" font-size="13" fill="#1d2433" text-anchor="middle">latest user</text>
+  <line x1="176" y1="164" x2="508" y2="164" stroke="#c0392b" stroke-width="2"/>
+  <text x="342" y="182" font-size="13" fill="#c0392b" text-anchor="middle">dropped oldest-first, user + assistant together</text>
+
+  <!-- trimmed -->
+  <text x="30" y="222" font-size="14" font-weight="bold" fill="#1d2433">What we send (≤ budget)</text>
+  <rect x="30" y="232" width="140" height="44" rx="6" fill="#2f6fde"/>
+  <text x="100" y="259" font-size="13" fill="#ffffff" text-anchor="middle">system + FAQ</text>
+  <rect x="176" y="232" width="80" height="44" rx="6" fill="#7fa6ec"/>
+  <text x="216" y="259" font-size="12" fill="#1d2433" text-anchor="middle">turn 29</text>
+  <rect x="260" y="232" width="80" height="44" rx="6" fill="#7fa6ec"/>
+  <text x="300" y="259" font-size="12" fill="#1d2433" text-anchor="middle">turn 30</text>
+  <rect x="344" y="232" width="110" height="44" rx="6" fill="#f2a541"/>
+  <text x="399" y="259" font-size="13" fill="#1d2433" text-anchor="middle">latest user</text>
+  <rect x="458" y="232" width="150" height="44" rx="6" fill="#ffffff" stroke="#888888" stroke-dasharray="5 4"/>
+  <text x="533" y="259" font-size="12" fill="#4a5163" text-anchor="middle">room for the reply</text>
+  <line x1="30" y1="292" x2="608" y2="292" stroke="#888888" stroke-width="1.5"/>
+  <line x1="30" y1="286" x2="30" y2="298" stroke="#888888" stroke-width="1.5"/>
+  <line x1="608" y1="286" x2="608" y2="298" stroke="#888888" stroke-width="1.5"/>
+  <text x="319" y="314" font-size="12" fill="#4a5163" text-anchor="middle">our budget (8,000 tokens in app.py), far below the model's context window</text>
+
+  <g font-size="12" fill="#1d2433">
+    <rect x="650" y="216" width="14" height="14" rx="3" fill="#2f6fde"/><text x="670" y="227">always kept</text>
+    <rect x="650" y="238" width="14" height="14" rx="3" fill="#f2a541"/><text x="670" y="249">always kept (raise if it alone won't fit)</text>
+    <rect x="650" y="260" width="14" height="14" rx="3" fill="#7fa6ec"/><text x="670" y="271">newest turns that fit</text>
+    <rect x="650" y="282" width="14" height="14" rx="3" fill="#c9cfdb"/><text x="670" y="293">dropped</text>
+  </g>
+</svg>

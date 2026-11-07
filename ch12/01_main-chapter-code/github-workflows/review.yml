@@ -1,0 +1,66 @@
+# Copy to .github/workflows/review.yml in the repo you want reviewed, and copy this chapter's
+# ch12_review/, review.py and post_comments.py into .github/review-bot/ there.
+#
+# NOT EXECUTED by the book's author: it needs a GitHub repository with Actions enabled.
+# Written against the GitHub Actions and REST API docs (accessed 2026-11-07); checked only with
+# a YAML parser.
+name: LLM code review
+
+on:
+  pull_request:
+    # Not `synchronize`: a bot that re-comments on every push gets muted. Re-run it by hand
+    # (close and reopen, or add a `workflow_dispatch` trigger) when you want a fresh review.
+    types: [opened, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write   # needed to post a review
+
+concurrency:
+  group: llm-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    # Secrets are not passed to workflows triggered by PRs from forks, and pull_request_target
+    # (which does get them) would run attacker-controlled diffs next to a token. So: same-repo
+    # PRs only, and never on drafts.
+    if: >-
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4   # in production, pin actions to a commit SHA
+        with:
+          fetch-depth: 0   # we need the merge base to compute the PR diff
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Review the diff
+        env:
+          LLM_BASE_URL: https://openrouter.ai/api/v1
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_MODEL: openai/gpt-6-luna
+        run: >
+          uv run --no-project --with "openai>=3.46" --with "pydantic>=2.14"
+          python .github/review-bot/review.py
+          --repo .
+          --base "origin/${{ github.base_ref }}"
+          --head "${{ github.event.pull_request.head.sha }}"
+          --min-confidence 0.7 --max-comments 8
+          --out comments.json
+
+      - name: Post the comments (as a COMMENT review, never "request changes")
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >
+          uv run --no-project --with "httpx>=0.28" --with "openai>=3.46" --with "pydantic>=2.14"
+          python .github/review-bot/post_comments.py
+          --comments comments.json
+          --repo .
+          --base "origin/${{ github.base_ref }}"
+          --head "${{ github.event.pull_request.head.sha }}"
+          --repo-slug "${{ github.repository }}"
+          --pr "${{ github.event.pull_request.number }}"
+          --commit-sha "${{ github.event.pull_request.head.sha }}"

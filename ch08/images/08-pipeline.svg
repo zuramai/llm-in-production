@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 440" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#888"/>
+    </marker>
+  </defs>
+  <rect width="960" height="440" rx="14" fill="#ffffff"/>
+  <text x="480" y="30" text-anchor="middle" font-size="18" font-weight="bold" fill="#222">ShopFlow invoice pipeline: extract, then check the arithmetic, then decide</text>
+
+  <!-- inputs -->
+  <rect x="24" y="80" width="130" height="60" rx="8" fill="#9ec5e8" stroke="#4a7fb0"/>
+  <text x="89" y="106" text-anchor="middle" font-size="13" fill="#111" font-weight="bold">PDF with text</text>
+  <text x="89" y="124" text-anchor="middle" font-size="12" fill="#111">supplier invoice</text>
+  <rect x="24" y="250" width="130" height="60" rx="8" fill="#9ec5e8" stroke="#4a7fb0"/>
+  <text x="89" y="276" text-anchor="middle" font-size="13" fill="#111" font-weight="bold">Scan / photo</text>
+  <text x="89" y="294" text-anchor="middle" font-size="12" fill="#111">PNG, no text layer</text>
+
+  <!-- router -->
+  <rect x="200" y="160" width="110" height="70" rx="8" fill="#f2d06b" stroke="#a88a1f"/>
+  <text x="255" y="190" text-anchor="middle" font-size="14" fill="#111" font-weight="bold">Router</text>
+  <text x="255" y="210" text-anchor="middle" font-size="11" fill="#111">text layer?</text>
+
+  <!-- extractors -->
+  <rect x="360" y="70" width="170" height="64" rx="8" fill="#a9d8a4" stroke="#4f8f49"/>
+  <text x="445" y="96" text-anchor="middle" font-size="13" fill="#111" font-weight="bold">pypdf text</text>
+  <text x="445" y="116" text-anchor="middle" font-size="12" fill="#111">+ text LLM, strict schema</text>
+  <rect x="360" y="256" width="170" height="64" rx="8" fill="#a9d8a4" stroke="#4f8f49"/>
+  <text x="445" y="282" text-anchor="middle" font-size="13" fill="#111" font-weight="bold">Vision LLM</text>
+  <text x="445" y="302" text-anchor="middle" font-size="12" fill="#111">page image, strict schema</text>
+
+  <!-- validate -->
+  <rect x="580" y="160" width="140" height="70" rx="8" fill="#f2a56b" stroke="#b5651d"/>
+  <text x="650" y="188" text-anchor="middle" font-size="14" fill="#111" font-weight="bold">Validate</text>
+  <text x="650" y="206" text-anchor="middle" font-size="11" fill="#111">lines = subtotal</text>
+  <text x="650" y="220" text-anchor="middle" font-size="11" fill="#111">subtotal + tax = total</text>
+
+  <!-- outcomes -->
+  <rect x="780" y="80" width="156" height="60" rx="8" fill="#a9d8a4" stroke="#4f8f49"/>
+  <text x="858" y="106" text-anchor="middle" font-size="13" fill="#111" font-weight="bold">ch08_invoices</text>
+  <text x="858" y="124" text-anchor="middle" font-size="12" fill="#111">booked automatically</text>
+  <rect x="780" y="250" width="156" height="60" rx="8" fill="#e8a0a0" stroke="#a84a4a"/>
+  <text x="858" y="276" text-anchor="middle" font-size="13" fill="#111" font-weight="bold">ch08_invoice_review</text>
+  <text x="858" y="294" text-anchor="middle" font-size="12" fill="#111">a human looks, with the reason</text>
+
+  <!-- repair loop -->
+  <rect x="520" y="350" width="260" height="56" rx="8" fill="#d6b8e8" stroke="#7d4fa0"/>
+  <text x="650" y="374" text-anchor="middle" font-size="13" fill="#111" font-weight="bold">If a rule fails: repair, then escalate</text>
+  <text x="650" y="392" text-anchor="middle" font-size="11" fill="#111">same model sees its error; then a stronger model</text>
+
+  <!-- arrows -->
+  <path d="M154,110 L200,185" stroke="#888" stroke-width="2" fill="none" marker-end="url(#a)"/>
+  <path d="M154,280 L200,205" stroke="#888" stroke-width="2" fill="none" marker-end="url(#a)"/>
+  <path d="M310,180 L360,110" stroke="#888" stroke-width="2" fill="none" marker-end="url(#a)"/>
+  <path d="M310,210 L360,280" stroke="#888" stroke-width="2" fill="none" marker-end="url(#a)"/>
+  <path d="M530,102 L600,160" stroke="#888" stroke-width="2" fill="none" marker-end="url(#a)"/>
+  <path d="M530,288 L600,230" stroke="#888" stroke-width="2" fill="none" marker-end="url(#a)"/>
+  <path d="M720,180 L780,115" stroke="#888" stroke-width="2" fill="none" marker-end="url(#a)"/>
+  <path d="M720,210 L780,275" stroke="#888" stroke-width="2" fill="none" marker-end="url(#a)"/>
+  <path d="M650,230 L650,350" stroke="#888" stroke-width="2" stroke-dasharray="5,4" fill="none" marker-end="url(#a)"/>
+  <text x="735" y="150" font-size="11" fill="#333">passes</text>
+  <text x="735" y="262" font-size="11" fill="#333">still fails</text>
+</svg>

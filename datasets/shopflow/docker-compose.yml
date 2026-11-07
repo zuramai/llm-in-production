@@ -1,0 +1,22 @@
+name: shopflow
+
+services:
+  shopflow-db:
+    image: pgvector/pgvector:0.8.7-pg18
+    container_name: shopflow-db
+    environment:
+      POSTGRES_USER: shopflow
+      POSTGRES_PASSWORD: shopflow
+      POSTGRES_DB: shopflow
+    ports:
+      - "5433:5432"
+    volumes:
+      - shopflow-pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shopflow"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  shopflow-pgdata:

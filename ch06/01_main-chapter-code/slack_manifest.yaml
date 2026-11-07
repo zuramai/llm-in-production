@@ -1,0 +1,30 @@
+display_information:
+  name: ShopFlow Data Bot
+  description: Answers questions about ShopFlow's production data (read-only).
+  background_color: "#2f6fde"
+features:
+  bot_user:
+    display_name: shopflow-data
+    always_online: true
+  app_home:
+    messages_tab_enabled: true
+    messages_tab_read_only_enabled: false
+oauth_config:
+  scopes:
+    bot:
+      - app_mentions:read
+      - chat:write
+      - im:history
+      - im:read
+      - im:write
+      - reactions:write
+settings:
+  event_subscriptions:
+    bot_events:
+      - app_mention
+      - message.im
+  interactivity:
+    is_enabled: false
+  org_deploy_enabled: false
+  socket_mode_enabled: true
+  token_rotation_enabled: false

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 420" font-family="Helvetica, Arial, sans-serif" font-size="13">
+  <rect width="760" height="420" rx="12" fill="#ffffff"/>
+  <text x="380" y="28" text-anchor="middle" font-size="17" font-weight="bold" fill="#1f2937">Splitting one model across GPUs</text>
+
+  <!-- Tensor parallel -->
+  <text x="20" y="62" font-size="14" font-weight="bold" fill="#1f2937">Tensor parallel (TP=2): split every layer's matrices</text>
+  <g stroke="#1f2937">
+    <rect x="30" y="76" width="150" height="120" rx="8" fill="#bfdbfe"/>
+    <rect x="210" y="76" width="150" height="120" rx="8" fill="#bbf7d0"/>
+  </g>
+  <g fill="#111827" text-anchor="middle">
+    <text x="105" y="100" font-weight="bold">GPU 0</text><text x="285" y="100" font-weight="bold">GPU 1</text>
+    <text x="105" y="124">half of every layer:</text><text x="105" y="142">heads 0-15, MLP cols 0-N/2</text>
+    <text x="285" y="124">half of every layer:</text><text x="285" y="142">heads 16-31, MLP cols N/2-N</text>
+    <text x="105" y="176" font-size="12">1/2 weights, 1/2 KV cache</text><text x="285" y="176" font-size="12">1/2 weights, 1/2 KV cache</text>
+  </g>
+  <path d="M180 110 H210 M210 150 H180" stroke="#b91c1c" stroke-width="2" marker-end="url(#a)" fill="none"/>
+  <text x="195" y="214" text-anchor="middle" fill="#b91c1c" font-size="12" font-weight="bold">all-reduce</text>
+  <text x="195" y="230" text-anchor="middle" fill="#b91c1c" font-size="12">twice per layer</text>
+  <text x="30" y="262" fill="#374151">+ every request gets faster (less to read per GPU)</text>
+  <text x="30" y="280" fill="#374151">- needs a fast link (NVLink): the all-reduces sit on the critical path</text>
+  <text x="30" y="298" fill="#374151">Use inside one node. vLLM: --tensor-parallel-size 2</text>
+
+  <!-- Pipeline parallel -->
+  <text x="400" y="62" font-size="14" font-weight="bold" fill="#1f2937">Pipeline parallel (PP=2): split by layers</text>
+  <g stroke="#1f2937">
+    <rect x="410" y="76" width="150" height="120" rx="8" fill="#fde68a"/>
+    <rect x="590" y="76" width="150" height="120" rx="8" fill="#fbcfe8"/>
+  </g>
+  <g fill="#111827" text-anchor="middle">
+    <text x="485" y="100" font-weight="bold">GPU 0</text><text x="665" y="100" font-weight="bold">GPU 1</text>
+    <text x="485" y="130">layers 1-18</text><text x="665" y="130">layers 19-36</text>
+    <text x="485" y="176" font-size="12">1/2 weights, 1/2 KV cache</text><text x="665" y="176" font-size="12">1/2 weights, 1/2 KV cache</text>
+  </g>
+  <path d="M560 136 H590" stroke="#b91c1c" stroke-width="2" fill="none" marker-end="url(#a)"/>
+  <text x="575" y="214" text-anchor="middle" fill="#b91c1c" font-size="12" font-weight="bold">activations</text>
+  <text x="575" y="230" text-anchor="middle" fill="#b91c1c" font-size="12">once per stage</text>
+  <text x="410" y="262" fill="#374151">+ little traffic: works over slower links, across nodes</text>
+  <text x="410" y="280" fill="#374151">- a single request still visits the stages one by one;</text>
+  <text x="410" y="298" fill="#374151">  needs many requests in flight to avoid idle "bubbles"</text>
+
+  <!-- Expert parallel + rule -->
+  <rect x="20" y="326" width="720" height="72" rx="8" fill="#f3f4f6" stroke="#9ca3af"/>
+  <text x="34" y="350" fill="#111827" font-weight="bold">Rule of thumb</text>
+  <text x="34" y="370" fill="#111827">Smallest TP that fits the weights plus KV cache inside one NVLink node; add PP only to cross nodes.</text>
+  <text x="34" y="388" fill="#111827">MoE models add expert parallelism (different experts on different GPUs); llm-d calls the multi-node form "wide EP".</text>
+
+  <defs><marker id="a" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#b91c1c"/></marker></defs>
+</svg>

@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 470" font-family="Helvetica, Arial, sans-serif" font-size="13">
+  <rect width="720" height="470" rx="12" fill="#ffffff"/>
+  <text x="360" y="28" text-anchor="middle" font-size="17" font-weight="bold" fill="#1f2937">Static batching vs continuous batching</text>
+
+  <!-- Static -->
+  <text x="20" y="62" font-size="14" font-weight="bold" fill="#1f2937">Static batching: the batch finishes when its slowest request finishes</text>
+  <g fill="#1f2937">
+    <text x="20" y="92">slot 1</text><text x="20" y="126">slot 2</text><text x="20" y="160">slot 3</text><text x="20" y="194">slot 4</text>
+  </g>
+  <!-- idle -->
+  <g fill="#e5e7eb" stroke="#9ca3af" stroke-dasharray="4 3">
+    <rect x="380" y="74" width="80" height="28"/>
+    <rect x="260" y="108" width="200" height="28"/>
+    <rect x="220" y="176" width="240" height="28"/>
+  </g>
+  <g stroke="#1f2937" stroke-width="1">
+    <rect x="140" y="74" width="240" height="28" fill="#60a5fa"/>
+    <rect x="140" y="108" width="120" height="28" fill="#34d399"/>
+    <rect x="140" y="142" width="320" height="28" fill="#fbbf24"/>
+    <rect x="140" y="176" width="80" height="28" fill="#f87171"/>
+  </g>
+  <g fill="#111827" text-anchor="middle">
+    <text x="260" y="93">request A</text><text x="200" y="127">B</text><text x="300" y="161">request C (longest)</text><text x="180" y="195">D</text>
+    <text x="420" y="93" fill="#6b7280">idle</text><text x="360" y="127" fill="#6b7280">idle (GPU waits)</text><text x="340" y="195" fill="#6b7280">idle (GPU waits)</text>
+  </g>
+  <text x="480" y="160" fill="#b91c1c" font-weight="bold">new requests wait here</text>
+  <line x1="460" y1="70" x2="460" y2="208" stroke="#b91c1c" stroke-width="2"/>
+
+  <!-- Continuous -->
+  <text x="20" y="250" font-size="14" font-weight="bold" fill="#1f2937">Continuous batching: a finished slot is refilled at the very next decode step</text>
+  <g fill="#1f2937">
+    <text x="20" y="280">slot 1</text><text x="20" y="314">slot 2</text><text x="20" y="348">slot 3</text><text x="20" y="382">slot 4</text>
+  </g>
+  <g stroke="#1f2937" stroke-width="1">
+    <rect x="140" y="262" width="240" height="28" fill="#60a5fa"/>
+    <rect x="380" y="262" width="160" height="28" fill="#a78bfa"/>
+    <rect x="140" y="296" width="120" height="28" fill="#34d399"/>
+    <rect x="260" y="296" width="240" height="28" fill="#f472b6"/>
+    <rect x="140" y="330" width="320" height="28" fill="#fbbf24"/>
+    <rect x="460" y="330" width="160" height="28" fill="#2dd4bf"/>
+    <rect x="140" y="364" width="80" height="28" fill="#f87171"/>
+    <rect x="220" y="364" width="160" height="28" fill="#fb923c"/>
+    <rect x="380" y="364" width="160" height="28" fill="#c084fc"/>
+  </g>
+  <g fill="#111827" text-anchor="middle">
+    <text x="260" y="281">A</text><text x="460" y="281">E</text><text x="200" y="315">B</text><text x="380" y="315">F</text>
+    <text x="300" y="349">C</text><text x="540" y="349">G</text><text x="180" y="383">D</text><text x="300" y="383">H</text><text x="460" y="383">I</text>
+  </g>
+
+  <line x1="140" y1="408" x2="640" y2="408" stroke="#888" stroke-width="1.5"/>
+  <text x="640" y="426" text-anchor="end" fill="#374151">time (one tick = one decode step for every active request)</text>
+  <text x="20" y="452" fill="#374151">The GPU stays busy because the scheduler admits work between steps, not between batches. (Orca, OSDI 2022; now default in vLLM, SGLang, llama.cpp.)</text>
+</svg>

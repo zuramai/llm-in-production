@@ -1,0 +1,161 @@
+[
+  {
+    "scenario": "cache off",
+    "environment": {
+      "load_avg_1m": 44.4,
+      "other_ollama_models_loaded": [
+        "glm-ocr:latest",
+        "nomic-embed-text:latest"
+      ]
+    },
+    "first_ttft_ms": 19742.0,
+    "later_median_ttft_ms": 19634.9,
+    "later_min_ttft_ms": 14935.7,
+    "rows": [
+      {
+        "ttft_ms": 19742.0,
+        "prompt_tokens_processed": 2788,
+        "prompt_tokens_from_cache": 0,
+        "prefill_ms": 18389.451,
+        "request": 1
+      },
+      {
+        "ttft_ms": 19634.9,
+        "prompt_tokens_processed": 2792,
+        "prompt_tokens_from_cache": 0,
+        "prefill_ms": 18763.982,
+        "request": 2
+      },
+      {
+        "ttft_ms": 14935.7,
+        "prompt_tokens_processed": 2792,
+        "prompt_tokens_from_cache": 0,
+        "prefill_ms": 13804.587,
+        "request": 3
+      },
+      {
+        "ttft_ms": 20726.4,
+        "prompt_tokens_processed": 2789,
+        "prompt_tokens_from_cache": 0,
+        "prefill_ms": 20180.837,
+        "request": 4
+      }
+    ]
+  },
+  {
+    "scenario": "cache on, stable prefix",
+    "environment": {
+      "load_avg_1m": 41.4,
+      "other_ollama_models_loaded": [
+        "qwen3:1.7b",
+        "qwen2.5-coder:0.5b",
+        "nomic-embed-text:latest"
+      ]
+    },
+    "first_ttft_ms": 20274.7,
+    "later_median_ttft_ms": 440.1,
+    "later_min_ttft_ms": 254.0,
+    "rows": [
+      {
+        "ttft_ms": 20274.7,
+        "prompt_tokens_processed": 2785,
+        "prompt_tokens_from_cache": 3,
+        "prefill_ms": 19911.603,
+        "request": 1
+      },
+      {
+        "ttft_ms": 633.8,
+        "prompt_tokens_processed": 19,
+        "prompt_tokens_from_cache": 2773,
+        "prefill_ms": 256.561,
+        "request": 2
+      },
+      {
+        "ttft_ms": 457.5,
+        "prompt_tokens_processed": 19,
+        "prompt_tokens_from_cache": 2773,
+        "prefill_ms": 375.299,
+        "request": 3
+      },
+      {
+        "ttft_ms": 480.1,
+        "prompt_tokens_processed": 16,
+        "prompt_tokens_from_cache": 2773,
+        "prefill_ms": 350.174,
+        "request": 4
+      },
+      {
+        "ttft_ms": 308.2,
+        "prompt_tokens_processed": 15,
+        "prompt_tokens_from_cache": 2773,
+        "prefill_ms": 246.39,
+        "request": 5
+      },
+      {
+        "ttft_ms": 254.0,
+        "prompt_tokens_processed": 15,
+        "prompt_tokens_from_cache": 2773,
+        "prefill_ms": 189.932,
+        "request": 6
+      },
+      {
+        "ttft_ms": 390.1,
+        "prompt_tokens_processed": 18,
+        "prompt_tokens_from_cache": 2773,
+        "prefill_ms": 344.353,
+        "request": 7
+      },
+      {
+        "ttft_ms": 440.1,
+        "prompt_tokens_processed": 23,
+        "prompt_tokens_from_cache": 2773,
+        "prefill_ms": 378.173,
+        "request": 8
+      }
+    ]
+  },
+  {
+    "scenario": "cache on, timestamp at start",
+    "environment": {
+      "load_avg_1m": 20.5,
+      "other_ollama_models_loaded": [
+        "qwen2.5-coder:0.5b",
+        "qwen3:1.7b",
+        "nomic-embed-text:latest"
+      ]
+    },
+    "first_ttft_ms": 21737.3,
+    "later_median_ttft_ms": 19791.9,
+    "later_min_ttft_ms": 17567.6,
+    "rows": [
+      {
+        "ttft_ms": 21737.3,
+        "prompt_tokens_processed": 2786,
+        "prompt_tokens_from_cache": 3,
+        "prefill_ms": 20887.175,
+        "request": 1
+      },
+      {
+        "ttft_ms": 20057.3,
+        "prompt_tokens_processed": 2779,
+        "prompt_tokens_from_cache": 14,
+        "prefill_ms": 17938.082,
+        "request": 2
+      },
+      {
+        "ttft_ms": 17567.6,
+        "prompt_tokens_processed": 2778,
+        "prompt_tokens_from_cache": 15,
+        "prefill_ms": 16286.928,
+        "request": 3
+      },
+      {
+        "ttft_ms": 19791.9,
+        "prompt_tokens_processed": 2775,
+        "prompt_tokens_from_cache": 15,
+        "prefill_ms": 18235.086,
+        "request": 4
+      }
+    ]
+  }
+]

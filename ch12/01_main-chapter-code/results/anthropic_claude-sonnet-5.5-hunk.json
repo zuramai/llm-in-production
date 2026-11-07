@@ -1,0 +1,115 @@
+{
+ "model": "anthropic/claude-sonnet-5.5",
+ "provider": "hosted",
+ "granularity": "hunk",
+ "guidelines": true,
+ "runs": [
+  {
+   "buggy": {
+    "comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "critical",
+      "category": "security",
+      "body": "A live Stripe secret key is hardcoded in source, so anyone with repo access (or git history) can use it to make charges or refunds, and it is now leaked. Revert to `os.environ.get(\"STRIPE_API_KEY\", \"\")` (or `os.environ[...]`), and rotate this key.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 19,
+      "severity": "high",
+      "category": "concurrency",
+      "body": "Read-then-write race: stock is read outside the UPDATE and the new value is computed in Python, so two concurrent reservations both read on_hand=5, both pass the check, and both write 5-qty. This oversells stock and loses one decrement. Restore the atomic `UPDATE ... SET on_hand = on_hand - %s WHERE ... AND on_hand >= %s` and return `cur.rowcount == 1`.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 24,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The UPDATE writes an absolute value (`on_hand - qty` computed from a stale read) with no `on_hand >= qty` guard. If another request changed stock between the read and write, that change is overwritten, so stock can become incorrect or even negative. Use a relative decrement with the guard condition in the WHERE clause.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 30,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "`LOW_STOCK_THRESHOLD` is used as a default argument, but nothing in the visible diff defines or imports it. If it is not already defined at module level, importing this module will raise NameError.",
+      "confidence": 0.3
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "critical",
+      "category": "security",
+      "body": "`status` is interpolated into the SQL with an f-string, so input like `x' OR '1'='1` or a stacked/UNION payload gives SQL injection. Restore the parameterised query: `WHERE status = %s` with `(status,)`.",
+      "confidence": 0.97
+     },
+     {
+      "path": "service/orders.py",
+      "line": 34,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The offset is now `page * PAGE_SIZE` although `page` is documented as 1-based. Page 1 skips the first PAGE_SIZE orders, so the newest orders are never returned. Use `(page - 1) * PAGE_SIZE`.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "high",
+      "category": "correctness",
+      "body": "\"Today\" is now computed from UTC midnight (naive `utcnow()`) instead of the business-time-zone calendar day, which violates the repo convention. Between 7-8pm and midnight New York time the count resets to the next UTC day, and the day boundary is off by 4-5 hours otherwise. Use `datetime.now(ZoneInfo(BUSINESS_TZ)).replace(hour=0, ...)`.",
+      "confidence": 0.93
+     },
+     {
+      "path": "service/orders.py",
+      "line": 56,
+      "severity": "medium",
+      "category": "performance",
+      "body": "The single grouped query was replaced by one query per customer id (N+1), so a large `customer_ids` list means N round trips. Restore the `customer_id = ANY(%s) GROUP BY customer_id` query and default missing customers to 0.",
+      "confidence": 0.85
+     },
+     {
+      "path": "service/orders.py",
+      "line": 67,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "`get_order` returns None for an unknown id, so `order['id']` raises TypeError: 'NoneType' object is not subscriptable. Handle the None case, e.g. by raising a clear error or returning a fallback string.",
+      "confidence": 0.85
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "high",
+      "category": "correctness",
+      "body": "`notify.send_receipt` was awaited before, so it is a coroutine function. Calling it without `await` just creates a coroutine that is never run, so no receipt is sent after a successful capture, and Python emits a 'coroutine was never awaited' warning. Restore `await notify.send_receipt(order_id)`.",
+      "confidence": 0.9
+     }
+    ],
+    "raw_count": 10,
+    "n_units": 9,
+    "latency_ms": 23231,
+    "usage": {
+     "prompt_tokens": 13501,
+     "completion_tokens": 1763,
+     "cost_usd": 0.044185680000000005
+    },
+    "errors": []
+   },
+   "clean": {
+    "comments": [],
+    "raw_count": 0,
+    "n_units": 8,
+    "latency_ms": 3926,
+    "usage": {
+     "prompt_tokens": 10750,
+     "completion_tokens": 80,
+     "cost_usd": 0.022077
+    },
+    "errors": []
+   }
+  }
+ ]
+}

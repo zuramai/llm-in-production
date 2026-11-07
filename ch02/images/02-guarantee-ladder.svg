@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 430" font-family="Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="900" height="430" rx="14" fill="#ffffff"/>
+  <text x="450" y="34" text-anchor="middle" font-size="19" font-weight="bold" fill="#222">What each method actually guarantees</text>
+
+  <!-- column headers -->
+  <text x="40" y="70" font-size="13" font-weight="bold" fill="#444">Method</text>
+  <text x="225" y="70" font-size="13" font-weight="bold" fill="#444">Where the constraint lives</text>
+  <text x="520" y="70" font-size="13" font-weight="bold" fill="#444">Guaranteed</text>
+  <text x="700" y="70" font-size="13" font-weight="bold" fill="#444">Still your job</text>
+
+  <!-- row 1 -->
+  <rect x="30" y="82" width="840" height="66" rx="8" fill="#f8d7da" stroke="#c0392b"/>
+  <text x="45" y="111" font-size="14" font-weight="bold" fill="#222">1 prompt-only</text>
+  <text x="45" y="132" font-size="12" fill="#333">"Reply with JSON"</text>
+  <text x="225" y="111" font-size="12" fill="#222">The prompt text. Nothing else.</text>
+  <text x="225" y="132" font-size="12" fill="#222">The model may add fences or prose.</text>
+  <text x="520" y="111" font-size="12" fill="#222">nothing</text>
+  <text x="700" y="111" font-size="12" fill="#222">strip fences, parse,</text>
+  <text x="700" y="132" font-size="12" fill="#222">validate, retry</text>
+
+  <!-- row 2 -->
+  <rect x="30" y="158" width="840" height="66" rx="8" fill="#fde8c8" stroke="#d68910"/>
+  <text x="45" y="187" font-size="14" font-weight="bold" fill="#222">2 JSON mode</text>
+  <text x="45" y="208" font-size="12" fill="#333">response_format: json_object</text>
+  <text x="225" y="187" font-size="12" fill="#222">Decoder: output must be valid JSON syntax.</text>
+  <text x="225" y="208" font-size="12" fill="#222">Keys and values are still free.</text>
+  <text x="520" y="187" font-size="12" fill="#222">it parses</text>
+  <text x="700" y="187" font-size="12" fill="#222">keys, enums, types,</text>
+  <text x="700" y="208" font-size="12" fill="#222">limits (validate, retry)</text>
+
+  <!-- row 3 -->
+  <rect x="30" y="234" width="840" height="66" rx="8" fill="#d5f0d8" stroke="#2e8b57"/>
+  <text x="45" y="263" font-size="14" font-weight="bold" fill="#222">3 strict json_schema</text>
+  <text x="45" y="284" font-size="12" fill="#333">response_format: json_schema</text>
+  <text x="225" y="263" font-size="12" fill="#222">Decoder: schema compiled to a grammar;</text>
+  <text x="225" y="284" font-size="12" fill="#222">invalid next tokens are masked out.</text>
+  <text x="520" y="263" font-size="12" fill="#222">shape, enums, types</text>
+  <text x="700" y="263" font-size="12" fill="#222">max_tokens cut-offs,</text>
+  <text x="700" y="284" font-size="12" fill="#222">refusals, business rules</text>
+
+  <!-- row 4 -->
+  <rect x="30" y="310" width="840" height="66" rx="8" fill="#d5f0d8" stroke="#2e8b57"/>
+  <text x="45" y="339" font-size="14" font-weight="bold" fill="#222">4 forced tool call</text>
+  <text x="45" y="360" font-size="12" fill="#333">tool_choice: {function: ...}</text>
+  <text x="225" y="339" font-size="12" fill="#222">Same schema, sent through the tool channel.</text>
+  <text x="225" y="360" font-size="12" fill="#222">Strict flag gives the same masking.</text>
+  <text x="520" y="339" font-size="12" fill="#222">shape (if strict)</text>
+  <text x="700" y="339" font-size="12" fill="#222">answer is in tool_calls,</text>
+  <text x="700" y="360" font-size="12" fill="#222">not content</text>
+
+  <text x="450" y="406" text-anchor="middle" font-size="12" fill="#555">Every row still ends with Pydantic validation: the schema guarantees structure, not truth.</text>
+</svg>

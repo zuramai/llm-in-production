@@ -1,0 +1,42 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      shopflow-db:
+        image: pgvector/pgvector:0.8.7-pg18
+        env:
+          POSTGRES_USER: shopflow
+          POSTGRES_PASSWORD: shopflow
+          POSTGRES_DB: shopflow
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U shopflow"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+    env:
+      # No model calls in CI: tests marked `llm` are skipped by default.
+      LLM_BASE_URL: http://localhost:11434/v1
+      LLM_API_KEY: ci
+      LLM_MODEL: ci
+      LLM_MODEL_STRONG: ci
+      EMBED_BASE_URL: http://localhost:11434/v1
+      EMBED_API_KEY: ci
+      EMBED_MODEL: ci
+      DATABASE_URL: postgresql://shopflow:shopflow@localhost:5433/shopflow
+      DATABASE_URL_RO: postgresql://shopflow_ro:shopflow_ro@localhost:5433/shopflow
+      BUSINESS_TIMEZONE: America/New_York
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+      - run: uv sync
+      - run: uv run ruff check .
+      - run: uv run python datasets/shopflow/seed.py --reset
+      - run: uv run pytest -m "not llm"

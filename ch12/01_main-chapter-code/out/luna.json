@@ -1,0 +1,66 @@
+[
+  {
+    "path": "service/config.py",
+    "line": 13,
+    "severity": "high",
+    "category": "correctness",
+    "body": "This replaces the environment-provided Stripe key with a literal placeholder (`NotARealKey`), so Stripe requests will be rejected and deployments cannot supply a valid key. Read `STRIPE_API_KEY` from the environment as before.",
+    "confidence": 0.99
+  },
+  {
+    "path": "service/inventory.py",
+    "line": 24,
+    "severity": "high",
+    "category": "concurrency",
+    "body": "The availability check and inventory update are no longer atomic: two concurrent requests can both read 1 unit, both pass the check, and both return `True` after setting stock to 0, reserving 2 units from 1. Keep the conditional decrement (`on_hand >= qty`) in a single atomic `UPDATE` and use its row count to determine success.",
+    "confidence": 0.99
+  },
+  {
+    "path": "service/orders.py",
+    "line": 27,
+    "severity": "high",
+    "category": "security",
+    "body": "Interpolating `status` directly into SQL lets a caller alter the `WHERE` predicate; for example, a status value of `x' OR '1'='1` can return orders of every status. Keep the `%s` placeholder and pass `(status,)` as query parameters.",
+    "confidence": 0.99
+  },
+  {
+    "path": "service/orders.py",
+    "line": 34,
+    "severity": "medium",
+    "category": "correctness",
+    "body": "With 1-based pages, this offset skips the first `PAGE_SIZE` orders on page 1 and shifts every subsequent page. Restore `(page - 1) * PAGE_SIZE` so page 1 starts at offset 0.",
+    "confidence": 0.99
+  },
+  {
+    "path": "service/orders.py",
+    "line": 44,
+    "severity": "medium",
+    "category": "correctness",
+    "body": "This computes midnight in UTC, but the service's business-day boundary is midnight in `BUSINESS_TZ`; orders near the New York/UTC boundary will be counted on the wrong day. Build `start` from the current time in `ZoneInfo(BUSINESS_TZ)`, as before.",
+    "confidence": 0.99
+  },
+  {
+    "path": "service/orders.py",
+    "line": 56,
+    "severity": "medium",
+    "category": "performance",
+    "body": "This executes one database query per customer instead of the previous single aggregate query, so the number of round trips grows linearly with `customer_ids`. Restore a grouped aggregate query (or otherwise fetch all totals in one query) to avoid this N+1 performance regression.",
+    "confidence": 0.99
+  },
+  {
+    "path": "service/orders.py",
+    "line": 67,
+    "severity": "medium",
+    "category": "correctness",
+    "body": "`get_order` returns `None` for an unknown ID, so `describe_order` raises `TypeError` when it subscripts the result. Handle the missing-order case explicitly, for example by returning an appropriate not-found description or raising a deliberate not-found exception.",
+    "confidence": 0.98
+  },
+  {
+    "path": "service/payments.py",
+    "line": 15,
+    "severity": "medium",
+    "category": "correctness",
+    "body": "`send_receipt` was awaited before this change, so it is an async operation; calling it without `await` only creates a coroutine and never sends the receipt. Await it here to preserve receipt delivery after a successful charge.",
+    "confidence": 0.99
+  }
+]

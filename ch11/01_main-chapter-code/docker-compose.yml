@@ -1,0 +1,43 @@
+# Chapter 11: checkout service + Prometheus + Loki + Grafana.
+# Ports: checkout 8011, Prometheus 9091, Loki 3101, Grafana 3011. Images pinned (as of 2026-11).
+name: ch11
+services:
+  checkout:
+    build: ./checkout
+    ports: ["8011:8011"]
+    environment:
+      LOKI_URL: http://loki:3100/loki/api/v1/push
+      DEPLOY_VERSION: v2026.11.07-1
+    depends_on: [loki]
+    mem_limit: 192m
+
+  prometheus:
+    image: prom/prometheus:v3.16.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=6h
+    volumes: ["./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro"]
+    ports: ["9091:9090"]
+    mem_limit: 384m
+
+  loki:
+    image: grafana/loki:3.7.9
+    command: ["-config.file=/etc/loki/loki.yaml"]
+    volumes: ["./observability/loki.yaml:/etc/loki/loki.yaml:ro"]
+    ports: ["3101:3100"]
+    mem_limit: 512m
+
+  grafana:
+    image: grafana/grafana:13.2.5
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"        # lets headless screenshots in; never in production
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_USERS_DEFAULT_THEME: light
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["3011:3000"]
+    depends_on: [prometheus, loki]
+    mem_limit: 512m

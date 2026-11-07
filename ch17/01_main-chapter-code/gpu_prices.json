@@ -1,0 +1,52 @@
+{
+  "_note": "Every number here is dated and sourced. Prices go stale within weeks: re-check before you decide anything.",
+  "accessed": "2026-11-07",
+  "gpu_hourly_usd": {
+    "RunPod (on-demand pods; page updated 2026-11-04)": {
+      "source": "https://www.runpod.io/pricing",
+      "H100 SXM 80GB": 3.99,
+      "H100 PCIe 80GB": 2.89,
+      "A100 80GB": 1.79,
+      "L40S 48GB": 1.09,
+      "H200 141GB": 5.29,
+      "B200 180GB": 7.99
+    },
+    "Lambda (per GPU; prices take effect 2026-11-16)": {
+      "source": "https://lambda.ai/instances",
+      "H100 SXM 80GB (1x)": 4.89,
+      "H100 SXM 80GB (8x HGX)": 4.59,
+      "A100 80GB (8x HGX)": 3.19,
+      "B200 180GB (8x HGX)": 7.69
+    }
+  },
+  "gpu_memory_bandwidth_gb_s": {
+    "_source": "H100 SXM: commonly quoted datasheet value (NVIDIA's H100 page rounds it to 'about 3 TB/s', https://www.nvidia.com/en-us/data-center/h100/). B200: 64 TB/s across 8 GPUs on https://www.nvidia.com/en-us/data-center/dgx-b200/. M2 Pro: https://www.apple.com/newsroom/2023/01/apple-unveils-m2-pro-and-m2-max-next-generation-chips-for-next-level-workflows/",
+    "H100 SXM 80GB": 3350,
+    "B200 180GB": 8000,
+    "M2 Pro": 200
+  },
+  "measured_throughput": {
+    "gpt-oss-120b on 2x H100 SXM, vLLM 0.10.2, ShareGPT, saturated, defaults": {
+      "source": "https://github.com/gpustack/gpustack/blob/main/docs/performance-lab/gpt-oss-120b/h100.md",
+      "n_gpus": 2,
+      "output_tokens_per_second": 2901.05
+    },
+    "gpt-oss-120b on 2x H100 SXM, vLLM 0.10.2, ShareGPT, saturated, tuned": {
+      "source": "https://github.com/gpustack/gpustack/blob/main/docs/performance-lab/gpt-oss-120b/h100.md",
+      "n_gpus": 2,
+      "output_tokens_per_second": 7648.67
+    },
+    "Qwen3-8B on 1x H100 SXM, vLLM 0.11.0, ShareGPT, concurrency 4, latency-tuned": {
+      "source": "https://github.com/gpustack/gpustack/blob/main/docs/performance-lab/qwen3-8b/h100-latency.md",
+      "n_gpus": 1,
+      "output_tokens_per_second": 496.88
+    }
+  },
+  "api_usd_per_million_tokens": {
+    "_source": "https://openrouter.ai/api/v1/models, fetched 2026-11-07 (listed price; routed providers vary)",
+    "openai/gpt-oss-120b": {"input": 0.018, "output": 0.067},
+    "meta-llama/llama-3.3-70b-instruct": {"input": 0.59, "output": 0.79},
+    "qwen/qwen3-14b": {"input": 0.12, "output": 0.24},
+    "openai/gpt-6-luna": {"input": 0.10, "output": 0.50}
+  }
+}
