@@ -1,0 +1,30 @@
+# Cube Core in front of the ShopFlow database, as the read-only role.
+#   docker compose -f ch07/02_bonus_cube/docker-compose.yml up -d
+#   uv run python ch07/02_bonus_cube/cube_query.py
+#   docker compose -f ch07/02_bonus_cube/docker-compose.yml down
+services:
+  cube:
+    image: cubejs/cube:v1.6.77          # pinned: `latest` moves (it is the v1.6 LTS line today)
+    ports:
+      - "8007:4000"                     # REST API on localhost:8007 (chapter port 80NN)
+    environment:
+      CUBEJS_DB_TYPE: postgres
+      CUBEJS_DB_HOST: shopflow-db
+      CUBEJS_DB_PORT: "5432"
+      CUBEJS_DB_NAME: shopflow
+      CUBEJS_DB_USER: shopflow_ro       # SELECT-only role from datasets/shopflow/schema.sql
+      CUBEJS_DB_PASS: shopflow_ro
+      # Local demo secret for signing JWTs. Use a real secret (and no dev mode) anywhere else.
+      CUBEJS_API_SECRET: ch07-local-demo-secret-change-me
+      CUBEJS_DEV_MODE: "false"
+      # Without dev mode Cube expects Cube Store for its cache and queue ("Cube Store was
+      # specified as queue/cache driver"). In-memory is fine for one container.
+      CUBEJS_CACHE_AND_QUEUE_DRIVER: memory
+    volumes:
+      - ./model:/cube/conf/model:ro
+    networks: [shopflow]
+
+networks:
+  shopflow:
+    name: shopflow_default              # the network of the shopflow-db container
+    external: true

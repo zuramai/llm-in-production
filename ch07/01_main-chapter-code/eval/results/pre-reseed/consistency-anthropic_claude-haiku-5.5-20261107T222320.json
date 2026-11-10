@@ -1,0 +1,566 @@
+{
+  "model": "anthropic/claude-haiku-5.5",
+  "repeats": 5,
+  "summary": [
+    {
+      "variant": "sql",
+      "question": "What's our refund rate this month?",
+      "values": [
+        7.56,
+        7.56,
+        0.0756,
+        2.94,
+        7.56
+      ],
+      "distinct": 2
+    },
+    {
+      "variant": "sql",
+      "question": "How many active customers do we have?",
+      "values": [
+        4072.0,
+        4072.0,
+        4072.0,
+        4072.0,
+        4072.0
+      ],
+      "distinct": 1
+    },
+    {
+      "variant": "sql",
+      "question": "What was net revenue last week?",
+      "values": [
+        116558.34,
+        116558.34,
+        116558.34,
+        116558.34,
+        116558.34
+      ],
+      "distinct": 1
+    },
+    {
+      "variant": "sql",
+      "question": "What was our average order value last month?",
+      "values": [
+        120.3,
+        120.2965,
+        120.2965,
+        120.2965,
+        120.2965
+      ],
+      "distinct": 1
+    },
+    {
+      "variant": "semantic",
+      "question": "What's our refund rate this month?",
+      "values": [
+        0.0301,
+        0.0301,
+        0.0301,
+        0.0301,
+        0.0301
+      ],
+      "distinct": 1
+    },
+    {
+      "variant": "semantic",
+      "question": "How many active customers do we have?",
+      "values": [
+        4068.0,
+        4068.0,
+        4068.0,
+        4068.0,
+        4068.0
+      ],
+      "distinct": 1
+    },
+    {
+      "variant": "semantic",
+      "question": "What was net revenue last week?",
+      "values": [
+        116558.34,
+        116558.34,
+        116558.34,
+        116558.34,
+        116558.34
+      ],
+      "distinct": 1
+    },
+    {
+      "variant": "semantic",
+      "question": "What was our average order value last month?",
+      "values": [
+        120.2965,
+        120.2965,
+        120.2965,
+        120.2965,
+        120.2965
+      ],
+      "distinct": 1
+    }
+  ],
+  "runs": [
+    {
+      "variant": "sql",
+      "question": "What's our refund rate this month?",
+      "value": 7.56,
+      "row": {
+        "refunds_usd": 9620.07,
+        "revenue_usd": 127250.43,
+        "refund_rate_pct": 7.559950877965599
+      },
+      "sql": "WITH bounds AS (SELECT DATE_TRUNC('MONTH', CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York' AS start_at) SELECT (SELECT COALESCE(SUM(r.amount_cents), 0) FROM refunds AS r, bounds AS b WHERE r.created_at >= b.start_at) / 100.0 AS refunds_usd, (SELECT COALESCE(SUM(o.total_cents), 0) FROM orders AS o, bounds AS b WHERE o.status IN ('paid', 'shipped', 'delivered') AND o.placed_at >= b.start_at) / 100.0 AS revenue_usd, 100.0 * (SELECT COALESCE(SUM(r.amount_cents), 0) FROM refunds AS r, bounds AS b WHERE r.created_at >= b.start_at) / NULLIF((SELECT COALESCE(SUM(o.total_cents), 0) FROM orders AS o, bounds AS b WHERE o.status IN ('paid', 'shipped', 'delivered') AND o.placed_at >= b.start_at), 0) AS refund_rate_pct LIMIT 1000",
+      "answer": "Refund rate this month is 7.559950877965599% ($9,620.07 in refunds against $127,250.43 in revenue). This assumes no glossary definition exists, so I defined it as refunds issued this month divided by gross revenue (paid, shipped, or delivered orders placed this month), using the current calendar month in America/New_York, as of 5:22 PM EST.",
+      "cost_usd": 0.0012516
+    },
+    {
+      "variant": "sql",
+      "question": "What's our refund rate this month?",
+      "value": 7.56,
+      "row": {
+        "refunds_usd": 9620.07,
+        "revenue_usd": 127250.43,
+        "refund_rate_pct": 7.56
+      },
+      "sql": "WITH bounds AS (SELECT DATE_TRUNC('MONTH', CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York' AS start_at), rev AS (SELECT COALESCE(SUM(o.total_cents), 0) / 100.0 AS revenue_usd FROM orders AS o, bounds AS b WHERE o.status IN ('paid', 'shipped', 'delivered') AND o.placed_at >= b.start_at), ref AS (SELECT COALESCE(SUM(r.amount_cents), 0) / 100.0 AS refunds_usd FROM refunds AS r, bounds AS b WHERE r.created_at >= b.start_at) SELECT ref.refunds_usd, rev.revenue_usd, ROUND(100.0 * ref.refunds_usd / NULLIF(rev.revenue_usd, 0), 2) AS refund_rate_pct FROM rev, ref LIMIT 1000",
+      "answer": "Our refund rate this month is 7.56%: $9,620.07 in refunds against $127,250.43 in gross revenue (month to date, America/New_York). Refunds are counted by when they were issued, and revenue by when orders were placed, so refunds on orders from earlier months are included. This is not a same-cohort rate. as of 5:22 PM EST",
+      "cost_usd": 0.0010735
+    },
+    {
+      "variant": "sql",
+      "question": "What's our refund rate this month?",
+      "value": 0.0756,
+      "row": {
+        "refunds_usd": 9620.07,
+        "revenue_usd": 127250.43,
+        "refund_rate": 0.0756
+      },
+      "sql": "WITH bounds AS (SELECT DATE_TRUNC('MONTH', CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York' AS start_at), r AS (SELECT COALESCE(SUM(rf.amount_cents), 0) AS refund_cents FROM refunds AS rf, bounds AS b WHERE rf.created_at >= b.start_at), v AS (SELECT COALESCE(SUM(o.total_cents), 0) AS revenue_cents FROM orders AS o, bounds AS b WHERE o.status IN ('paid', 'shipped', 'delivered') AND o.placed_at >= b.start_at) SELECT r.refund_cents / 100.0 AS refunds_usd, v.revenue_cents / 100.0 AS revenue_usd, ROUND(CAST(r.refund_cents AS DECIMAL) / NULLIF(v.revenue_cents, 0), 4) AS refund_rate FROM r, v LIMIT 1000",
+      "answer": "This month's refund rate is **7.56%**: $9,620.07 in refunds against $127,250.43 in revenue. Refunds are counted by created_at in the current calendar month (America/New_York), and revenue is paid, shipped, or delivered orders placed this month, since the glossary has no refund-rate definition. as of 5:22 PM EST",
+      "cost_usd": 0.0013238
+    },
+    {
+      "variant": "sql",
+      "question": "What's our refund rate this month?",
+      "value": 2.94,
+      "row": {
+        "orders_placed": 1087,
+        "refunded_orders": 32,
+        "refund_rate_pct": 2.94
+      },
+      "sql": "SELECT COUNT(*) AS orders_placed, COUNT(*) FILTER(WHERE EXISTS(SELECT 1 FROM refunds AS r WHERE r.order_id = o.id)) AS refunded_orders, ROUND(CAST(100.0 * COUNT(*) FILTER(WHERE EXISTS(SELECT 1 FROM refunds AS r WHERE r.order_id = o.id)) / NULLIF(COUNT(*), 0) AS DECIMAL), 2) AS refund_rate_pct FROM orders AS o WHERE o.placed_at >= DATE_TRUNC('MONTH', CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York' LIMIT 1000",
+      "answer": "This month, 32 of 1,087 orders have at least one refund, a refund rate of 2.94%. I counted orders placed this month (America/New_York) and matched refunds by order_id, so refunds issued this month on orders from earlier months aren't included. as of 5:22 PM EST",
+      "cost_usd": 0.0009886
+    },
+    {
+      "variant": "sql",
+      "question": "What's our refund rate this month?",
+      "value": 7.56,
+      "row": {
+        "revenue_usd": 127250.43,
+        "refunds_usd": 9620.07,
+        "refund_rate_pct": 7.56
+      },
+      "sql": "WITH bounds AS (SELECT DATE_TRUNC('MONTH', CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York' AS start_at), rev AS (SELECT COALESCE(SUM(o.total_cents), 0) AS cents FROM orders AS o, bounds AS b WHERE o.status IN ('paid', 'shipped', 'delivered') AND o.placed_at >= b.start_at), ref AS (SELECT COALESCE(SUM(r.amount_cents), 0) AS cents FROM refunds AS r, bounds AS b WHERE r.created_at >= b.start_at) SELECT rev.cents / 100.0 AS revenue_usd, ref.cents / 100.0 AS refunds_usd, ROUND(100.0 * ref.cents / NULLIF(rev.cents, 0), 2) AS refund_rate_pct FROM rev, ref LIMIT 1000",
+      "answer": "Our refund rate this month is **7.56%**: $9,620.07 in refunds against $127,250.43 in revenue. Since the glossary doesn't define refund rate, I used refunds as a share of revenue, with revenue from paid, shipped, or delivered orders placed this month and refunds counted by refund date (America/New_York). as of 5:22 PM EST",
+      "cost_usd": 0.0013231
+    },
+    {
+      "variant": "sql",
+      "question": "How many active customers do we have?",
+      "value": 4072.0,
+      "row": {
+        "active_customers": 4072
+      },
+      "sql": "SELECT COUNT(DISTINCT customer_id) AS active_customers FROM orders WHERE placed_at >= CURRENT_TIMESTAMP - INTERVAL '90 DAYS' LIMIT 1000",
+      "answer": "We have **4,072 active customers**, defined as distinct customers with at least one order in the last 90 days (rolling window from now), counting orders of any status. This is as of 5:22 PM EST.",
+      "cost_usd": 0.0005842
+    },
+    {
+      "variant": "sql",
+      "question": "How many active customers do we have?",
+      "value": 4072.0,
+      "row": {
+        "active_customers": 4072
+      },
+      "sql": "SELECT COUNT(DISTINCT customer_id) AS active_customers FROM orders WHERE placed_at >= CURRENT_TIMESTAMP - INTERVAL '90 DAYS' LIMIT 1000",
+      "answer": "We have 4072 active customers, meaning distinct customers with at least one order (any status) in the rolling 90 days before now. as of 5:22 PM EST",
+      "cost_usd": 0.0006257000000000001
+    },
+    {
+      "variant": "sql",
+      "question": "How many active customers do we have?",
+      "value": 4072.0,
+      "row": {
+        "active_customers": 4072
+      },
+      "sql": "SELECT COUNT(DISTINCT customer_id) AS active_customers FROM orders WHERE placed_at >= CURRENT_TIMESTAMP - INTERVAL '90 DAYS' LIMIT 1000",
+      "answer": "We have **4,072 active customers**, defined as customers with at least one order placed in the last 90 days (any order status counts as placed). This is as of 5:22 PM EST.",
+      "cost_usd": 0.0005346
+    },
+    {
+      "variant": "sql",
+      "question": "How many active customers do we have?",
+      "value": 4072.0,
+      "row": {
+        "active_customers": 4072
+      },
+      "sql": "SELECT COUNT(DISTINCT customer_id) AS active_customers FROM orders WHERE placed_at >= CURRENT_TIMESTAMP - INTERVAL '90 DAYS' LIMIT 1000",
+      "answer": "We have **4,072 active customers**, meaning distinct customers who placed at least one order (any status) in the rolling 90 days up to now. This is as of 5:22 PM EST.",
+      "cost_usd": 0.0006179
+    },
+    {
+      "variant": "sql",
+      "question": "How many active customers do we have?",
+      "value": 4072.0,
+      "row": {
+        "active_customers": 4072
+      },
+      "sql": "SELECT COUNT(DISTINCT customer_id) AS active_customers FROM orders WHERE placed_at >= CURRENT_TIMESTAMP - INTERVAL '90 DAYS' LIMIT 1000",
+      "answer": "We have **4,072 active customers**, defined as customers with at least one order in the last 90 days, regardless of order status. This uses a rolling 90-day window from the current time, as of 5:22 PM EST.",
+      "cost_usd": 0.0005654
+    },
+    {
+      "variant": "sql",
+      "question": "What was net revenue last week?",
+      "value": 116558.34,
+      "row": {
+        "net_revenue_usd": 116558.34
+      },
+      "sql": "WITH bounds AS (SELECT DATE_TRUNC('WEEK', CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York' - INTERVAL '1 WEEK' AS start_at, DATE_TRUNC('WEEK', CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York' AS end_at) SELECT (SELECT COALESCE(SUM(total_cents), 0) FROM orders, bounds WHERE status IN ('paid', 'shipped', 'delivered') AND placed_at >= start_at AND placed_at < end_at) / 100.0 - (SELECT COALESCE(SUM(amount_cents), 0) FROM refunds, bounds WHERE created_at >= start_at AND created_at < end_at) / 100.0 AS net_revenue_usd LIMIT 1000",
+      "answer": "Net revenue for last week (Mon 2026-10-26 through Sun 2026-11-01, America/New_York) was **$116,558.34**.\n\nThis counts orders with status paid, shipped, or delivered by placement date, minus refunds by creation date within the same window. as of 5:22 PM EST",
+      "cost_usd": 0.0012558
+    },
+    {
+      "variant": "sql",
+      "question": "What was net revenue last week?",
+      "value": 116558.34,
+      "row": {
+        "net_revenue_usd": 116558.34
+      },
+      "sql": "WITH bounds AS (SELECT DATE_TRUNC('WEEK', CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York' - INTERVAL '1 WEEK' AS start_at, DATE_TRUNC('WEEK', CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York' AS end_at) SELECT (SELECT COALESCE(SUM(o.total_cents), 0) FROM orders AS o, bounds AS b WHERE o.status IN ('paid', 'shipped', 'delivered') AND o.placed_at >= b.start_at AND o.placed_at < b.end_at) / 100.0 - (SELECT COALESCE(SUM(r.amount_cents), 0) FROM refunds AS r, bounds AS b WHERE r.created_at >= b.start_at AND r.created_at < b.end_at) / 100.0 AS net_revenue_usd LIMIT 1000",
+      "answer": "Net revenue last week (Mon 2026-10-26 through Sun 2026-11-01, America/New_York) was **$116,558.34**. This counts paid, shipped, and delivered orders placed in that window, minus refunds created in that window. as of 5:22 PM EST",
+      "cost_usd": 0.0011253
+    },
+    {
+      "variant": "sql",
+      "question": "What was net revenue last week?",
+      "value": 116558.34,
+      "row": {
+        "net_revenue_usd": 116558.34
+      },
+      "sql": "WITH bounds AS (SELECT DATE_TRUNC('WEEK', CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York' - INTERVAL '1 WEEK' AS start_at, DATE_TRUNC('WEEK', CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York' AS end_at) SELECT (SELECT COALESCE(SUM(o.total_cents), 0) FROM orders AS o, bounds AS b WHERE o.status IN ('paid', 'shipped', 'delivered') AND o.placed_at >= b.start_at AND o.placed_at < b.end_at) / 100.0 - (SELECT COALESCE(SUM(r.amount_cents), 0) FROM refunds AS r, bounds AS b WHERE r.created_at >= b.start_at AND r.created_at < b.end_at) / 100.0 AS net_revenue_usd LIMIT 1000",
+      "answer": "Net revenue last week was **$116,558.34**. This covers the previous full Monday-to-Monday week (America/New_York), counting paid, shipped, and delivered orders placed that week, minus refunds created that week, regardless of when the original order was placed. as of 5:22 PM EST",
+      "cost_usd": 0.0010582
+    },
+    {
+      "variant": "sql",
+      "question": "What was net revenue last week?",
+      "value": 116558.34,
+      "row": {
+        "net_revenue_usd": 116558.34
+      },
+      "sql": "WITH bounds AS (SELECT DATE_TRUNC('WEEK', CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York' - INTERVAL '1 WEEK' AS start_at, DATE_TRUNC('WEEK', CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York' AS end_at) SELECT (SELECT COALESCE(SUM(o.total_cents), 0) FROM orders AS o, bounds AS b WHERE o.status IN ('paid', 'shipped', 'delivered') AND o.placed_at >= b.start_at AND o.placed_at < b.end_at) / 100.0 - (SELECT COALESCE(SUM(r.amount_cents), 0) FROM refunds AS r, bounds AS b WHERE r.created_at >= b.start_at AND r.created_at < b.end_at) / 100.0 AS net_revenue_usd LIMIT 1000",
+      "answer": "Net revenue last week (October 26 to November 2, 2026, America/New_York) was **$116,558.34**. This counts orders with status paid, shipped, or delivered placed that week, minus refunds created that same week. as of 5:22 PM EST",
+      "cost_usd": 0.0008623
+    },
+    {
+      "variant": "sql",
+      "question": "What was net revenue last week?",
+      "value": 116558.34,
+      "row": {
+        "net_revenue_usd": 116558.34
+      },
+      "sql": "WITH bounds AS (SELECT DATE_TRUNC('WEEK', CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York' - INTERVAL '1 WEEK' AS start_at, DATE_TRUNC('WEEK', CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York' AS end_at) SELECT ((SELECT COALESCE(SUM(o.total_cents), 0) FROM orders AS o, bounds AS b WHERE o.status IN ('paid', 'shipped', 'delivered') AND o.placed_at >= b.start_at AND o.placed_at < b.end_at) - (SELECT COALESCE(SUM(r.amount_cents), 0) FROM refunds AS r, bounds AS b WHERE r.created_at >= b.start_at AND r.created_at < b.end_at)) / 100.0 AS net_revenue_usd LIMIT 1000",
+      "answer": "Net revenue last week (Mon 10/26 00:00 to Mon 11/02 00:00, America/New_York) was **$116,558.34**. This counts orders with status paid, shipped, or delivered, minus refunds dated in the same week.\n\nas of 5:22 PM EST",
+      "cost_usd": 0.0010923
+    },
+    {
+      "variant": "sql",
+      "question": "What was our average order value last month?",
+      "value": 120.3,
+      "row": {
+        "aov_usd": 120.3,
+        "revenue_usd": 596670.59,
+        "orders_counted": 4960
+      },
+      "sql": "SELECT ROUND(SUM(total_cents) / 100.0 / NULLIF(COUNT(*), 0), 2) AS aov_usd, SUM(total_cents) / 100.0 AS revenue_usd, COUNT(*) AS orders_counted FROM orders WHERE status IN ('paid', 'shipped', 'delivered') AND placed_at >= DATE_TRUNC('MONTH', CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York' - INTERVAL '1 MONTH' AND placed_at < DATE_TRUNC('MONTH', CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York' LIMIT 1000",
+      "answer": "Our average order value (AOV) for October 2026 was **$120.30**, based on $596,670.59 in revenue across 4,960 orders (transactions) in paid, shipped, or delivered status. Refunded and cancelled orders are excluded, and order values include shipping and net of discounts. as of 5:22 PM EST",
+      "cost_usd": 0.0010807
+    },
+    {
+      "variant": "sql",
+      "question": "What was our average order value last month?",
+      "value": 120.2965,
+      "row": {
+        "revenue_usd": 596670.59,
+        "orders_counted": 4960,
+        "average_order_value_usd": 120.29648991935484
+      },
+      "sql": "WITH bounds AS (SELECT DATE_TRUNC('MONTH', CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York' - INTERVAL '1 MONTH' AS start_at, DATE_TRUNC('MONTH', CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York' AS end_at) SELECT SUM(o.total_cents) / 100.0 AS revenue_usd, COUNT(*) AS orders_counted, (SUM(o.total_cents) / 100.0) / NULLIF(COUNT(*), 0) AS average_order_value_usd FROM orders AS o, bounds AS b WHERE o.status IN ('paid', 'shipped', 'delivered') AND o.placed_at >= b.start_at AND o.placed_at < b.end_at LIMIT 1000",
+      "answer": "Our average order value for October 2026 was **$120.30**, based on $596,670.59 in revenue across 4,960 transactions (orders) with paid, shipped, or delivered status. This is gross revenue, so refunds and cancellations are not subtracted, and the period uses America/New_York time. as of 5:22 PM EST",
+      "cost_usd": 0.001106
+    },
+    {
+      "variant": "sql",
+      "question": "What was our average order value last month?",
+      "value": 120.2965,
+      "row": {
+        "aov_usd": 120.29648991935484,
+        "revenue_usd": 596670.59,
+        "orders_counted": 4960
+      },
+      "sql": "SELECT (SUM(total_cents) / 100.0) / NULLIF(COUNT(*), 0) AS aov_usd, SUM(total_cents) / 100.0 AS revenue_usd, COUNT(*) AS orders_counted FROM orders WHERE status IN ('paid', 'shipped', 'delivered') AND placed_at >= DATE_TRUNC('MONTH', CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York' - INTERVAL '1 MONTH' AND placed_at < DATE_TRUNC('MONTH', CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York' LIMIT 1000",
+      "answer": "Our average order value for October 2026 was **$120.30**, from $596,670.59 in gross revenue across 4,960 transactions (orders) with status paid, shipped, or delivered. Refunds are not subtracted. as of 5:23 PM EST",
+      "cost_usd": 0.0009889999999999999
+    },
+    {
+      "variant": "sql",
+      "question": "What was our average order value last month?",
+      "value": 120.2965,
+      "row": {
+        "avg_order_value_usd": 120.29648991935484,
+        "revenue_usd": 596670.59,
+        "orders_counted": 4960
+      },
+      "sql": "SELECT SUM(total_cents) / 100.0 / NULLIF(COUNT(*), 0) AS avg_order_value_usd, SUM(total_cents) / 100.0 AS revenue_usd, COUNT(*) AS orders_counted FROM orders WHERE status IN ('paid', 'shipped', 'delivered') AND placed_at >= (DATE_TRUNC('MONTH', CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York') - INTERVAL '1 MONTH') AT TIME ZONE 'America/New_York' AND placed_at < DATE_TRUNC('MONTH', CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York' LIMIT 1000",
+      "answer": "Our average order value for October 2026 was **$120.30**, from 596,670.59 in revenue across 4,960 transactions (orders) with status paid, shipped, or delivered. Orders were counted by placed date in America/New_York time, and AOV is revenue divided by that order count. As of 5:23 PM EST.",
+      "cost_usd": 0.0010890000000000001
+    },
+    {
+      "variant": "sql",
+      "question": "What was our average order value last month?",
+      "value": 120.2965,
+      "row": {
+        "aov_usd": 120.29648991935484,
+        "revenue_usd": 596670.59,
+        "orders_counted": 4960
+      },
+      "sql": "SELECT (SUM(total_cents) / 100.0) / NULLIF(COUNT(*), 0) AS aov_usd, SUM(total_cents) / 100.0 AS revenue_usd, COUNT(*) AS orders_counted FROM orders WHERE status IN ('paid', 'shipped', 'delivered') AND placed_at >= (DATE_TRUNC('MONTH', CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York') - INTERVAL '1 MONTH') AT TIME ZONE 'America/New_York' AND placed_at < DATE_TRUNC('MONTH', CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York' LIMIT 1000",
+      "answer": "Average order value for October 2026 (America/New_York) was **$120.30**, based on $596,670.59 in revenue across 4960 paid, shipped, or delivered orders (transactions). Refunds were not subtracted, and cancelled, refunded, and pending orders were excluded. As of 5:23 PM EST.",
+      "cost_usd": 0.0010975
+    },
+    {
+      "variant": "semantic",
+      "question": "What's our refund rate this month?",
+      "value": 0.0301,
+      "row": {
+        "refund_rate": 0.03007518796992481
+      },
+      "sql": "WITH m_order AS (SELECT COUNT(*) FILTER(WHERE orders.status IN ('cancelled', 'refunded')) AS refunded_orders, COUNT(*) FILTER(WHERE orders.status <> 'pending') AS paid_orders FROM orders WHERE orders.placed_at >= CAST('2026-11-01T00:00:00-04:00' AS TIMESTAMPTZ) AND orders.placed_at < CAST('2026-12-01T00:00:00-05:00' AS TIMESTAMPTZ)) SELECT (CAST(COALESCE(refunded_orders, 0) AS DECIMAL)) / NULLIF(COALESCE(paid_orders, 0), 0) AS refund_rate FROM m_order LIMIT 1000",
+      "answer": "Our refund rate for November 2026 month to date is 3.01%. This is the share of orders placed in the period that were later cancelled or refunded, out of orders that were ever paid (not pending), using calendar month to date in America/New_York starting November 1, as of 5:23 PM EST.",
+      "cost_usd": 0.0007452
+    },
+    {
+      "variant": "semantic",
+      "question": "What's our refund rate this month?",
+      "value": 0.0301,
+      "row": {
+        "refund_rate": 0.03007518796992481
+      },
+      "sql": "WITH m_order AS (SELECT COUNT(*) FILTER(WHERE orders.status IN ('cancelled', 'refunded')) AS refunded_orders, COUNT(*) FILTER(WHERE orders.status <> 'pending') AS paid_orders FROM orders WHERE orders.placed_at >= CAST('2026-11-01T00:00:00-04:00' AS TIMESTAMPTZ) AND orders.placed_at < CAST('2026-12-01T00:00:00-05:00' AS TIMESTAMPTZ)) SELECT (CAST(COALESCE(refunded_orders, 0) AS DECIMAL)) / NULLIF(COALESCE(paid_orders, 0), 0) AS refund_rate FROM m_order LIMIT 1000",
+      "answer": "Our refund rate for this month (November 2026, company-wide) is **3.01%**. That's the share of orders placed this month that were later cancelled or refunded, out of orders that were ever paid (excluding pending). as of 5:23 PM EST",
+      "cost_usd": 0.0007397
+    },
+    {
+      "variant": "semantic",
+      "question": "What's our refund rate this month?",
+      "value": 0.0301,
+      "row": {
+        "refund_rate": 0.03007518796992481
+      },
+      "sql": "WITH m_order AS (SELECT COUNT(*) FILTER(WHERE orders.status IN ('cancelled', 'refunded')) AS refunded_orders, COUNT(*) FILTER(WHERE orders.status <> 'pending') AS paid_orders FROM orders WHERE orders.placed_at >= CAST('2026-11-01T00:00:00-04:00' AS TIMESTAMPTZ) AND orders.placed_at < CAST('2026-12-01T00:00:00-05:00' AS TIMESTAMPTZ)) SELECT (CAST(COALESCE(refunded_orders, 0) AS DECIMAL)) / NULLIF(COALESCE(paid_orders, 0), 0) AS refund_rate FROM m_order LIMIT 1000",
+      "answer": "Our refund rate for this month (November 2026, America/New_York) is **3.01%**. That's the share of orders placed this month that were later cancelled or refunded, out of orders that were ever paid (excluding pending). as of 5:23 PM EST",
+      "cost_usd": 0.0007215
+    },
+    {
+      "variant": "semantic",
+      "question": "What's our refund rate this month?",
+      "value": 0.0301,
+      "row": {
+        "refund_rate": 0.03007518796992481
+      },
+      "sql": "WITH m_order AS (SELECT COUNT(*) FILTER(WHERE orders.status IN ('cancelled', 'refunded')) AS refunded_orders, COUNT(*) FILTER(WHERE orders.status <> 'pending') AS paid_orders FROM orders WHERE orders.placed_at >= CAST('2026-11-01T00:00:00-04:00' AS TIMESTAMPTZ) AND orders.placed_at < CAST('2026-12-01T00:00:00-05:00' AS TIMESTAMPTZ)) SELECT (CAST(COALESCE(refunded_orders, 0) AS DECIMAL)) / NULLIF(COALESCE(paid_orders, 0), 0) AS refund_rate FROM m_order LIMIT 1000",
+      "answer": "Our refund rate for November 2026 so far is **3.01%**. This is the share of orders placed this month that were later cancelled or refunded, out of orders that were ever paid. I've used the calendar month in America/New_York, as of 5:23 PM EST.",
+      "cost_usd": 0.0007162000000000001
+    },
+    {
+      "variant": "semantic",
+      "question": "What's our refund rate this month?",
+      "value": 0.0301,
+      "row": {
+        "refund_rate": 0.03007518796992481
+      },
+      "sql": "WITH m_order AS (SELECT COUNT(*) FILTER(WHERE orders.status IN ('cancelled', 'refunded')) AS refunded_orders, COUNT(*) FILTER(WHERE orders.status <> 'pending') AS paid_orders FROM orders WHERE orders.placed_at >= CAST('2026-11-01T00:00:00-04:00' AS TIMESTAMPTZ) AND orders.placed_at < CAST('2026-12-01T00:00:00-05:00' AS TIMESTAMPTZ)) SELECT (CAST(COALESCE(refunded_orders, 0) AS DECIMAL)) / NULLIF(COALESCE(paid_orders, 0), 0) AS refund_rate FROM m_order LIMIT 1000",
+      "answer": "Our refund rate for November 2026 to date is 3.01%. This is the share of orders placed this month that were later cancelled or refunded, out of orders that were ever paid (not pending), using calendar month-to-date in America/New_York. As of 5:23 PM EST.",
+      "cost_usd": 0.0007735999999999999
+    },
+    {
+      "variant": "semantic",
+      "question": "How many active customers do we have?",
+      "value": 4068.0,
+      "row": {
+        "active_customers": 4068
+      },
+      "sql": "WITH m_order AS (SELECT COUNT(DISTINCT orders.customer_id) AS ordering_customers FROM orders WHERE orders.placed_at >= CAST('2026-08-10T00:00:00-04:00' AS TIMESTAMPTZ) AND orders.placed_at < CAST('2026-11-08T00:00:00-05:00' AS TIMESTAMPTZ)) SELECT COALESCE(ordering_customers, 0) AS active_customers FROM m_order LIMIT 1000",
+      "answer": "We have **4,068 active customers**, meaning distinct customers with at least one order in any status over the last 90 days including today, since no period was specified. as of 5:23 PM EST",
+      "cost_usd": 0.0007271
+    },
+    {
+      "variant": "semantic",
+      "question": "How many active customers do we have?",
+      "value": 4068.0,
+      "row": {
+        "active_customers": 4068
+      },
+      "sql": "WITH m_order AS (SELECT COUNT(DISTINCT orders.customer_id) AS ordering_customers FROM orders WHERE orders.placed_at >= CAST('2026-08-10T00:00:00-04:00' AS TIMESTAMPTZ) AND orders.placed_at < CAST('2026-11-08T00:00:00-05:00' AS TIMESTAMPTZ)) SELECT COALESCE(ordering_customers, 0) AS active_customers FROM m_order LIMIT 1000",
+      "answer": "ShopFlow has **4,068 active customers**, meaning distinct customers with at least one order of any status in the last 90 days including today (2026-11-07), since no period was specified. This is as of 5:23 PM EST.",
+      "cost_usd": 0.0007011999999999999
+    },
+    {
+      "variant": "semantic",
+      "question": "How many active customers do we have?",
+      "value": 4068.0,
+      "row": {
+        "active_customers": 4068
+      },
+      "sql": "WITH m_order AS (SELECT COUNT(DISTINCT orders.customer_id) AS ordering_customers FROM orders WHERE orders.placed_at >= CAST('2026-08-10T00:00:00-04:00' AS TIMESTAMPTZ) AND orders.placed_at < CAST('2026-11-08T00:00:00-05:00' AS TIMESTAMPTZ)) SELECT COALESCE(ordering_customers, 0) AS active_customers FROM m_order LIMIT 1000",
+      "answer": "We have **4,068 active customers**, meaning distinct customers with at least one order of any status in the last 90 days, including today. This assumes no other period was intended. as of 5:23 PM EST",
+      "cost_usd": 0.0007425999999999999
+    },
+    {
+      "variant": "semantic",
+      "question": "How many active customers do we have?",
+      "value": 4068.0,
+      "row": {
+        "active_customers": 4068
+      },
+      "sql": "WITH m_order AS (SELECT COUNT(DISTINCT orders.customer_id) AS ordering_customers FROM orders WHERE orders.placed_at >= CAST('2026-08-10T00:00:00-04:00' AS TIMESTAMPTZ) AND orders.placed_at < CAST('2026-11-08T00:00:00-05:00' AS TIMESTAMPTZ)) SELECT COALESCE(ordering_customers, 0) AS active_customers FROM m_order LIMIT 1000",
+      "answer": "There are **4,068 active customers**, meaning distinct customers with at least one order of any status in the last 90 days, including today (2026-11-07). I used that default window because no period was specified. as of 5:23 PM EST",
+      "cost_usd": 0.0007699
+    },
+    {
+      "variant": "semantic",
+      "question": "How many active customers do we have?",
+      "value": 4068.0,
+      "row": {
+        "active_customers": 4068
+      },
+      "sql": "WITH m_order AS (SELECT COUNT(DISTINCT orders.customer_id) AS ordering_customers FROM orders WHERE orders.placed_at >= CAST('2026-08-10T00:00:00-04:00' AS TIMESTAMPTZ) AND orders.placed_at < CAST('2026-11-08T00:00:00-05:00' AS TIMESTAMPTZ)) SELECT COALESCE(ordering_customers, 0) AS active_customers FROM m_order LIMIT 1000",
+      "answer": "We have **4,068** active customers, meaning distinct customers with at least one order of any status in the last 90 days, including today. This assumes no other period was intended.\n\nas of 5:23 PM EST",
+      "cost_usd": 0.0006774999999999999
+    },
+    {
+      "variant": "semantic",
+      "question": "What was net revenue last week?",
+      "value": 116558.34,
+      "row": {
+        "net_revenue": 116558.34
+      },
+      "sql": "WITH m_order AS (SELECT SUM(orders.total_cents) FILTER(WHERE orders.status IN ('paid', 'shipped', 'delivered')) AS gross_revenue_cents FROM orders WHERE orders.placed_at >= CAST('2026-10-26T00:00:00-04:00' AS TIMESTAMPTZ) AND orders.placed_at < CAST('2026-11-02T00:00:00-05:00' AS TIMESTAMPTZ)), m_refund AS (SELECT SUM(refunds.amount_cents) AS refunded_cents FROM refunds WHERE refunds.created_at >= CAST('2026-10-26T00:00:00-04:00' AS TIMESTAMPTZ) AND refunds.created_at < CAST('2026-11-02T00:00:00-05:00' AS TIMESTAMPTZ)) SELECT (COALESCE(gross_revenue_cents, 0) * 0.01) - (COALESCE(refunded_cents, 0) * 0.01) AS net_revenue FROM m_order CROSS JOIN m_refund LIMIT 1000",
+      "answer": "Net revenue last week was **$116,558.34**, calculated as gross revenue minus refunds issued in the same period (refunds counted by refund date). I assumed \"last week\" means the previous Monday-to-Sunday calendar week in America/New_York, and the result is a single total with no breakdown. As of 5:23 PM EST.",
+      "cost_usd": 0.0007747
+    },
+    {
+      "variant": "semantic",
+      "question": "What was net revenue last week?",
+      "value": 116558.34,
+      "row": {
+        "net_revenue": 116558.34
+      },
+      "sql": "WITH m_order AS (SELECT SUM(orders.total_cents) FILTER(WHERE orders.status IN ('paid', 'shipped', 'delivered')) AS gross_revenue_cents FROM orders WHERE orders.placed_at >= CAST('2026-10-26T00:00:00-04:00' AS TIMESTAMPTZ) AND orders.placed_at < CAST('2026-11-02T00:00:00-05:00' AS TIMESTAMPTZ)), m_refund AS (SELECT SUM(refunds.amount_cents) AS refunded_cents FROM refunds WHERE refunds.created_at >= CAST('2026-10-26T00:00:00-04:00' AS TIMESTAMPTZ) AND refunds.created_at < CAST('2026-11-02T00:00:00-05:00' AS TIMESTAMPTZ)) SELECT (COALESCE(gross_revenue_cents, 0) * 0.01) - (COALESCE(refunded_cents, 0) * 0.01) AS net_revenue FROM m_order CROSS JOIN m_refund LIMIT 1000",
+      "answer": "Net revenue for last week (Mon 2026-10-26 to Sun 2026-11-01) was **$116,558.34**. This is gross revenue minus refunds issued in the same period, counted by refund date. as of 5:23 PM EST",
+      "cost_usd": 0.0007498
+    },
+    {
+      "variant": "semantic",
+      "question": "What was net revenue last week?",
+      "value": 116558.34,
+      "row": {
+        "net_revenue": 116558.34
+      },
+      "sql": "WITH m_order AS (SELECT SUM(orders.total_cents) FILTER(WHERE orders.status IN ('paid', 'shipped', 'delivered')) AS gross_revenue_cents FROM orders WHERE orders.placed_at >= CAST('2026-10-26T00:00:00-04:00' AS TIMESTAMPTZ) AND orders.placed_at < CAST('2026-11-02T00:00:00-05:00' AS TIMESTAMPTZ)), m_refund AS (SELECT SUM(refunds.amount_cents) AS refunded_cents FROM refunds WHERE refunds.created_at >= CAST('2026-10-26T00:00:00-04:00' AS TIMESTAMPTZ) AND refunds.created_at < CAST('2026-11-02T00:00:00-05:00' AS TIMESTAMPTZ)) SELECT (COALESCE(gross_revenue_cents, 0) * 0.01) - (COALESCE(refunded_cents, 0) * 0.01) AS net_revenue FROM m_order CROSS JOIN m_refund LIMIT 1000",
+      "answer": "Net revenue last week was **$116,558.34**. This is gross revenue minus refunds issued in the same period, with refunds counted by refund date. I used the calendar week (Monday start, America/New_York) before the current week, as of 5:23 PM EST.",
+      "cost_usd": 0.0008559
+    },
+    {
+      "variant": "semantic",
+      "question": "What was net revenue last week?",
+      "value": 116558.34,
+      "row": {
+        "net_revenue": 116558.34
+      },
+      "sql": "WITH m_order AS (SELECT SUM(orders.total_cents) FILTER(WHERE orders.status IN ('paid', 'shipped', 'delivered')) AS gross_revenue_cents FROM orders WHERE orders.placed_at >= CAST('2026-10-26T00:00:00-04:00' AS TIMESTAMPTZ) AND orders.placed_at < CAST('2026-11-02T00:00:00-05:00' AS TIMESTAMPTZ)), m_refund AS (SELECT SUM(refunds.amount_cents) AS refunded_cents FROM refunds WHERE refunds.created_at >= CAST('2026-10-26T00:00:00-04:00' AS TIMESTAMPTZ) AND refunds.created_at < CAST('2026-11-02T00:00:00-05:00' AS TIMESTAMPTZ)) SELECT (COALESCE(gross_revenue_cents, 0) * 0.01) - (COALESCE(refunded_cents, 0) * 0.01) AS net_revenue FROM m_order CROSS JOIN m_refund LIMIT 1000",
+      "answer": "Net revenue last week was **$116,558.34**. This is gross revenue minus refunds issued in the same period, counted by refund date. \"Last week\" is the calendar week in America/New_York, starting Monday, as of 2026-11-07. As of 5:23 PM EST.",
+      "cost_usd": 0.0007645
+    },
+    {
+      "variant": "semantic",
+      "question": "What was net revenue last week?",
+      "value": 116558.34,
+      "row": {
+        "net_revenue": 116558.34
+      },
+      "sql": "WITH m_order AS (SELECT SUM(orders.total_cents) FILTER(WHERE orders.status IN ('paid', 'shipped', 'delivered')) AS gross_revenue_cents FROM orders WHERE orders.placed_at >= CAST('2026-10-26T00:00:00-04:00' AS TIMESTAMPTZ) AND orders.placed_at < CAST('2026-11-02T00:00:00-05:00' AS TIMESTAMPTZ)), m_refund AS (SELECT SUM(refunds.amount_cents) AS refunded_cents FROM refunds WHERE refunds.created_at >= CAST('2026-10-26T00:00:00-04:00' AS TIMESTAMPTZ) AND refunds.created_at < CAST('2026-11-02T00:00:00-05:00' AS TIMESTAMPTZ)) SELECT (COALESCE(gross_revenue_cents, 0) * 0.01) - (COALESCE(refunded_cents, 0) * 0.01) AS net_revenue FROM m_order CROSS JOIN m_refund LIMIT 1000",
+      "answer": "Net revenue last week (Monday, October 26 to Sunday, November 1, 2026, America/New_York) was **$116,558.34**. This is gross revenue minus refunds issued in that period, with refunds counted by refund date. as of 5:23 PM EST",
+      "cost_usd": 0.0006954
+    },
+    {
+      "variant": "semantic",
+      "question": "What was our average order value last month?",
+      "value": 120.2965,
+      "row": {
+        "aov": 120.29648991935484
+      },
+      "sql": "WITH m_order AS (SELECT SUM(orders.total_cents) FILTER(WHERE orders.status IN ('paid', 'shipped', 'delivered')) AS gross_revenue_cents, COUNT(*) FILTER(WHERE orders.status IN ('paid', 'shipped', 'delivered')) AS revenue_orders FROM orders WHERE orders.placed_at >= CAST('2026-10-01T00:00:00-04:00' AS TIMESTAMPTZ) AND orders.placed_at < CAST('2026-11-01T00:00:00-04:00' AS TIMESTAMPTZ)) SELECT (CAST(COALESCE(gross_revenue_cents, 0) * 0.01 AS DECIMAL)) / NULLIF(COALESCE(revenue_orders, 0), 0) AS aov FROM m_order LIMIT 1000",
+      "answer": "Average order value (AOV) for October 2026 was **$120.30**, calculated as gross revenue divided by the number of paid, shipped, or delivered orders. This assumes \"last month\" means October 2026 in America/New_York time, since today is 2026-11-07. As of 5:23 PM EST.",
+      "cost_usd": 0.0007067
+    },
+    {
+      "variant": "semantic",
+      "question": "What was our average order value last month?",
+      "value": 120.2965,
+      "row": {
+        "aov": 120.29648991935484
+      },
+      "sql": "WITH m_order AS (SELECT SUM(orders.total_cents) FILTER(WHERE orders.status IN ('paid', 'shipped', 'delivered')) AS gross_revenue_cents, COUNT(*) FILTER(WHERE orders.status IN ('paid', 'shipped', 'delivered')) AS revenue_orders FROM orders WHERE orders.placed_at >= CAST('2026-10-01T00:00:00-04:00' AS TIMESTAMPTZ) AND orders.placed_at < CAST('2026-11-01T00:00:00-04:00' AS TIMESTAMPTZ)) SELECT (CAST(COALESCE(gross_revenue_cents, 0) * 0.01 AS DECIMAL)) / NULLIF(COALESCE(revenue_orders, 0), 0) AS aov FROM m_order LIMIT 1000",
+      "answer": "Average order value (AOV) for October 2026 was **$120.30**. This is gross revenue divided by the number of paid, shipped, or delivered orders, and I took \"last month\" to mean the calendar month of October in America/New_York time. As of 5:23 PM EST.",
+      "cost_usd": 0.0007179
+    },
+    {
+      "variant": "semantic",
+      "question": "What was our average order value last month?",
+      "value": 120.2965,
+      "row": {
+        "aov": 120.29648991935484
+      },
+      "sql": "WITH m_order AS (SELECT SUM(orders.total_cents) FILTER(WHERE orders.status IN ('paid', 'shipped', 'delivered')) AS gross_revenue_cents, COUNT(*) FILTER(WHERE orders.status IN ('paid', 'shipped', 'delivered')) AS revenue_orders FROM orders WHERE orders.placed_at >= CAST('2026-10-01T00:00:00-04:00' AS TIMESTAMPTZ) AND orders.placed_at < CAST('2026-11-01T00:00:00-04:00' AS TIMESTAMPTZ)) SELECT (CAST(COALESCE(gross_revenue_cents, 0) * 0.01 AS DECIMAL)) / NULLIF(COALESCE(revenue_orders, 0), 0) AS aov FROM m_order LIMIT 1000",
+      "answer": "Our average order value (AOV) for October 2026 was **$120.30**. This is gross revenue divided by the number of paid, shipped, or delivered orders, and I read \"last month\" as the calendar month of October 2026 in America/New_York time. As of 5:23 PM EST.",
+      "cost_usd": 0.0007093000000000001
+    },
+    {
+      "variant": "semantic",
+      "question": "What was our average order value last month?",
+      "value": 120.2965,
+      "row": {
+        "aov": 120.29648991935484
+      },
+      "sql": "WITH m_order AS (SELECT SUM(orders.total_cents) FILTER(WHERE orders.status IN ('paid', 'shipped', 'delivered')) AS gross_revenue_cents, COUNT(*) FILTER(WHERE orders.status IN ('paid', 'shipped', 'delivered')) AS revenue_orders FROM orders WHERE orders.placed_at >= CAST('2026-10-01T00:00:00-04:00' AS TIMESTAMPTZ) AND orders.placed_at < CAST('2026-11-01T00:00:00-04:00' AS TIMESTAMPTZ)) SELECT (CAST(COALESCE(gross_revenue_cents, 0) * 0.01 AS DECIMAL)) / NULLIF(COALESCE(revenue_orders, 0), 0) AS aov FROM m_order LIMIT 1000",
+      "answer": "Our average order value for October 2026 was **$120.30**. This is gross revenue divided by the number of paid, shipped, or delivered orders, and I took \"last month\" to mean the America/New_York calendar month, since today is 2026-11-07. as of 5:23 PM EST",
+      "cost_usd": 0.0007369
+    },
+    {
+      "variant": "semantic",
+      "question": "What was our average order value last month?",
+      "value": 120.2965,
+      "row": {
+        "aov": 120.29648991935484
+      },
+      "sql": "WITH m_order AS (SELECT SUM(orders.total_cents) FILTER(WHERE orders.status IN ('paid', 'shipped', 'delivered')) AS gross_revenue_cents, COUNT(*) FILTER(WHERE orders.status IN ('paid', 'shipped', 'delivered')) AS revenue_orders FROM orders WHERE orders.placed_at >= CAST('2026-10-01T00:00:00-04:00' AS TIMESTAMPTZ) AND orders.placed_at < CAST('2026-11-01T00:00:00-04:00' AS TIMESTAMPTZ)) SELECT (CAST(COALESCE(gross_revenue_cents, 0) * 0.01 AS DECIMAL)) / NULLIF(COALESCE(revenue_orders, 0), 0) AS aov FROM m_order LIMIT 1000",
+      "answer": "Last month's average order value (AOV) was **$120.30**. This is gross revenue divided by the number of paid, shipped, or delivered orders, for the last calendar month in America/New_York time. as of 5:23 PM EST",
+      "cost_usd": 0.0006898000000000001
+    }
+  ],
+  "cost_usd": 0.0343599,
+  "run_at": "20261107T222320"
+}

@@ -1,0 +1,145 @@
+# 15 metric-ambiguity questions: each one has more than one plausible SQL reading, and the gold
+# is the definition finance signed off on (semantic/metrics.yaml). The gold SQL is written by
+# hand, independently of ch07_semantic/compile.py, and runs in the business time zone.
+# `{tz}` is replaced with the business time zone. Period boundaries are computed on local
+# (timestamp without time zone) values and converted back, so they are DST-correct.
+
+- id: m01
+  category: metric_ambiguity
+  question: What was our net revenue last week?
+  note: Gross revenue of orders placed last week minus refunds issued last week (refund date).
+  gold_sql: |
+    WITH b AS (
+      SELECT (date_trunc('week', now() AT TIME ZONE '{tz}') - interval '1 week') AT TIME ZONE '{tz}' AS lo,
+             date_trunc('week', now() AT TIME ZONE '{tz}') AT TIME ZONE '{tz}' AS hi)
+    SELECT (SELECT coalesce(sum(total_cents), 0) FROM orders, b
+             WHERE status IN ('paid', 'shipped', 'delivered') AND placed_at >= lo AND placed_at < hi)
+           / 100.0
+         - (SELECT coalesce(sum(amount_cents), 0) FROM refunds, b
+             WHERE created_at >= lo AND created_at < hi) / 100.0
+- id: m02
+  category: metric_ambiguity
+  question: What's our refund rate this month?
+  note: Orders placed this month later cancelled or refunded / orders placed this month ever paid.
+  gold_sql: |
+    SELECT count(*) FILTER (WHERE status IN ('cancelled', 'refunded'))::numeric
+           / nullif(count(*) FILTER (WHERE status <> 'pending'), 0)
+    FROM orders
+    WHERE placed_at >= date_trunc('month', now() AT TIME ZONE '{tz}') AT TIME ZONE '{tz}'
+- id: m03
+  category: metric_ambiguity
+  question: What was the average order value yesterday?
+  gold_sql: |
+    SELECT avg(total_cents) / 100.0 FROM orders
+    WHERE status IN ('paid', 'shipped', 'delivered')
+      AND placed_at >= (date_trunc('day', now() AT TIME ZONE '{tz}') - interval '1 day') AT TIME ZONE '{tz}'
+      AND placed_at <  date_trunc('day', now() AT TIME ZONE '{tz}') AT TIME ZONE '{tz}'
+- id: m04
+  category: metric_ambiguity
+  question: How many active customers do we have?
+  note: Distinct customers with an order (any status) in the last 90 calendar days, today included.
+  gold_sql: |
+    SELECT count(DISTINCT customer_id) FROM orders
+    WHERE placed_at >= (date_trunc('day', now() AT TIME ZONE '{tz}') - interval '89 days') AT TIME ZONE '{tz}'
+- id: m05
+  category: metric_ambiguity
+  question: How many monthly active customers did we have in each of the last 3 complete months?
+  gold_sql: |
+    SELECT date_trunc('month', placed_at AT TIME ZONE '{tz}')::date, count(DISTINCT customer_id)
+    FROM orders
+    WHERE placed_at >= (date_trunc('month', now() AT TIME ZONE '{tz}') - interval '3 months') AT TIME ZONE '{tz}'
+      AND placed_at <  date_trunc('month', now() AT TIME ZONE '{tz}') AT TIME ZONE '{tz}'
+    GROUP BY 1
+- id: m06
+  category: metric_ambiguity
+  question: What were sales by channel this month?
+  gold_sql: |
+    SELECT channel, sum(total_cents) / 100.0 FROM orders
+    WHERE status IN ('paid', 'shipped', 'delivered')
+      AND placed_at >= date_trunc('month', now() AT TIME ZONE '{tz}') AT TIME ZONE '{tz}'
+    GROUP BY channel
+- id: m07
+  category: metric_ambiguity
+  question: Show weekly gross revenue for the last 4 complete weeks.
+  gold_sql: |
+    SELECT date_trunc('week', placed_at AT TIME ZONE '{tz}')::date, sum(total_cents) / 100.0
+    FROM orders
+    WHERE status IN ('paid', 'shipped', 'delivered')
+      AND placed_at >= (date_trunc('week', now() AT TIME ZONE '{tz}') - interval '4 weeks') AT TIME ZONE '{tz}'
+      AND placed_at <  date_trunc('week', now() AT TIME ZONE '{tz}') AT TIME ZONE '{tz}'
+    GROUP BY 1
+- id: m08
+  category: metric_ambiguity
+  question: How many transactions did VIP customers make last month?
+  note: Transactions are orders of any status, not payments.
+  gold_sql: |
+    SELECT count(*) FROM orders o JOIN customers c ON c.id = o.customer_id
+    WHERE c.segment = 'vip'
+      AND o.placed_at >= (date_trunc('month', now() AT TIME ZONE '{tz}') - interval '1 month') AT TIME ZONE '{tz}'
+      AND o.placed_at <  date_trunc('month', now() AT TIME ZONE '{tz}') AT TIME ZONE '{tz}'
+- id: m09
+  category: metric_ambiguity
+  question: What is net revenue by customer segment this month?
+  gold_sql: |
+    WITH g AS (
+      SELECT c.segment, sum(o.total_cents) AS cents FROM orders o
+      JOIN customers c ON c.id = o.customer_id
+      WHERE o.status IN ('paid', 'shipped', 'delivered')
+        AND o.placed_at >= date_trunc('month', now() AT TIME ZONE '{tz}') AT TIME ZONE '{tz}'
+      GROUP BY c.segment),
+    r AS (
+      SELECT c.segment, sum(r.amount_cents) AS cents FROM refunds r
+      JOIN orders o ON o.id = r.order_id JOIN customers c ON c.id = o.customer_id
+      WHERE r.created_at >= date_trunc('month', now() AT TIME ZONE '{tz}') AT TIME ZONE '{tz}'
+      GROUP BY c.segment)
+    SELECT coalesce(g.segment, r.segment),
+           (coalesce(g.cents, 0) - coalesce(r.cents, 0)) / 100.0
+    FROM g FULL JOIN r ON r.segment = g.segment
+- id: m10
+  category: metric_ambiguity
+  question: What was the refund rate by channel last month?
+  gold_sql: |
+    SELECT channel,
+           count(*) FILTER (WHERE status IN ('cancelled', 'refunded'))::numeric
+           / nullif(count(*) FILTER (WHERE status <> 'pending'), 0)
+    FROM orders
+    WHERE placed_at >= (date_trunc('month', now() AT TIME ZONE '{tz}') - interval '1 month') AT TIME ZONE '{tz}'
+      AND placed_at <  date_trunc('month', now() AT TIME ZONE '{tz}') AT TIME ZONE '{tz}'
+    GROUP BY channel
+- id: m11
+  category: metric_ambiguity
+  question: What's the AOV for business customers this quarter?
+  gold_sql: |
+    SELECT avg(o.total_cents) / 100.0 FROM orders o JOIN customers c ON c.id = o.customer_id
+    WHERE c.segment = 'business' AND o.status IN ('paid', 'shipped', 'delivered')
+      AND o.placed_at >= date_trunc('quarter', now() AT TIME ZONE '{tz}') AT TIME ZONE '{tz}'
+- id: m12
+  category: metric_ambiguity
+  question: Show daily revenue for this week.
+  gold_sql: |
+    SELECT (placed_at AT TIME ZONE '{tz}')::date, sum(total_cents) / 100.0 FROM orders
+    WHERE status IN ('paid', 'shipped', 'delivered')
+      AND placed_at >= date_trunc('week', now() AT TIME ZONE '{tz}') AT TIME ZONE '{tz}'
+    GROUP BY 1
+- id: m13
+  category: metric_ambiguity
+  question: How much money did we refund last month?
+  note: By refund date, not by the date the refunded order was placed.
+  gold_sql: |
+    SELECT sum(amount_cents) / 100.0 FROM refunds
+    WHERE created_at >= (date_trunc('month', now() AT TIME ZONE '{tz}') - interval '1 month') AT TIME ZONE '{tz}'
+      AND created_at <  date_trunc('month', now() AT TIME ZONE '{tz}') AT TIME ZONE '{tz}'
+- id: m14
+  category: metric_ambiguity
+  question: How many distinct customers placed an order this week?
+  gold_sql: |
+    SELECT count(DISTINCT customer_id) FROM orders
+    WHERE placed_at >= date_trunc('week', now() AT TIME ZONE '{tz}') AT TIME ZONE '{tz}'
+- id: m15
+  category: metric_ambiguity
+  question: What's our revenue per order this year?
+  note: Revenue per order is AOV; both sides use paid, shipped or delivered orders only.
+  gold_sql: |
+    SELECT sum(total_cents) / 100.0 / count(*) FROM orders
+    WHERE status IN ('paid', 'shipped', 'delivered')
+      AND placed_at >= date_trunc('year', now() AT TIME ZONE '{tz}') AT TIME ZONE '{tz}'

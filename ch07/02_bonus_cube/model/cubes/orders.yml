@@ -1,0 +1,56 @@
+# The same definitions as ch07/01_main-chapter-code/semantic/metrics.yaml, in Cube's format.
+cubes:
+  - name: orders
+    sql_table: public.orders
+
+    joins:
+      - name: customers
+        relationship: many_to_one
+        sql: "{CUBE}.customer_id = {customers.id}"
+
+    dimensions:
+      - name: id
+        sql: id
+        type: number
+        primary_key: true
+      - name: status
+        sql: status
+        type: string
+      - name: channel
+        sql: channel
+        type: string
+      - name: placed_at
+        sql: placed_at
+        type: time
+
+    measures:
+      - name: transactions
+        type: count
+        description: Orders placed, whatever their status. Not payments.
+      - name: gross_revenue
+        sql: "{CUBE}.total_cents / 100.0"
+        type: sum
+        filters:
+          - sql: "{CUBE}.status IN ('paid', 'shipped', 'delivered')"
+      - name: revenue_orders
+        type: count
+        filters:
+          - sql: "{CUBE}.status IN ('paid', 'shipped', 'delivered')"
+      - name: aov
+        sql: "{gross_revenue} / NULLIF({revenue_orders}, 0)"
+        type: number
+        description: Average order value = gross revenue / revenue orders.
+      - name: refunded_orders
+        type: count
+        filters:
+          - sql: "{CUBE}.status IN ('cancelled', 'refunded')"
+      - name: paid_orders
+        type: count
+        filters:
+          - sql: "{CUBE}.status <> 'pending'"
+      - name: refund_rate
+        sql: "1.0 * {refunded_orders} / NULLIF({paid_orders}, 0)"
+        type: number
+      - name: active_customers
+        sql: customer_id
+        type: count_distinct

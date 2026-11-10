@@ -1,0 +1,39 @@
+cubes:
+  - name: customers
+    # Only the columns the read-only role can SELECT (email is not granted).
+    sql: SELECT id, segment, country FROM public.customers
+
+    dimensions:
+      - name: id
+        sql: id
+        type: number
+        primary_key: true
+      - name: segment
+        sql: segment
+        type: string
+      - name: country
+        sql: country
+        type: string
+
+  - name: refunds
+    sql_table: public.refunds
+
+    joins:
+      - name: orders
+        relationship: many_to_one
+        sql: "{CUBE}.order_id = {orders.id}"
+
+    dimensions:
+      - name: id
+        sql: id
+        type: number
+        primary_key: true
+      - name: created_at
+        sql: created_at
+        type: time
+
+    measures:
+      - name: refunded_amount
+        sql: "{CUBE}.amount_cents / 100.0"
+        type: sum
+        description: Money refunded, by refund date.

@@ -1,0 +1,236 @@
+# ShopFlow semantic layer: the single, governed definition of every number the bot can report.
+#
+# The LLM never sees SQL. It picks metrics, dimensions, filters, a time range and a grain from
+# this file; ch07_semantic/compile.py turns that choice into Postgres SQL with sqlglot.
+#
+#   entities    one per table. `time` is the column time ranges and grains apply to;
+#               `joins` are many-to-one foreign keys (safe: they never multiply rows).
+#   dimensions  columns you can group or filter by, reachable from a measure's entity.
+#   measures    aggregations over one entity (count, count_distinct, sum), with optional
+#               row filters written by humans in SQL. Money stays in integer cents here.
+#   metrics     what people ask for. simple (one measure, optional scale), ratio
+#               (numerator / denominator) or derived (arithmetic over other metrics).
+
+version: 1
+timezone: America/New_York      # the business day, week and month are New York's
+week_start: monday              # Postgres date_trunc('week') weeks start on Monday
+grains: [day, week, month, quarter, year]
+
+entities:
+  order:
+    table: orders
+    primary_key: id
+    time: placed_at
+    joins: {customer: customer_id}
+  order_item:
+    table: order_items
+    primary_key: id
+    time: null                  # inherits the order's placed_at through the join
+    time_via: order
+    joins: {order: order_id, product: product_id}
+  product:
+    table: products
+    primary_key: id
+    joins: {category: category_id}
+  category:
+    table: categories
+    primary_key: id
+  customer:
+    table: customers
+    primary_key: id
+    time: created_at
+  payment:
+    table: payments
+    primary_key: id
+    time: created_at
+    joins: {order: order_id}
+  refund:
+    table: refunds
+    primary_key: id
+    time: created_at
+    joins: {order: order_id}
+  shipment:
+    table: shipments
+    primary_key: id
+    time: shipped_at
+    joins: {order: order_id}
+  stock:
+    table: inventory
+    primary_key: null
+    joins: {product: product_id}
+  ticket:
+    table: support_tickets
+    primary_key: id
+    time: created_at
+    joins: {customer: customer_id}
+
+dimensions:
+  order.status:
+    column: status
+    values: [pending, paid, shipped, delivered, cancelled, refunded]
+  order.channel: {column: channel, values: [web, ios, android]}
+  customer.segment: {column: segment, values: [consumer, business, vip]}
+  customer.country:
+    column: country
+    values: [US, CA, GB, DE, AU, ID]
+    description: ISO-2 country code
+  customer.name:
+    column: full_name
+    with_key: true              # 148 names are shared by two customers: group by id too
+  product.name: {column: name, with_key: true}
+  product.active: {column: active, type: boolean}
+  category.name:
+    column: name
+    description: product category
+    values: [Apparel, Beauty, Books, Electronics, Footwear, Garden, Grocery, Home & Kitchen,
+             Office, Pet Supplies, Sports & Outdoors, Toys & Games]
+  payment.status: {column: status, values: [succeeded, failed]}
+  payment.provider: {column: provider, values: [stripe, paypal]}
+  shipment.carrier: {column: carrier, values: [UPS, FedEx, USPS, DHL]}
+  stock.warehouse: {column: warehouse, values: [NJ-01, TX-01, CA-01]}
+  ticket.priority: {column: label_priority, values: [low, medium, high, urgent]}
+  ticket.category:
+    column: label_category
+    values: [shipping, refund, product_defect, account, payment, other]
+  ticket.channel: {column: channel, values: [email, chat, web_form]}
+
+measures:
+  orders: {entity: order, agg: count}
+  revenue_orders:
+    entity: order
+    agg: count
+    filter: "status IN ('paid', 'shipped', 'delivered')"
+  gross_revenue_cents:
+    entity: order
+    agg: sum
+    expr: total_cents
+    filter: "status IN ('paid', 'shipped', 'delivered')"
+  paid_orders: {entity: order, agg: count, filter: "status <> 'pending'"}
+  refunded_orders:
+    entity: order
+    agg: count
+    filter: "status IN ('cancelled', 'refunded')"
+  ordering_customers: {entity: order, agg: count_distinct, expr: customer_id}
+  line_revenue_cents:
+    entity: order_item
+    agg: sum
+    expr: quantity * unit_price_cents
+    filter: "orders.status IN ('paid', 'shipped', 'delivered')"
+  units_sold:
+    entity: order_item
+    agg: sum
+    expr: quantity
+    filter: "orders.status IN ('paid', 'shipped', 'delivered')"
+  refunds: {entity: refund, agg: count}
+  refunded_cents: {entity: refund, agg: sum, expr: amount_cents}
+  payment_attempts: {entity: payment, agg: count}
+  shipped_orders: {entity: shipment, agg: count_distinct, expr: order_id}
+  customers: {entity: customer, agg: count}
+  products: {entity: product, agg: count}
+  units_on_hand: {entity: stock, agg: sum, expr: on_hand}
+  tickets: {entity: ticket, agg: count}
+
+metrics:
+  # --- the six core metrics finance signed off on ---
+  transactions:
+    type: simple
+    measure: orders
+    description: >-
+      Orders placed, whatever their status (cancelled included). Not payments.
+    synonyms: [orders, number of orders, order count]
+  gross_revenue:
+    type: simple
+    measure: gross_revenue_cents
+    scale: 0.01
+    unit: usd
+    description: Sum of order totals for paid, shipped or delivered orders, by order date.
+    synonyms: [revenue, sales, GMV, turnover]
+  net_revenue:
+    type: derived
+    expr: gross_revenue - refunded_amount
+    unit: usd
+    description: >-
+      Gross revenue minus refunds issued in the same period (refunds by refund date).
+  aov:
+    type: ratio
+    numerator: gross_revenue
+    denominator: revenue_order_count
+    unit: usd
+    description: Average order value = gross revenue / number of paid, shipped or delivered orders.
+    synonyms: [average order value, average basket]
+  refund_rate:
+    type: ratio
+    numerator: refunded_order_count
+    denominator: paid_order_count
+    unit: ratio
+    description: >-
+      Share of orders placed in the period that were later cancelled or refunded, out of orders
+      that were ever paid (status not pending). A fraction between 0 and 1.
+  active_customers:
+    type: simple
+    measure: ordering_customers
+    default_time_range: {preset: last_n, unit: day, n: 90}
+    description: >-
+      Distinct customers with at least one order (any status) in the period. With no period,
+      the last 90 days including today.
+    synonyms: [buyers, customers who ordered, purchasing customers]
+
+  # --- supporting metrics (coverage for everyday questions) ---
+  revenue_order_count:
+    type: simple
+    measure: revenue_orders
+    description: Number of paid, shipped or delivered orders (the orders counted in revenue).
+  paid_order_count:
+    type: simple
+    measure: paid_orders
+    description: Orders that were ever paid (status not pending).
+  refunded_order_count:
+    type: simple
+    measure: refunded_orders
+    description: Orders placed in the period that were later cancelled or refunded.
+  refund_count:
+    type: simple
+    measure: refunds
+    description: Refunds issued in the period, by refund date.
+  refunded_amount:
+    type: simple
+    measure: refunded_cents
+    scale: 0.01
+    unit: usd
+    description: Money refunded in the period, by refund date.
+  product_revenue:
+    type: simple
+    measure: line_revenue_cents
+    scale: 0.01
+    unit: usd
+    description: >-
+      Line-item revenue (quantity x unit price) of paid, shipped or delivered orders. Use it for
+      revenue by product or category; it excludes order-level discounts and shipping.
+  units_sold:
+    type: simple
+    measure: units_sold
+    description: Units sold on paid, shipped or delivered orders.
+  payment_attempts:
+    type: simple
+    measure: payment_attempts
+    description: Payment attempts, successful or failed (filter on payment.status).
+  shipped_orders:
+    type: simple
+    measure: shipped_orders
+    description: Orders handed to a carrier, by ship date.
+  customer_count:
+    type: simple
+    measure: customers
+    description: Registered customers (by signup date).
+  product_count:
+    type: simple
+    measure: products
+    description: Products in the catalog (filter product.active for active ones).
+  units_in_stock:
+    type: simple
+    measure: units_on_hand
+    description: Units on hand right now across warehouses. A snapshot; no time range.
+  ticket_count:
+    type: simple
+    measure: tickets
+    description: Customer support tickets created.

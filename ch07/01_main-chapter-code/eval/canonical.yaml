@@ -1,0 +1,73 @@
+# The MetricQuery a correct planner should emit for each answerable eval question.
+# tests/test_ch07_gold.py compiles each one and checks its rows against the hand-written gold
+# SQL, so the compiler and the gold keep each other honest. Omitted keys take their defaults.
+
+s1: {metrics: [transactions], time_range: {preset: today}}
+s2: {metrics: [transactions], time_range: {preset: yesterday}}
+s3: {metrics: [customer_count]}
+s4:
+  metrics: [product_count]
+  filters: [{dimension: product.active, op: "=", values: ["true"]}]
+s5: {metrics: [gross_revenue]}
+s6: {metrics: [refund_count, refunded_amount]}
+s7:
+  metrics: [ticket_count]
+  filters: [{dimension: ticket.priority, op: "=", values: [urgent]}]
+s8: {metrics: [aov]}
+j1:
+  metrics: [product_revenue]
+  dimensions: [category.name]
+  order_by: [{field: product_revenue, descending: true}]
+j2:
+  metrics: [gross_revenue]
+  dimensions: [customer.name]
+  order_by: [{field: gross_revenue, descending: true}]
+  limit: 5
+j3: {metrics: [shipped_orders], dimensions: [shipment.carrier]}
+j4: {metrics: [transactions], dimensions: [customer.segment]}
+j5:
+  metrics: [transactions]
+  dimensions: [customer.country]
+  order_by: [{field: transactions, descending: true}]
+  limit: 3
+j6:
+  metrics: [units_in_stock]
+  filters: [{dimension: category.name, op: "=", values: [Electronics]}]
+t1: {metrics: [gross_revenue], time_range: {preset: today}}
+t2: {metrics: [transactions], time_range: {preset: last_week}}
+t3: {metrics: [gross_revenue], time_range: {preset: this_month}}
+t4:
+  metrics: [payment_attempts]
+  filters: [{dimension: payment.status, op: "=", values: [failed]}]
+  time_range: {preset: yesterday}
+t5: {metrics: [transactions], time_range: {preset: this_week}}
+m01: {metrics: [net_revenue], time_range: {preset: last_week}}
+m02: {metrics: [refund_rate], time_range: {preset: this_month}}
+m03: {metrics: [aov], time_range: {preset: yesterday}}
+m04: {metrics: [active_customers]}
+m05:
+  metrics: [active_customers]
+  time_range: {preset: previous_n, unit: month, n: 3}
+  grain: month
+m06: {metrics: [gross_revenue], dimensions: [order.channel], time_range: {preset: this_month}}
+m07:
+  metrics: [gross_revenue]
+  time_range: {preset: previous_n, unit: week, n: 4}
+  grain: week
+m08:
+  metrics: [transactions]
+  filters: [{dimension: customer.segment, op: "=", values: [vip]}]
+  time_range: {preset: last_month}
+m09:
+  metrics: [net_revenue]
+  dimensions: [customer.segment]
+  time_range: {preset: this_month}
+m10: {metrics: [refund_rate], dimensions: [order.channel], time_range: {preset: last_month}}
+m11:
+  metrics: [aov]
+  filters: [{dimension: customer.segment, op: "=", values: [business]}]
+  time_range: {preset: this_quarter}
+m12: {metrics: [gross_revenue], time_range: {preset: this_week}, grain: day}
+m13: {metrics: [refunded_amount], time_range: {preset: last_month}}
+m14: {metrics: [active_customers], time_range: {preset: this_week}}
+m15: {metrics: [aov], time_range: {preset: this_year}}
