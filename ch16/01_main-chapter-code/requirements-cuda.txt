@@ -1,0 +1,6 @@
+# CUDA-only stack for Chapter 16 (never the main .venv).
+#   uv venv ch16/01_main-chapter-code/.venv-cuda --python 3.12
+#   uv pip install -r ch16/01_main-chapter-code/requirements-cuda.txt \
+#       --python ch16/01_main-chapter-code/.venv-cuda
+# vLLM 0.33 pins torch 2.14 from PyPI (CUDA 13.0 wheels, needs driver >= 580; we ran 595).
+vllm==0.33.0

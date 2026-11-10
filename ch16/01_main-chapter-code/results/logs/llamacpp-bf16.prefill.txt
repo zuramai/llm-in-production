@@ -1,0 +1,9 @@
+[llamacpp-bf16] warm-up ok=True ttft=0.15512895956635475 
+[llamacpp-bf16] c=  1 ok=4/4 TTFT p50=132ms p95=137ms TPOT p50=19ms p95=19ms out=38 tok/s wall=1.7s
+wrote results/prefill/llamacpp-bf16-256.json
+[llamacpp-bf16] warm-up ok=False ttft=None BadRequestError: Error code: 400 - request (1079 tokens) exceeds the available context size (1024 tokens), try increasing it
+[llamacpp-bf16] c=  1 ok=0/4 TTFT p50=n/a p95=n/a TPOT p50=n/a p95=n/a out=0 tok/s wall=0.0s
+wrote results/prefill/llamacpp-bf16-1024.json
+[llamacpp-bf16] warm-up ok=False ttft=None BadRequestError: Error code: 400 - request (4247 tokens) exceeds the available context size (1024 tokens), try increasing it
+[llamacpp-bf16] c=  1 ok=0/4 TTFT p50=n/a p95=n/a TPOT p50=n/a p95=n/a out=0 tok/s wall=0.1s
+wrote results/prefill/llamacpp-bf16-4096.json

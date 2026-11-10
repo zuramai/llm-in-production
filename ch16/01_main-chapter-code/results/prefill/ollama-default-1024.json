@@ -1,0 +1,78 @@
+{
+  "label": "ollama-default",
+  "base_url": "http://127.0.0.1:8116/v1",
+  "model": "qwen3:8b",
+  "date": "2026-11-09T05:55:42+00:00",
+  "config": {
+    "concurrency": [
+      1
+    ],
+    "requests": 4,
+    "prompt_tokens": 1024,
+    "max_tokens": 16,
+    "request_options": {
+      "reasoning_effort": "none"
+    }
+  },
+  "levels": [
+    {
+      "concurrency": 1,
+      "requests": 4,
+      "ok": 4,
+      "errors": [],
+      "wall_s": 1.4657587241381407,
+      "output_tok_per_s": 43.6633935354072,
+      "requests_per_s": 2.72896209596295,
+      "ttft_p50": 0.2448649755679071,
+      "ttft_p95": 0.2510767863597721,
+      "tpot_p50": 0.00798731353133917,
+      "tpot_p95": 0.008011905440750222,
+      "e2e_p50": 0.36522863898426294,
+      "e2e_p95": 0.37112016761675476,
+      "mean_prompt_tokens": 1073.5,
+      "mean_completion_tokens": 16.0,
+      "raw": [
+        {
+          "ok": true,
+          "ttft": 0.2520853029564023,
+          "e2e": 0.3721269308589399,
+          "decode": 0.11962905200198293,
+          "prompt_tokens": 1065,
+          "completion_tokens": 16,
+          "error": null,
+          "tpot": 0.007975270133465528
+        },
+        {
+          "ok": true,
+          "ttft": 0.24536185897886753,
+          "e2e": 0.3654151759110391,
+          "decode": 0.11964619578793645,
+          "prompt_tokens": 1082,
+          "completion_tokens": 16,
+          "error": null,
+          "tpot": 0.007976413052529097
+        },
+        {
+          "ok": true,
+          "ttft": 0.24436809215694666,
+          "e2e": 0.3650421020574868,
+          "decode": 0.12021482363343239,
+          "prompt_tokens": 1078,
+          "completion_tokens": 16,
+          "error": null,
+          "tpot": 0.00801432157556216
+        },
+        {
+          "ok": true,
+          "ttft": 0.24258254515007138,
+          "e2e": 0.3629802390933037,
+          "decode": 0.11997321015223861,
+          "prompt_tokens": 1069,
+          "completion_tokens": 16,
+          "error": null,
+          "tpot": 0.00799821401014924
+        }
+      ]
+    }
+  ]
+}

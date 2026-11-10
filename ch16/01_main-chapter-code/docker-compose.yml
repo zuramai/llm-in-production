@@ -1,0 +1,41 @@
+# Chapter 16: SGLang on :8316 from the official image, with the Hugging Face BF16 weights.
+#
+#   cd ch16/01_main-chapter-code
+#   docker compose up -d && docker compose logs -f sglang     # ready when /health answers
+#   docker compose down
+#
+# llama-server runs from a local CUDA build (build_llama_cpp.sh) and vLLM from .venv-cuda
+# (serve_vllm.sh). Never start two engines at once on one 24 GB card: each one pre-allocates
+# most of the GPU for its KV cache.
+
+services:
+  sglang:
+    # CUDA 13 build (driver >= 580). Tag plus digest: tags can be re-pushed, digests can't.
+    image: lmsysorg/sglang:v0.5.23-runtime@sha256:3ce6da3e5ea0fee2dac6a23b528cb294fedd31ca74a55a4511f709c5e01e8652
+    ports: ["127.0.0.1:8316:30000"]
+    ipc: host # NCCL and the tokenizer/detokenizer processes talk through shared memory
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    volumes:
+      # Read-only: the container runs as root and must not write root-owned files into our cache.
+      - ${HF_HOME:-${HOME}/.cache/huggingface}:/root/.cache/huggingface:ro
+    environment:
+      HF_HUB_OFFLINE: "1"
+    command: >
+      python3 -m sglang.launch_server
+      --model-path ${SGLANG_MODEL:-Qwen/Qwen3-8B}
+      --host 0.0.0.0 --port 30000
+      --mem-fraction-static ${SGLANG_MEM_FRACTION:-0.80}
+      --context-length 8192
+      --reasoning-parser qwen3
+      --enable-metrics
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:30000/health"]
+      interval: 5s
+      start_period: 300s
+    restart: unless-stopped

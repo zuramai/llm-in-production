@@ -1,0 +1,123 @@
+apiVersion: v1
+automountServiceAccountToken: false
+kind: ServiceAccount
+metadata:
+  labels:
+    llm-d.ai/accelerator-variant: gpu
+    llm-d.ai/accelerator-vendor: nvidia
+    llm-d.ai/guide: optimized-baseline
+    llm-d.ai/model: Qwen3-32B
+  name: optimized-baseline-nvidia-gpu-vllm-sa
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    llm-d.ai/accelerator-variant: gpu
+    llm-d.ai/accelerator-vendor: nvidia
+    llm-d.ai/guide: optimized-baseline
+    llm-d.ai/model: Qwen3-32B
+    llm-d.ai/role: decode
+  name: optimized-baseline-nvidia-gpu-vllm-decode
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      llm-d.ai/accelerator-variant: gpu
+      llm-d.ai/accelerator-vendor: nvidia
+      llm-d.ai/guide: optimized-baseline
+      llm-d.ai/model: Qwen3-32B
+      llm-d.ai/role: decode
+  template:
+    metadata:
+      labels:
+        llm-d.ai/accelerator-variant: gpu
+        llm-d.ai/accelerator-vendor: nvidia
+        llm-d.ai/guide: optimized-baseline
+        llm-d.ai/model: Qwen3-32B
+        llm-d.ai/role: decode
+    spec:
+      containers:
+      - args:
+        - Qwen/Qwen3-8B
+        - --disable-access-log-for-endpoints=/health,/metrics,/v1/models
+        - --tensor-parallel-size=1
+        - --gpu-memory-utilization=0.90
+        - --max-model-len=8192
+        - --max-num-seqs=64
+        - --reasoning-parser=qwen3
+        - --shutdown-timeout=45
+        command:
+        - vllm
+        - serve
+        env:
+        - name: HF_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: HF_TOKEN
+              name: llm-d-hf-token
+        image: docker.io/vllm/vllm-openai:v0.31.0
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - /bin/sleep
+              - "15"
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /health
+            port: modelserver
+          periodSeconds: 10
+          timeoutSeconds: 5
+        name: modelserver
+        ports:
+        - containerPort: 8000
+          name: modelserver
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /v1/models
+            port: modelserver
+          periodSeconds: 5
+          timeoutSeconds: 2
+        resources:
+          limits:
+            cpu: "8"
+            memory: 48Gi
+            nvidia.com/gpu: 1
+          requests:
+            cpu: "4"
+            memory: 32Gi
+            nvidia.com/gpu: 1
+        startupProbe:
+          failureThreshold: 120
+          httpGet:
+            path: /v1/models
+            port: modelserver
+          initialDelaySeconds: 15
+          periodSeconds: 30
+          timeoutSeconds: 5
+        volumeMounts:
+        - mountPath: /dev/shm
+          name: shm
+        - mountPath: /.cache
+          name: torch-compile-cache
+        - mountPath: /.triton
+          name: triton-cache
+        - mountPath: /.config
+          name: vllm-config
+      serviceAccountName: optimized-baseline-nvidia-gpu-vllm-sa
+      terminationGracePeriodSeconds: 75
+      volumes:
+      - emptyDir:
+          medium: Memory
+          sizeLimit: 20Gi
+        name: shm
+      - emptyDir: {}
+        name: torch-compile-cache
+      - emptyDir: {}
+        name: triton-cache
+      - emptyDir: {}
+        name: vllm-config

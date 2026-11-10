@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 490" font-family="Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="980" height="490" rx="16" fill="#ffffff"/>
+  <text x="490" y="34" text-anchor="middle" font-size="19" font-weight="bold" fill="#222">Where the RTX 3090's 24 GiB went, per engine (measured, Qwen3-8B)</text>
+  <text x="490" y="56" text-anchor="middle" font-size="13" fill="#444">1 GiB = 30 px · process memory from nvidia-smi during the run · weights and KV cache from each engine's log</text>
+
+  <!-- scale: x = 250 + GiB * 30 ; 24 GiB = 970 -->
+  <g font-size="13" fill="#222">
+    <text x="240" y="104" text-anchor="end">Ollama default</text>
+    <text x="240" y="120" text-anchor="end" fill="#555" font-size="11">Q4_K_M · 1 slot × 32k ctx</text>
+    <text x="240" y="164" text-anchor="end">llama-server Q4</text>
+    <text x="240" y="180" text-anchor="end" fill="#555" font-size="11">32 slots × 1k ctx</text>
+    <text x="240" y="224" text-anchor="end">llama-server BF16</text>
+    <text x="240" y="240" text-anchor="end" fill="#555" font-size="11">32 slots × 1k ctx</text>
+    <text x="240" y="284" text-anchor="end">vLLM BF16</text>
+    <text x="240" y="300" text-anchor="end" fill="#555" font-size="11">gpu-memory-utilization 0.86</text>
+    <text x="240" y="344" text-anchor="end">SGLang BF16</text>
+    <text x="240" y="360" text-anchor="end" fill="#555" font-size="11">mem-fraction-static 0.86</text>
+  </g>
+
+  <!-- card outline per row -->
+  <g fill="none" stroke="#888" stroke-dasharray="4 3">
+    <rect x="250" y="90" width="720" height="36"/>
+    <rect x="250" y="150" width="720" height="36"/>
+    <rect x="250" y="210" width="720" height="36"/>
+    <rect x="250" y="270" width="720" height="36"/>
+    <rect x="250" y="330" width="720" height="36"/>
+  </g>
+
+  <g font-size="11" fill="#222">
+    <!-- Ollama default: co-tenant 2.27, weights 4.53, KV 4.50, other 0.58 -->
+    <rect x="250" y="90" width="68" height="36" fill="#d0d0d0"/>
+    <rect x="318" y="90" width="136" height="36" fill="#9cc3e6"/><text x="386" y="112" text-anchor="middle">weights 4.5</text>
+    <rect x="454" y="90" width="135" height="36" fill="#c9b3e6"/><text x="521" y="112" text-anchor="middle">KV 4.5 (32k tok)</text>
+    <rect x="589" y="90" width="17" height="36" fill="#f3c98b"/>
+
+    <!-- llama-server Q4: weights 4.53, KV 4.50, other 0.44 -->
+    <rect x="250" y="150" width="68" height="36" fill="#d0d0d0"/>
+    <rect x="318" y="150" width="136" height="36" fill="#9cc3e6"/><text x="386" y="172" text-anchor="middle">weights 4.5</text>
+    <rect x="454" y="150" width="135" height="36" fill="#c9b3e6"/><text x="521" y="172" text-anchor="middle">KV 4.5 (32k tok)</text>
+    <rect x="589" y="150" width="13" height="36" fill="#f3c98b"/>
+
+    <!-- llama-server BF16: process 19.03 = KV 4.50 + weights/buffers 14.53 (token embeddings stay on CPU) -->
+    <rect x="250" y="210" width="68" height="36" fill="#d0d0d0"/>
+    <rect x="318" y="210" width="436" height="36" fill="#9cc3e6"/><text x="536" y="232" text-anchor="middle">weights + buffers 14.5 (embeddings on CPU)</text>
+    <rect x="754" y="210" width="135" height="36" fill="#c9b3e6"/><text x="821" y="232" text-anchor="middle">KV 4.5 (32k tok)</text>
+
+    <!-- vLLM: weights 15.27, KV 3.55, other 0.85 -->
+    <rect x="250" y="270" width="68" height="36" fill="#d0d0d0"/>
+    <rect x="318" y="270" width="458" height="36" fill="#9cc3e6"/><text x="547" y="292" text-anchor="middle">weights 15.3</text>
+    <rect x="776" y="270" width="107" height="36" fill="#c9b3e6"/><text x="829" y="292" text-anchor="middle">KV 3.6 (25.8k)</text>
+    <rect x="883" y="270" width="25" height="36" fill="#f3c98b"/>
+
+    <!-- SGLang: weights 15.28, KV 2.74, CUDA graphs 0.97, other 1.35 -->
+    <rect x="250" y="330" width="68" height="36" fill="#d0d0d0"/>
+    <rect x="318" y="330" width="458" height="36" fill="#9cc3e6"/><text x="547" y="352" text-anchor="middle">weights 15.3</text>
+    <rect x="776" y="330" width="82" height="36" fill="#c9b3e6"/><text x="817" y="352" text-anchor="middle">KV 2.7 (20k)</text>
+    <rect x="858" y="330" width="70" height="36" fill="#f3c98b"/><text x="893" y="352" text-anchor="middle">graphs+</text>
+  </g>
+
+  <!-- legend -->
+  <g font-size="12" fill="#222">
+    <rect x="250" y="392" width="16" height="14" fill="#d0d0d0"/><text x="272" y="404">another user's process (2.3 GiB)</text>
+    <rect x="490" y="392" width="16" height="14" fill="#9cc3e6"/><text x="512" y="404">model weights</text>
+    <rect x="630" y="392" width="16" height="14" fill="#c9b3e6"/><text x="652" y="404">KV cache (tokens it can hold)</text>
+    <rect x="250" y="418" width="16" height="14" fill="#f3c98b"/><text x="272" y="430">activations, CUDA graphs, buffers</text>
+    <text x="250" y="456" fill="#444">Dashed box = the whole 24 GiB card. BF16 engines spend two thirds of it on weights;</text>
+    <text x="250" y="474" fill="#444">the KV cache left over decides how many requests can run at once.</text>
+  </g>
+</svg>

@@ -1,0 +1,9 @@
+[llamacpp-q4] warm-up ok=True ttft=0.0952179292216897 
+[llamacpp-q4] c=  1 ok=4/4 TTFT p50=80ms p95=84ms TPOT p50=8ms p95=8ms out=79 tok/s wall=0.8s
+wrote results/prefill/llamacpp-q4-256.json
+[llamacpp-q4] warm-up ok=False ttft=None BadRequestError: Error code: 400 - request (1079 tokens) exceeds the available context size (1024 tokens), try increasing it
+[llamacpp-q4] c=  1 ok=0/4 TTFT p50=n/a p95=n/a TPOT p50=n/a p95=n/a out=0 tok/s wall=0.0s
+wrote results/prefill/llamacpp-q4-1024.json
+[llamacpp-q4] warm-up ok=False ttft=None BadRequestError: Error code: 400 - request (4247 tokens) exceeds the available context size (1024 tokens), try increasing it
+[llamacpp-q4] c=  1 ok=0/4 TTFT p50=n/a p95=n/a TPOT p50=n/a p95=n/a out=0 tok/s wall=0.1s
+wrote results/prefill/llamacpp-q4-4096.json

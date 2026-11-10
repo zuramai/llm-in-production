@@ -1,0 +1,81 @@
+{
+  "label": "sglang-bf16",
+  "base_url": "http://127.0.0.1:8316/v1",
+  "model": "Qwen/Qwen3-8B",
+  "date": "2026-11-09T06:33:38+00:00",
+  "config": {
+    "concurrency": [
+      1
+    ],
+    "requests": 4,
+    "prompt_tokens": 256,
+    "max_tokens": 16,
+    "request_options": {
+      "chat_template_kwargs": {
+        "enable_thinking": false
+      },
+      "ignore_eos": true
+    }
+  },
+  "levels": [
+    {
+      "concurrency": 1,
+      "requests": 4,
+      "ok": 4,
+      "errors": [],
+      "wall_s": 1.6689078519120812,
+      "output_tok_per_s": 38.34843243542457,
+      "requests_per_s": 2.3967770272140356,
+      "ttft_p50": 0.1142142175231129,
+      "ttft_p95": 0.11433683650102466,
+      "tpot_p50": 0.02016102126799524,
+      "tpot_p95": 0.020204736458448072,
+      "e2e_p50": 0.4170691629406065,
+      "e2e_p95": 0.41764033534564077,
+      "mean_prompt_tokens": 281.0,
+      "mean_completion_tokens": 16.0,
+      "raw": [
+        {
+          "ok": true,
+          "ttft": 0.11435239017009735,
+          "e2e": 0.4168746368959546,
+          "decode": 0.3021085378713906,
+          "prompt_tokens": 281,
+          "completion_tokens": 16,
+          "error": null,
+          "tpot": 0.02014056919142604
+        },
+        {
+          "ok": true,
+          "ttft": 0.11411581002175808,
+          "e2e": 0.41771125281229615,
+          "decode": 0.303157817106694,
+          "prompt_tokens": 282,
+          "completion_tokens": 16,
+          "error": null,
+          "tpot": 0.020210521140446264
+        },
+        {
+          "ok": true,
+          "ttft": 0.11417973600327969,
+          "e2e": 0.4168998561799526,
+          "decode": 0.3022512891329825,
+          "prompt_tokens": 279,
+          "completion_tokens": 16,
+          "error": null,
+          "tpot": 0.020150085942198834
+        },
+        {
+          "ok": true,
+          "ttft": 0.1142486990429461,
+          "e2e": 0.41723846970126033,
+          "decode": 0.30257934890687466,
+          "prompt_tokens": 282,
+          "completion_tokens": 16,
+          "error": null,
+          "tpot": 0.020171956593791642
+        }
+      ]
+    }
+  ]
+}

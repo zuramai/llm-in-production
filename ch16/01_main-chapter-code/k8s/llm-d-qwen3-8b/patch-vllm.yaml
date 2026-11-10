@@ -1,0 +1,32 @@
+# Replaces the guide's Qwen3-32B / TP=2 decode Deployment with the model and flags we measured
+# on one RTX 3090 in this chapter. The name carries the base's namePrefix. Each pod owns its GPU,
+# so --gpu-memory-utilization goes up from the 0.86 we used next to another tenant to 0.90.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: optimized-baseline-nvidia-gpu-vllm-decode
+spec:
+  replicas: 4
+  template:
+    spec:
+      containers:
+        - name: modelserver
+          command: ["vllm", "serve"]
+          args:
+            - "Qwen/Qwen3-8B"
+            - "--disable-access-log-for-endpoints=/health,/metrics,/v1/models"
+            - "--tensor-parallel-size=1"
+            - "--gpu-memory-utilization=0.90"
+            - "--max-model-len=8192"
+            - "--max-num-seqs=64"
+            - "--reasoning-parser=qwen3"
+            - "--shutdown-timeout=45"
+          resources:
+            limits:
+              cpu: "8"
+              memory: 48Gi
+              nvidia.com/gpu: 1
+            requests:
+              cpu: "4"
+              memory: 32Gi
+              nvidia.com/gpu: 1

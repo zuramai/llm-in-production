@@ -1,0 +1,19 @@
+# NOT EXECUTED (needs a Kubernetes cluster with NVIDIA GPU nodes). Written against llm-d v1.0,
+# https://llm-d.ai/docs/getting-started/quickstart (accessed 2026-11-07).
+#
+# Our single-GPU vLLM setup from Chapter 16, scaled out: 4 replicas of Qwen3-8B, one 24 GB GPU
+# each, behind the llm-d router (prefix-cache- and load-aware balancing). Install the router
+# exactly as in the quickstart (helm install ... optimized-baseline.values.yaml), then:
+#
+#   kubectl apply -n llm-d-quickstart -k ch16/01_main-chapter-code/k8s/llm-d-qwen3-8b/
+#
+# Checked with `kustomize build` (v5.7.1, rendered output in results/logs/). Two things the render
+# shows: the guide pins the image docker.io/vllm/vllm-openai:v0.31.0 (we ran 0.33.0 locally), and
+# the pods keep the label llm-d.ai/model=Qwen3-32B, because it is part of the Deployment's
+# selector in the base and Kubernetes doesn't let you change a selector on a live Deployment.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - https://github.com/llm-d/llm-d//guides/optimized-baseline/modelserver/gpu/vllm/base?ref=release-1.0
+patches:
+  - path: patch-vllm.yaml
