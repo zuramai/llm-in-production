@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 520" font-family="Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="960" height="520" rx="12" fill="#ffffff"/>
+  <text x="30" y="38" font-size="20" font-weight="bold" fill="#1d2433">Where each saving happens: one request through the ShopFlow gateway</text>
+  <text x="30" y="62" font-size="14" fill="#4a5163">Every layer can end the request early. The cheapest request is the one that never reaches a model.</text>
+
+  <!-- apps -->
+  <g font-size="13">
+    <rect x="30" y="90" width="150" height="56" rx="8" fill="#f1f1f4" stroke="#888888"/>
+    <text x="105" y="114" text-anchor="middle" font-weight="bold" fill="#1d2433">support bot</text>
+    <text x="105" y="132" text-anchor="middle" font-size="11" fill="#4a5163">key: sk-support…</text>
+    <rect x="30" y="160" width="150" height="56" rx="8" fill="#f1f1f4" stroke="#888888"/>
+    <text x="105" y="184" text-anchor="middle" font-weight="bold" fill="#1d2433">data bot (ch06)</text>
+    <text x="105" y="202" text-anchor="middle" font-size="11" fill="#4a5163">key: sk-data…</text>
+    <rect x="30" y="230" width="150" height="56" rx="8" fill="#f1f1f4" stroke="#888888"/>
+    <text x="105" y="254" text-anchor="middle" font-weight="bold" fill="#1d2433">batch jobs</text>
+    <text x="105" y="272" text-anchor="middle" font-size="11" fill="#4a5163">key: sk-batch…</text>
+  </g>
+
+  <!-- app-side semantic cache -->
+  <rect x="30" y="320" width="150" height="150" rx="8" fill="#e3f4ea" stroke="#2e8b57"/>
+  <text x="105" y="344" text-anchor="middle" font-size="13" font-weight="bold" fill="#1d5c3a">semantic cache</text>
+  <text x="105" y="362" text-anchor="middle" font-size="11" fill="#1d5c3a">(in the app)</text>
+  <text x="44" y="388" font-size="11" fill="#4a5163">pgvector, cosine ≥ t</text>
+  <text x="44" y="406" font-size="11" fill="#4a5163">single-turn, impersonal</text>
+  <text x="44" y="424" font-size="11" fill="#4a5163">questions only</text>
+  <text x="44" y="452" font-size="11" fill="#c0392b">risk: false hits</text>
+  <line x1="105" y1="320" x2="105" y2="292" stroke="#888888" stroke-width="2" stroke-dasharray="5 4"/>
+
+  <!-- gateway box -->
+  <rect x="220" y="84" width="470" height="400" rx="12" fill="#eef3fd" stroke="#2f6fde" stroke-width="2"/>
+  <text x="240" y="110" font-size="15" font-weight="bold" fill="#1d3f80">LiteLLM proxy :4015 (one config.yaml)</text>
+  <g font-size="13">
+    <rect x="240" y="124" width="430" height="58" rx="8" fill="#ffffff" stroke="#2f6fde"/>
+    <text x="256" y="148" font-weight="bold" fill="#1d3f80">1. virtual key → budget + rate limit</text>
+    <text x="256" y="168" font-size="11" fill="#4a5163">Postgres :5435 tracks spend per key; over budget → 422, over RPM → 429</text>
+
+    <rect x="240" y="192" width="430" height="58" rx="8" fill="#ffffff" stroke="#2f6fde"/>
+    <text x="256" y="216" font-weight="bold" fill="#1d3f80">2. exact cache</text>
+    <text x="256" y="236" font-size="11" fill="#4a5163">Redis :6385, key = hash of the whole request; any changed byte is a miss</text>
+
+    <rect x="240" y="260" width="430" height="58" rx="8" fill="#ffffff" stroke="#2f6fde"/>
+    <text x="256" y="284" font-weight="bold" fill="#1d3f80">3. router: alias → deployment</text>
+    <text x="256" y="304" font-size="11" fill="#4a5163">fast · smart · local · local-strong; retries, timeouts, cooldowns</text>
+
+    <rect x="240" y="328" width="430" height="58" rx="8" fill="#ffffff" stroke="#2f6fde"/>
+    <text x="256" y="352" font-weight="bold" fill="#1d3f80">4. fallback</text>
+    <text x="256" y="372" font-size="11" fill="#4a5163">fast fails → local, invisible to the app</text>
+
+    <rect x="240" y="396" width="430" height="70" rx="8" fill="#fff6e5" stroke="#f2a541"/>
+    <text x="256" y="420" font-weight="bold" fill="#7a4a00">cascade (in the app, through the gateway)</text>
+    <text x="256" y="440" font-size="11" fill="#4a5163">answer with fast/local → cheap verifier checks it against the FAQ</text>
+    <text x="256" y="456" font-size="11" fill="#4a5163">→ escalate to smart only when the check fails</text>
+  </g>
+  <line x1="180" y1="118" x2="240" y2="152" stroke="#888888" stroke-width="2"/>
+  <line x1="180" y1="188" x2="240" y2="152" stroke="#888888" stroke-width="2"/>
+  <line x1="180" y1="258" x2="240" y2="152" stroke="#888888" stroke-width="2"/>
+
+  <!-- providers -->
+  <g font-size="13">
+    <rect x="730" y="110" width="200" height="110" rx="8" fill="#fdecea" stroke="#c0392b"/>
+    <text x="830" y="134" text-anchor="middle" font-weight="bold" fill="#7a1f16">OpenRouter</text>
+    <text x="746" y="156" font-size="11" fill="#4a5163">fast = openai/gpt-6-luna</text>
+    <text x="746" y="174" font-size="11" fill="#4a5163">smart = claude-sonnet-5.5</text>
+    <text x="746" y="200" font-size="11" fill="#1d5c3a" font-weight="bold">provider prompt cache:</text>
+    <text x="746" y="214" font-size="11" fill="#1d5c3a">repeated prefix ≈ 0.1× price</text>
+
+    <rect x="730" y="250" width="200" height="90" rx="8" fill="#e3f4ea" stroke="#2e8b57"/>
+    <text x="830" y="274" text-anchor="middle" font-weight="bold" fill="#1d5c3a">Ollama (RTX 3090)</text>
+    <text x="746" y="296" font-size="11" fill="#4a5163">local = qwen3:8b</text>
+    <text x="746" y="314" font-size="11" fill="#4a5163">local-strong = gpt-oss:20b</text>
+    <text x="746" y="332" font-size="11" fill="#4a5163">$0 marginal, our GPU</text>
+  </g>
+  <line x1="670" y1="289" x2="730" y2="165" stroke="#888888" stroke-width="2"/>
+  <line x1="670" y1="357" x2="730" y2="295" stroke="#888888" stroke-width="2" stroke-dasharray="5 4"/>
+  <text x="700" y="372" font-size="11" fill="#4a5163">fallback</text>
+
+  <text x="730" y="400" font-size="12" fill="#1d2433" font-weight="bold">Ends the request early:</text>
+  <text x="730" y="420" font-size="11" fill="#4a5163">budget/limit → refused, $0</text>
+  <text x="730" y="438" font-size="11" fill="#4a5163">exact/semantic hit → cached, $0</text>
+  <line x1="670" y1="289" x2="730" y2="285" stroke="#888888" stroke-width="2"/>
+  <text x="730" y="456" font-size="11" fill="#4a5163">verifier passes → no smart call</text>
+</svg>

@@ -1,0 +1,55 @@
+# ch15/01_main-chapter-code/docker-compose.yml
+# LiteLLM proxy (gateway) on :4015, its Postgres (keys, budgets, spend) on :5435, Redis on :6385.
+#
+#   docker compose -f ch15/01_main-chapter-code/docker-compose.yml up -d
+#
+# The proxy uses host networking because Ollama listens on 127.0.0.1:11434 only, which a
+# bridged container can't reach. On Docker Desktop (macOS/Windows) drop `network_mode: host`,
+# publish "4015:4015" and point the `local` alias at http://host.docker.internal:11434/v1.
+name: ch15
+
+services:
+  litellm:
+    image: ghcr.io/berriai/litellm:v1.108.2-lts   # pinned: never run a gateway from :latest
+    network_mode: host
+    command: ["--config", "/app/config.yaml", "--port", "4015", "--num_workers", "1"]
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+    env_file: ../../.env                # LLM_API_KEY (OpenRouter) is read via os.environ/...
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-ch15-dev-master}
+      DATABASE_URL: postgresql://litellm:litellm@127.0.0.1:5435/litellm
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: "6385"
+      STORE_MODEL_IN_DB: "False"
+    depends_on:
+      litellm-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  litellm-db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: litellm
+      POSTGRES_PASSWORD: litellm
+      POSTGRES_DB: litellm
+    ports: ["127.0.0.1:5435:5432"]
+    volumes: [litellm-db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U litellm"]
+      interval: 2s
+      retries: 30
+
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    ports: ["127.0.0.1:6385:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      retries: 30
+
+volumes:
+  litellm-db:

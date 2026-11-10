@@ -1,0 +1,96 @@
+# ch15/01_main-chapter-code/config.yaml: LiteLLM proxy configuration for ShopFlow.
+# Applications only ever see the aliases on the left (`fast`, `smart`, `local`, ...).
+# Swapping a provider or a model is a change here, not a deploy of every service.
+model_list:
+  - model_name: fast                       # cheap default for most traffic
+    litellm_params:
+      model: openrouter/openai/gpt-6-luna
+      api_key: os.environ/LLM_API_KEY
+      timeout: 30
+      max_tokens: 512                      # default when a caller forgets (OpenRouter reserves 65k)
+      # $ per token, as of 2026-11 on OpenRouter. Budgets need a price for every model.
+      input_cost_per_token: 0.0000001      # $0.10 / 1M
+      output_cost_per_token: 0.0000005     # $0.50 / 1M
+    model_info:                            # without these, cached tokens are priced at $0
+      cache_read_input_token_cost: 0.00000001        # 0.1x input
+      cache_creation_input_token_cost: 0.000000125   # 1.25x input
+
+  - model_name: smart                      # expensive, for escalations and judging
+    litellm_params:
+      model: openrouter/anthropic/claude-sonnet-5.5
+      api_key: os.environ/LLM_API_KEY
+      timeout: 60
+      max_tokens: 512
+      # Sonnet 5.5 always reasons through OpenRouter ("Reasoning is mandatory for this endpoint").
+      # At the default effort it spent 329 hidden tokens on a one-line JSON grade and hit
+      # max_tokens=400; at "low" it spent 0 and cost 2.8x less.
+      reasoning_effort: low
+      input_cost_per_token: 0.000002       # $2 / 1M
+      output_cost_per_token: 0.00001       # $10 / 1M
+    model_info:
+      cache_read_input_token_cost: 0.0000001         # 0.05x input on Sonnet 5.5
+      cache_creation_input_token_cost: 0.0000025     # 1.25x input (5-minute TTL)
+
+  - model_name: fast-alt                   # same price class, other model family (cross-checks)
+    litellm_params:
+      model: openrouter/anthropic/claude-haiku-5.5
+      api_key: os.environ/LLM_API_KEY
+      timeout: 30
+      max_tokens: 512
+      input_cost_per_token: 0.0000001      # $0.10 / 1M
+      output_cost_per_token: 0.0000005     # $0.50 / 1M
+    model_info:
+      cache_read_input_token_cost: 0.00000001
+      cache_creation_input_token_cost: 0.000000125
+
+  - model_name: local                      # qwen3:8b on our own GPU via Ollama
+    litellm_params:
+      model: openai/qwen3:8b               # Ollama's OpenAI-compatible endpoint
+      api_base: http://127.0.0.1:11434/v1
+      api_key: ollama
+      timeout: 300                         # CPU-only while another workload holds the GPU; 30 s on a free GPU
+      max_tokens: 512
+      reasoning_effort: none               # qwen3 "thinks" for minutes unless told not to
+      input_cost_per_token: 0
+      output_cost_per_token: 0
+
+  - model_name: local-strong               # gpt-oss:20b, the capable local model
+    litellm_params:
+      model: openai/gpt-oss:20b
+      api_base: http://127.0.0.1:11434/v1
+      api_key: ollama
+      timeout: 120
+      max_tokens: 1024
+      input_cost_per_token: 0
+      output_cost_per_token: 0
+
+  - model_name: fast-outage-drill          # game day: `fast` with its provider unreachable
+    litellm_params:
+      model: openrouter/openai/gpt-6-luna
+      api_key: os.environ/LLM_API_KEY
+      api_base: http://127.0.0.1:9         # nothing listens here: connection refused
+      timeout: 5
+      max_tokens: 512
+      input_cost_per_token: 0.0000001
+      output_cost_per_token: 0.0000005
+    model_info:
+      cache_read_input_token_cost: 0.00000001
+      cache_creation_input_token_cost: 0.000000125
+
+router_settings:
+  # When `fast` fails (after retries), try `local`. Applications never see the outage.
+  fallbacks: [{"fast": ["local"]}, {"fast-outage-drill": ["local"]}]
+  num_retries: 1
+  allowed_fails: 3                         # failures per minute before a deployment cools down
+  cooldown_time: 30
+
+litellm_settings:
+  cache: true                              # exact-match cache, shared by every worker
+  cache_params:
+    type: redis                            # host/port from REDIS_HOST / REDIS_PORT
+    ttl: 3600                              # seconds; answers change when policies change
+  drop_params: true                        # strip params a provider rejects instead of erroring
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL

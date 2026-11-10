@@ -1,0 +1,84 @@
+# Semantic-cache test set for ch15. Labelled against datasets/shopflow/docs/faq.md by the AI
+# tooling used to write this chapter (not human-reviewed).
+#
+# `seeds` are questions already answered and stored in the cache.
+# `probes` are new questions. `ok` lists the seeds whose cached answer correctly answers the probe;
+# an empty list means no cached answer is right (serving any of them is a FALSE HIT).
+seeds:
+  track: How do I track my order?
+  cancel: Can I cancel my order?
+  failed_payment: My payment failed. Was I charged?
+  ship_time: How long does shipping take?
+  ship_cost: How much does shipping cost?
+  carriers: Which carriers do you use?
+  missing_pkg: My package says delivered but I don't have it.
+  return_policy: What is your return policy?
+  start_return: How do I start a return?
+  refund_time: When will I get my refund?
+  damaged: My item arrived damaged. What do I do?
+  vip: What is VIP?
+  pay_methods: Which payment methods do you accept?
+  login: I can't log in.
+  delete_account: How do I delete my account?
+  support_hours: What are your customer support hours?
+  change_address: Can I change my delivery address?
+  express_cost: How much is express shipping?
+  canada_time: How long does shipping to Canada take?
+  crypto: Do you accept Bitcoin?
+
+probes:
+  # --- paraphrases: same intent, a cached answer is right -------------------------------------
+  - {q: "Where's my package?", ok: [track]}
+  - {q: "How can I see the status of my order?", ok: [track]}
+  - {q: "How do I cancel an order?", ok: [cancel]}
+  - {q: "Is it possible to cancel my purchase?", ok: [cancel]}
+  - {q: "What happens if my card is declined, do you still take the money?", ok: [failed_payment]}
+  - {q: "Payment didn't go through. Did you charge me?", ok: [failed_payment]}
+  - {q: "How many days does delivery take?", ok: [ship_time]}
+  - {q: "How long does shipping take within the United States?", ok: [ship_time]}
+  - {q: "How long does express shipping take?", ok: [ship_time]}
+  - {q: "Is shipping free?", ok: [ship_cost]}
+  - {q: "How much is standard shipping?", ok: [ship_cost]}
+  - {q: "Who delivers your packages?", ok: [carriers]}
+  - {q: "Do you ship with UPS or FedEx?", ok: [carriers]}
+  - {q: "My parcel shows as delivered but it's not here", ok: [missing_pkg]}
+  - {q: "How many days do I have to return an item?", ok: [return_policy]}
+  - {q: "Can I return an opened lipstick?", ok: [return_policy]}
+  - {q: "I want to send something back, how do I do that?", ok: [start_return]}
+  - {q: "How long until my refund arrives?", ok: [refund_time]}
+  - {q: "My headphones arrived broken", ok: [damaged]}
+  - {q: "The blender I received is defective, what now?", ok: [damaged]}
+  - {q: "How do I become a VIP?", ok: [vip]}
+  - {q: "What are the perks of VIP membership?", ok: [vip]}
+  - {q: "Can I pay with PayPal?", ok: [pay_methods]}
+  - {q: "Do you take American Express?", ok: [pay_methods]}
+  - {q: "I forgot my password and can't sign in", ok: [login]}
+  - {q: "Please close my account", ok: [delete_account]}
+  - {q: "When is your support team available?", ok: [support_hours]}
+  - {q: "Is customer service open on Saturdays?", ok: [support_hours]}
+  - {q: "Can I ship my order to a different address?", ok: [change_address]}
+  - {q: "What's the cost of express delivery?", ok: [express_cost, ship_cost]}
+  - {q: "How many days does delivery to Canada take?", ok: [canada_time, ship_time]}
+  - {q: "Do you accept cryptocurrency?", ok: [crypto, pay_methods]}
+
+  # --- near misses: look alike, but no cached answer is right ----------------------------------
+  - {q: "How do I cancel my VIP membership?", ok: []}
+  - {q: "How do I cancel a return I started?", ok: []}
+  - {q: "How do I track my return?", ok: []}
+  - {q: "How do I start a warranty claim?", ok: []}
+  - {q: "What is your exchange policy?", ok: []}
+  - {q: "What is your price-match policy?", ok: []}
+  - {q: "When will I get my replacement item?", ok: []}
+  - {q: "My order arrived but one item is missing from the box", ok: []}
+  - {q: "Was I charged twice for my order?", ok: []}
+  - {q: "How much does shipping to Canada cost?", ok: []}
+  - {q: "How long does shipping to Japan take?", ok: []}
+  - {q: "Will I have to pay customs fees?", ok: []}
+  - {q: "How do I delete a review I wrote?", ok: []}
+  - {q: "How do I remove a saved card from my account?", ok: []}
+  - {q: "What are your store opening hours?", ok: []}
+  - {q: "Can I change the size of an item in my order?", ok: []}
+  - {q: "Can I pick up my order in a store?", ok: []}
+  - {q: "How do I return a gift I received?", ok: []}
+  - {q: "Do you sell gift cards?", ok: []}
+  - {q: "How do I unsubscribe from marketing emails?", ok: []}
