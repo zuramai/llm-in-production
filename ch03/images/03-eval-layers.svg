@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 420" width="820" height="420" font-family="Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="820" height="420" rx="16" fill="#ffffff"/>
+  <text x="410" y="34" text-anchor="middle" font-size="20" font-weight="bold" fill="#222">Three layers of evaluation, each one checks the one above</text>
+
+  <!-- layer 1: code checks -->
+  <rect x="40" y="60" width="500" height="92" rx="10" fill="#a8d5ba" stroke="#5b9c75" stroke-width="2"/>
+  <text x="60" y="88" font-size="17" font-weight="bold" fill="#1d3b2a">1. Code checks</text>
+  <text x="60" y="112" font-size="14" fill="#1d3b2a">exact · numeric tolerance · regex + forbid patterns</text>
+  <text x="60" y="134" font-size="14" fill="#1d3b2a">deterministic, free, milliseconds → every commit (pytest gate)</text>
+
+  <!-- layer 2: LLM judge -->
+  <rect x="40" y="172" width="500" height="92" rx="10" fill="#f6d28b" stroke="#c9a04a" stroke-width="2"/>
+  <text x="60" y="200" font-size="17" font-weight="bold" fill="#4a3510">2. LLM judge</text>
+  <text x="60" y="224" font-size="14" fill="#4a3510">rubric → {reason, score 1-5} · pairwise A/B with position swap</text>
+  <text x="60" y="246" font-size="14" fill="#4a3510">open-ended answers, cents per run → on prompt or model changes</text>
+
+  <!-- layer 3: reference labels -->
+  <rect x="40" y="284" width="500" height="92" rx="10" fill="#b9c8ea" stroke="#6a80b8" stroke-width="2"/>
+  <text x="60" y="312" font-size="17" font-weight="bold" fill="#1d2a4a">3. Reference labels</text>
+  <text x="60" y="336" font-size="14" fill="#1d2a4a">40 answers, same rubric, labelled blind to the judges</text>
+  <text x="60" y="358" font-size="14" fill="#1d2a4a">in production: people who own the policy → calibrate (Cohen's κ)</text>
+
+  <!-- arrows on the right: who checks whom -->
+  <path d="M560 330 C 640 330, 640 218, 560 218" fill="none" stroke="#888" stroke-width="2.5"/>
+  <polygon points="560,218 572,211 572,225" fill="#888"/>
+  <text x="648" y="268" font-size="13" fill="#555">κ ≥ 0.8 before</text>
+  <text x="648" y="285" font-size="13" fill="#555">we trust it</text>
+
+  <path d="M560 218 C 640 218, 640 106, 560 106" fill="none" stroke="#888" stroke-width="2.5"/>
+  <polygon points="560,106 572,99 572,113" fill="#888"/>
+  <text x="648" y="156" font-size="13" fill="#555">grades what regex</text>
+  <text x="648" y="173" font-size="13" fill="#555">can't express</text>
+
+  <text x="410" y="404" text-anchor="middle" font-size="13" fill="#555">Cost and trust both grow downward; volume grows upward.</text>
+</svg>

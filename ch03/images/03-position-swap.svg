@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 360" width="820" height="360" font-family="Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="820" height="360" rx="16" fill="#ffffff"/>
+  <text x="410" y="32" text-anchor="middle" font-size="19" font-weight="bold" fill="#222">Pairwise judging with a position swap</text>
+
+  <!-- call 1 -->
+  <text x="40" y="72" font-size="15" font-weight="bold" fill="#333">Call 1</text>
+  <rect x="110" y="52" width="120" height="34" rx="6" fill="#a8d5ba" stroke="#5b9c75"/>
+  <text x="170" y="74" text-anchor="middle" font-size="14" fill="#1d3b2a">A = answer x</text>
+  <rect x="240" y="52" width="120" height="34" rx="6" fill="#f6d28b" stroke="#c9a04a"/>
+  <text x="300" y="74" text-anchor="middle" font-size="14" fill="#4a3510">B = answer y</text>
+  <line x1="370" y1="69" x2="420" y2="69" stroke="#888" stroke-width="2"/>
+  <polygon points="420,69 410,63 410,75" fill="#888"/>
+  <rect x="425" y="52" width="90" height="34" rx="6" fill="#e3e3e3" stroke="#999"/>
+  <text x="470" y="74" text-anchor="middle" font-size="14" fill="#222">judge</text>
+
+  <!-- call 2 -->
+  <text x="40" y="132" font-size="15" font-weight="bold" fill="#333">Call 2</text>
+  <rect x="110" y="112" width="120" height="34" rx="6" fill="#f6d28b" stroke="#c9a04a"/>
+  <text x="170" y="134" text-anchor="middle" font-size="14" fill="#4a3510">A = answer y</text>
+  <rect x="240" y="112" width="120" height="34" rx="6" fill="#a8d5ba" stroke="#5b9c75"/>
+  <text x="300" y="134" text-anchor="middle" font-size="14" fill="#1d3b2a">B = answer x</text>
+  <line x1="370" y1="129" x2="420" y2="129" stroke="#888" stroke-width="2"/>
+  <polygon points="420,129 410,123 410,135" fill="#888"/>
+  <rect x="425" y="112" width="90" height="34" rx="6" fill="#e3e3e3" stroke="#999"/>
+  <text x="470" y="134" text-anchor="middle" font-size="14" fill="#222">judge</text>
+
+  <!-- outcomes table -->
+  <rect x="40" y="172" width="740" height="36" rx="6" fill="#d9d9d9"/>
+  <text x="60" y="196" font-size="14" font-weight="bold" fill="#222">call 1 says</text>
+  <text x="200" y="196" font-size="14" font-weight="bold" fill="#222">call 2 says</text>
+  <text x="340" y="196" font-size="14" font-weight="bold" fill="#222">meaning</text>
+  <text x="620" y="196" font-size="14" font-weight="bold" fill="#222">verdict</text>
+
+  <rect x="40" y="212" width="740" height="32" rx="6" fill="#dff0e5"/>
+  <text x="60" y="233" font-size="14" fill="#222">A</text>
+  <text x="200" y="233" font-size="14" fill="#222">B</text>
+  <text x="340" y="233" font-size="14" fill="#222">x won in both slots</text>
+  <text x="620" y="233" font-size="14" font-weight="bold" fill="#1d3b2a">x wins (consistent)</text>
+
+  <rect x="40" y="248" width="740" height="32" rx="6" fill="#fbecd0"/>
+  <text x="60" y="269" font-size="14" fill="#222">B</text>
+  <text x="200" y="269" font-size="14" fill="#222">A</text>
+  <text x="340" y="269" font-size="14" fill="#222">y won in both slots</text>
+  <text x="620" y="269" font-size="14" font-weight="bold" fill="#4a3510">y wins (consistent)</text>
+
+  <rect x="40" y="284" width="740" height="32" rx="6" fill="#f6d6d0"/>
+  <text x="60" y="305" font-size="14" fill="#222">A</text>
+  <text x="200" y="305" font-size="14" fill="#222">A</text>
+  <text x="340" y="305" font-size="14" fill="#222">the judge picked a slot, not an answer</text>
+  <text x="620" y="305" font-size="14" font-weight="bold" fill="#7a2a1d">tie (flip)</text>
+
+  <text x="410" y="342" text-anchor="middle" font-size="13" fill="#555">Flip rate = share of pairs whose verdict changes with the order. On identical-quality pairs it measures pure position bias.</text>
+</svg>

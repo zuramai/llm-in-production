@@ -1,4 +1,4 @@
-"""evalkit: a ~200-line eval harness. Datasets, an async runner, four metrics and two judges.
+"""evalkit: a small eval harness. Datasets, an async runner, four metrics and two judges.
 
 Everything here is plain Python plus the OpenAI SDK. The only network calls are the two judges,
 which take an injectable `client` so tests can pass a fake.
@@ -230,6 +230,25 @@ def judge_answer(
     user = f"<customer_question>\n{question}\n</customer_question>\n<assistant_answer>\n{answer}\n</assistant_answer>"
     data, cost = _ask_judge(client, model, system, user, "Judgment", _SCORE_SCHEMA, **opts)
     return Judgment(data["score"], data["reason"], cost)
+
+
+def make_scorer(judge_client=None, judge_model: str | None = None, reference: str = "", **opts):
+    """A scorer for `run`: code metrics for exact/numeric/regex cases, the pointwise judge for
+    `metric: judge` cases, with the 1-5 score mapped to 0..1. Each judgment is kept in
+    `scorer.judgments[case_id]` so the reasons (and the cost) survive the run."""
+    judgments: dict[str, Judgment] = {}
+
+    def scorer(case: Case, output: str) -> float:
+        if case.metric != "judge":
+            return code_metric(case, output)
+        if judge_client is None or judge_model is None:
+            raise ValueError(f"{case.id}: metric 'judge' needs judge_client and judge_model")
+        j = judge_answer(judge_client, judge_model, case.input, output, reference, **opts)
+        judgments[case.id] = j
+        return (j.score - 1) / 4
+
+    scorer.judgments = judgments  # type: ignore[attr-defined]
+    return scorer
 
 
 # --------------------------------------------------------------------------- pairwise judge

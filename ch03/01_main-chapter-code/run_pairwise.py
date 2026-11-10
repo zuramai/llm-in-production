@@ -14,8 +14,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from ch03_evalkit import Dataset, judge_pair, position_bias
-from ch03_faqbot import FAQ_TEXT, VARIANTS, make_bot
-from openai import OpenAI
+from ch03_faqbot import FAQ_TEXT, VARIANTS, make_bot, ollama_client
 
 from llmprod import chat_client
 
@@ -26,12 +25,14 @@ IDS = [
     "payment-methods", "failed-payment", "pending-expiry", "damaged", "support-hours", "carriers",
     "delete-account",
 ]  # fmt: skip
-# name -> (model, base_url or None for the configured provider, extra request options)
+# name -> (model, local on Ollama?, extra request options)
 JUDGES = {
-    "luna": ("openai/gpt-6-luna", None, {}),
-    "haiku": ("anthropic/claude-haiku-5.5", None, {}),
-    # A small local model as a deliberately weak judge (Ollama, free, 4k default context).
-    "qwen3_1.7b": ("qwen3:1.7b", "http://localhost:11434/v1", {"reasoning_effort": "none"}),
+    "luna": ("openai/gpt-6-luna", False, {}),
+    "haiku": ("anthropic/claude-haiku-5.5", False, {}),
+    # Local judges on the GPU (Ollama, free, 4k default context).
+    "gptoss20b": ("gpt-oss:20b", True, {"max_tokens": 2000, "reasoning_effort": "low"}),
+    # A small local model as a deliberately weak judge.
+    "qwen3_1.7b": ("qwen3:1.7b", True, {"reasoning_effort": "none"}),
 }
 PAD_PROMPT = (
     "Rewrite the support answer below so it is about 3x longer. Add polite filler, restate the "
@@ -67,13 +68,9 @@ if __name__ == "__main__":
     results_path = OUT / "results.json"
     summary = json.loads(results_path.read_text()) if results_path.exists() else {}
     for jname in sys.argv[1:] or JUDGES:
-        model, base_url, opts = JUDGES[jname]
-        client = (
-            OpenAI(base_url=base_url, api_key="ollama", timeout=300, max_retries=0)
-            if base_url
-            else chat_client(timeout=90)
-        )
-        with ThreadPoolExecutor(1 if base_url else 8) as pool:
+        model, local, opts = JUDGES[jname]
+        client = ollama_client() if local else chat_client(timeout=90)
+        with ThreadPoolExecutor(2 if local else 8) as pool:
             outs = list(
                 pool.map(
                     lambda p, model=model, opts=opts, client=client: judge_pair(

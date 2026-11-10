@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "01_main-chapter-code"))
-from ch03_faqbot import SYSTEM_PROMPT  # noqa: E402
+from ch03_faqbot import SYSTEM_PROMPT
 
 messages = [
     {"role": "system", "content": SYSTEM_PROMPT},

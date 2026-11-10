@@ -1,6 +1,7 @@
 """Generate the 40 bot answers used to calibrate the judge. Writes calibration/answers.json.
 
-Run once (about 40 cheap calls); the committed JSON is what the humans labelled.
+Run once (about 40 cheap calls); the committed JSON is the set that
+calibration/reference_labels.json scores.
     uv run python ch03/01_main-chapter-code/make_calibration_answers.py
 """
 

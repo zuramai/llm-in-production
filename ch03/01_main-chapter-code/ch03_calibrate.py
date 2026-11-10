@@ -1,8 +1,9 @@
-"""Judge calibration: run a judge over the human-labelled set and measure agreement."""
+"""Judge calibration: run a judge over the reference-labelled set and measure agreement."""
 
 from __future__ import annotations
 
 import json
+import random
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -17,11 +18,12 @@ SCORES = [1, 2, 3, 4, 5]
 
 
 def load_calibration() -> tuple[list[dict], dict[str, int]]:
+    """Return the 40 answers and the reference score per id (calibration/reference_labels.json)."""
     answers = json.loads((CAL / "answers.json").read_text())
-    labels = json.loads((CAL / "human_labels.json").read_text())["labels"]
-    human = {k: v["score"] for k, v in labels.items()}
-    assert [a["id"] for a in answers] == sorted(human), "answers and labels must cover the same ids"
-    return answers, human
+    labels = json.loads((CAL / "reference_labels.json").read_text())["labels"]
+    reference = {k: v["score"] for k, v in labels.items()}
+    assert [a["id"] for a in answers] == sorted(reference), "answers and labels must match"
+    return answers, reference
 
 
 def run_judge(
@@ -42,25 +44,54 @@ def run_judge(
         return dict(pool.map(one, answers))
 
 
-def agreement(human: dict[str, int], judge: dict[str, int]) -> dict:
+def agreement(reference: dict[str, int], judge: dict[str, int]) -> dict:
     """Agreement between two raters on the same items.
 
-    Quadratic-weighted kappa is the headline: the 1-5 scale is ordinal, so judge=4 vs human=5
-    is a much smaller disagreement than judge=1 vs human=5, and plain kappa treats them alike.
+    Quadratic-weighted kappa is the headline: the 1-5 scale is ordinal, so judge=4 vs reference=5
+    is a much smaller disagreement than judge=1 vs reference=5, and plain kappa treats them alike.
     """
-    ids = sorted(human)
-    h = [human[i] for i in ids]
+    ids = sorted(reference)
+    r = [reference[i] for i in ids]
     j = [judge[i] for i in ids]
     return {
         "n": len(ids),
-        "exact": float(np.mean([a == b for a, b in zip(h, j, strict=True)])),
-        "within1": float(np.mean([abs(a - b) <= 1 for a, b in zip(h, j, strict=True)])),
-        "kappa": float(cohen_kappa_score(h, j, labels=SCORES)),
-        "kappa_linear": float(cohen_kappa_score(h, j, labels=SCORES, weights="linear")),
-        "kappa_quadratic": float(cohen_kappa_score(h, j, labels=SCORES, weights="quadratic")),
-        "bias": float(np.mean(np.array(j) - np.array(h))),  # >0: judge is more lenient
-        "confusion": confusion_matrix(h, j, labels=SCORES).tolist(),  # rows human, cols judge
+        "exact": float(np.mean([a == b for a, b in zip(r, j, strict=True)])),
+        "within1": float(np.mean([abs(a - b) <= 1 for a, b in zip(r, j, strict=True)])),
+        "kappa": float(cohen_kappa_score(r, j, labels=SCORES)),
+        "kappa_linear": float(cohen_kappa_score(r, j, labels=SCORES, weights="linear")),
+        "kappa_quadratic": float(cohen_kappa_score(r, j, labels=SCORES, weights="quadratic")),
+        "bias": float(np.mean(np.array(j) - np.array(r))),  # >0: judge is more lenient
+        "confusion": confusion_matrix(r, j, labels=SCORES).tolist(),  # rows reference, cols judge
     }
+
+
+def blind_sheet(answers: list[dict], seed: int = 0) -> str:
+    """A Markdown labelling sheet: answers in shuffled order, without variant names or scores.
+
+    The labeller sees only the question, the answer and the rubric, so nothing hints at which
+    answers were broken on purpose or what any judge said.
+    """
+    order = list(answers)
+    random.Random(seed).shuffle(order)
+    out = [
+        "# Label the 40 calibration answers (blind)",
+        "",
+        (
+            "Score each answer 1-5 using ONLY datasets/shopflow/docs/faq.md as ground truth."
+            " Do not open judge_*.json, reference_labels.json or questions.yaml. Write"
+            " `id,score,why` per answer, in this order."
+        ),
+        "",
+        "## Rubric",
+        "",
+        POINTWISE_RUBRIC.strip(),
+        "",
+        "## Answers",
+    ]
+    for a in order:
+        quoted = "\n".join("> " + line for line in a["answer"].splitlines())
+        out += ["", f"### {a['id']}", f"**Customer:** {a['question']}", "", quoted]
+    return "\n".join(out) + "\n"
 
 
 def save_run(name: str, judgments: dict[str, Judgment], extra: dict | None = None) -> None:

@@ -63,20 +63,45 @@ VARIANTS: dict[str, str] = {
 }
 
 
-def make_bot(system_prompt: str = SYSTEM_PROMPT, model: str | None = None, client=None):
-    """Return `bot(question) -> answer` (single turn, no streaming, no history)."""
+OLLAMA_URL = "http://localhost:11434/v1"
+
+
+def ollama_client(timeout: float = 300):
+    """OpenAI-compatible client for the local Ollama server (no key, no retries)."""
+    from openai import OpenAI
+
+    return OpenAI(base_url=OLLAMA_URL, api_key="ollama", timeout=timeout, max_retries=0)
+
+
+def make_bot(
+    system_prompt: str = SYSTEM_PROMPT,
+    model: str | None = None,
+    client=None,
+    reasoning_effort: str | None = "low",
+):
+    """Return `bot(question) -> answer` (single turn, no streaming UI, no history).
+
+    `bot.costs` collects the provider-reported USD cost of every call (0.0 on Ollama).
+    """
     from llmprod import chat_client, get_settings
 
     client = client or chat_client()
     model = model or get_settings().llm_model
+    costs: list[float] = []
 
     def bot(question: str) -> str:
         history = prev.trim_history(
             [{"role": "system", "content": system_prompt}, {"role": "user", "content": question}],
             max_tokens=4000,
         )
-        return "".join(
-            prev.stream_reply(history, model=model, client=client, reasoning_effort="low")
+        usage: dict = {}
+        text = "".join(
+            prev.stream_reply(
+                history, model=model, client=client, usage=usage, reasoning_effort=reasoning_effort
+            )
         )
+        costs.append(float(usage.get("cost") or 0.0))
+        return text
 
+    bot.costs = costs  # type: ignore[attr-defined]
     return bot

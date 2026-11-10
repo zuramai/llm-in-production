@@ -1,5 +1,10 @@
 # The same golden set as ../01_main-chapter-code/faq_eval.yaml, as a promptfoo config (subset).
-# Run: uv run python make_prompt.py && npx -y promptfoo@0.125.1 eval --no-cache -o results.json
+# promptfoo 0.125.1 needs Node >= 22.22; `uvx --from nodejs-wheel` supplies Node 24 without sudo.
+# Run from this directory, with LLM_API_KEY exported from the repo's .env (a private uv cache
+# keeps the long-running uvx from holding the shared cache lock):
+#   uv run python make_prompt.py
+#   PROMPTFOO_DISABLE_TELEMETRY=1 UV_CACHE_DIR=$HOME/.cache/uv-ch03 \
+#     uvx --from nodejs-wheel npx -y promptfoo@0.125.1 eval --no-cache --no-progress-bar -o results.json
 description: ShopFlow FAQ bot regression
 prompts:
   - file://prompt.json

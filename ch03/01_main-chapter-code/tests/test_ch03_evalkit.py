@@ -15,7 +15,7 @@ import pytest
 CODE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(CODE))
 
-from ch03_calibrate import agreement
+from ch03_calibrate import agreement, blind_sheet, load_calibration
 from ch03_evalkit import (
     Case,
     Dataset,
@@ -25,6 +25,7 @@ from ch03_evalkit import (
     exact,
     judge_answer,
     judge_pair,
+    make_scorer,
     numeric,
     position_bias,
     regex,
@@ -236,17 +237,58 @@ def test_position_bias_ignores_ties_and_handles_empty():
     assert position_bias([])["flip_rate"] == 0.0
 
 
+def test_scorer_routes_judge_cases_to_the_judge_and_maps_1_to_5_onto_0_to_1():
+    client = FakeClient([{"reason": "bad", "score": 1}, {"reason": "ok", "score": 4}])
+    scorer = make_scorer(client, "m", "FAQ")
+    ds = Dataset(
+        "t",
+        [
+            Case("code", "q", "30", metric="exact"),  # never reaches the judge
+            Case("j1", "q1", metric="judge"),
+            Case("j2", "q2", metric="judge"),
+        ],
+    )
+    results = asyncio.run(run(ds, lambda q: "30", concurrency=1, scorer=scorer))
+    assert [r.score for r in results] == [1.0, 0.0, 0.75]
+    assert len(client.calls) == 2
+    assert scorer.judgments["j2"].reason == "ok"
+
+
+def test_judge_case_without_a_judge_is_an_error_not_a_pass():
+    ds = Dataset("t", [Case("j", "q", metric="judge")])
+    (r,) = asyncio.run(run(ds, lambda q: "anything", scorer=make_scorer()))
+    assert r.score is None and "needs judge_client" in r.error
+    assert summarize([r])["accuracy"] == 0.0
+
+
 # ----------------------------------------------------------------------------- agreement
 
 
 def test_weighted_kappa_penalises_far_misses_more_than_near_misses():
-    human = {f"q{i}": s for i, s in enumerate([1, 2, 3, 4, 5, 5, 4, 3, 2, 1])}
-    near = {k: min(5, v + 1) if v < 5 else 4 for k, v in human.items()}  # always off by one
-    far = {k: 6 - v for k, v in human.items()}  # scale reversed
-    perfect = agreement(human, dict(human))
+    ref = {f"q{i}": s for i, s in enumerate([1, 2, 3, 4, 5, 5, 4, 3, 2, 1])}
+    near = {k: min(5, v + 1) if v < 5 else 4 for k, v in ref.items()}  # always off by one
+    far = {k: 6 - v for k, v in ref.items()}  # scale reversed
+    perfect = agreement(ref, dict(ref))
     assert perfect["kappa"] == perfect["kappa_quadratic"] == 1.0
-    a_near, a_far = agreement(human, near), agreement(human, far)
+    a_near, a_far = agreement(ref, near), agreement(ref, far)
     assert a_near["within1"] == 1.0 and a_far["within1"] < 1.0
     assert a_near["kappa_quadratic"] > a_far["kappa_quadratic"]
     assert a_far["kappa_quadratic"] < 0
     assert sum(map(sum, a_near["confusion"])) == 10
+
+
+def test_reference_labels_cover_every_answer_with_a_valid_score():
+    answers, reference = load_calibration()
+    assert len(answers) == 40 and set(reference.values()) <= {1, 2, 3, 4, 5}
+
+
+def test_blind_sheet_shuffles_and_hides_variants():
+    answers, _ = load_calibration()
+    sheet = blind_sheet(answers, seed=1)
+    ids = [line[4:] for line in sheet.splitlines() if line.startswith("### ")]
+    assert sorted(ids) == [a["id"] for a in answers]  # every answer exactly once
+    assert ids != sorted(ids)  # shuffled, so neighbours don't hint at the variant
+    assert ids == [line[4:] for line in blind_sheet(answers, seed=1).splitlines()
+                   if line.startswith("### ")]  # same seed, same sheet
+    for leak in ("variant", "hand_mutated", "no_guardrails", "yes_man", "stale_faq"):
+        assert leak not in sheet
