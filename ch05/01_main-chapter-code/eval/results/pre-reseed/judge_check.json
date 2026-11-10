@@ -1,0 +1,325 @@
+{
+ "strong_model": "anthropic/claude-sonnet-5.5",
+ "n": 25,
+ "agree": 24,
+ "agreement": 96.0,
+ "strong_cost_usd": 0.07873,
+ "rows": [
+  {
+   "file": "graph-openai_gpt-6-luna.json",
+   "id": "r01",
+   "cheap": true,
+   "strong": true,
+   "cheap_reason": "Fact 1: answer states yes, within window (delivered 2026-10-25, 13 days elapsed, 30-day window) \u2014 stated. Fact 2: answer states last day 2026-11-24 with delivery date plus 30 days shown \u2014 stated.",
+   "strong_reason": "Fact 1: The answer says yes, the order is within the 30-day return window, which is correct. Fact 2: The answer gives 2026-11-24 as the last day (delivered 2026-10-25 + 30 days), which matches.",
+   "answer": "Yes\u2014order 26801 is within the return window: it was delivered 2026-10-25, and 13 days had elapsed by 2026-11-07; the 30-day window ends 2026-11-24 (delivery date + 30 days). [sql:1] [doc:policies/returns-policy.md#1] Apparel is returnable, but it must be unworn, have tags attached, and be unused in its original packaging. [doc:policies/returns-policy.md#1]",
+   "gold": [
+    "Yes, it can still be returned (within 30 days of delivery)",
+    "The last day to return it is 2026-11-24"
+   ]
+  },
+  {
+   "file": "graph-openai_gpt-6-luna.json",
+   "id": "r02",
+   "cheap": true,
+   "strong": true,
+   "cheap_reason": "Fact 1: The answer says No, the return window has closed, citing delivery on 2026-09-21 and 47 days elapsed, exceeding the 30-day window, so the fact is stated.",
+   "strong_reason": "Fact 1: The answer says No, the 30-day window has closed, with delivery on 2026-09-21 and 47 days elapsed, which matches the gold fact and contradicts none of its details.",
+   "answer": "No. The customer and order match; order 21461 was delivered on 2026-09-21, and 47 days have elapsed as of 2026-11-07, exceeding the 30-day return window (2026-09-21 + 30 days = 2026-10-21). [sql:1] [doc:policies/returns-policy.md#8] The item is a Mini Cat Tree in Pet Supplies, a returnable category, but that does not override the expired window; eligibility also requires it to be unused and in its original packaging. [sql:1] [doc:policies/returns-policy.md#1]",
+   "gold": [
+    "No, the 30-day return window has closed (delivered 2026-09-21, 47 days ago)"
+   ]
+  },
+  {
+   "file": "graph-openai_gpt-6-luna.json",
+   "id": "r03",
+   "cheap": true,
+   "strong": true,
+   "cheap_reason": "Fact 1: The answer clearly states that opened beauty products cannot be returned unless they arrived damaged or defective, even though it is within the 30-day window (it explicitly notes the window runs through 2026-11-27 but the exception still requires damage or defect), so the fact is stated.",
+   "strong_reason": "Fact 1: The answer says no, opened beauty items can't be returned unless damaged or defective, and notes it is within the 30-day window (10 days after delivery), matching the gold fact without contradiction.",
+   "answer": "No, not just because they dislike it: opened beauty products cannot be returned unless they arrived damaged or defective. [doc:care/skincare-products.md#5] Order 27392 was delivered on 2026-10-28, so today, 2026-11-07, is 10 days after delivery; the 30-day window runs through 2026-11-27, but the opened-item exception still requires damage or a defect. [sql:1] [doc:care/skincare-products.md#5] The evidence does not establish that the serum arrived damaged or defective; if it did, they should contact support within 30 days of delivery with a photo, and can receive a full refund or free replacement. [sql:1] [doc:care/skincare-products.md#5]",
+   "gold": [
+    "No: opened Beauty items can't be returned unless they arrived damaged or defective (even though it is within 30 days of delivery)"
+   ]
+  },
+  {
+   "file": "graph-openai_gpt-6-luna.json",
+   "id": "r04",
+   "cheap": true,
+   "strong": true,
+   "cheap_reason": "Fact 1: The answer says damaged grocery items may be refunded or replaced even if opened and that the customer is within the 30-day window, but it hedges with \"may\" on eligibility; it does state the window and opened-item rule, so it is stated. Fact 2: The answer offers a free replacement or full refund of $19.98 including shipping, matching the gold fact.",
+   "strong_reason": "Fact 1: The answer says damaged grocery items may be refunded or replaced even if opened and confirms the customer is within the 30-day window (delivered 2026-10-23, deadline 2026-11-22), so eligibility is stated. Fact 2: The answer offers a free replacement or a full refund of $19.98 including shipping, which matches the gold fact.",
+   "answer": "Offer a free replacement or a full refund of $19.98, including the $5.99 shipping, since the damaged item is grocery and may be refunded or replaced even if opened. [doc:policies/returns-policy.md#7] [doc:policies/damaged-or-defective-items.md#7] The order was delivered 2026-10-23; 30 days after delivery is 2026-11-22, and today is 2026-11-07, so the customer is within the contact window. [sql:1] [doc:policies/returns-policy.md#7] They must contact support within that window and include a photo of the damage. [doc:policies/returns-policy.md#7]",
+   "gold": [
+    "It is still eligible: damaged grocery items qualify even if opened (reported within 30 days of delivery)",
+    "A free replacement or a full refund including shipping (the order total is $19.98)"
+   ]
+  },
+  {
+   "file": "graph-openai_gpt-6-luna.json",
+   "id": "c01",
+   "cheap": true,
+   "strong": true,
+   "cheap_reason": "Fact 1: The answer says yes, order is paid with no shipment, and cancellation is free before shipping, so it is stated. Fact 2: The answer gives a refund of $108.88 and says within 5-7 business days, but does not mention shipping being included or to the original payment method; the amount and timing match, so the main claim is stated.",
+   "strong_reason": "Fact 1: The answer says yes, cancellation is free of charge until it ships, and the order is paid with no shipment, so this is stated. Fact 2: The answer states a full refund of $108.88 within 5-7 business days; it does not mention shipping or the original payment method, but the order total equals the refund and nothing in the parentheses is contradicted, so this is stated.",
+   "answer": "Yes. Order 29989 belongs to customer 2592 and remains paid, with no shipment recorded; it was placed November 6, 2026, so it has not shipped according to the available shipment data. [sql:1] You can cancel any order free of charge until it ships, and a cancellation after payment gets a full refund. [doc:policies/order-cancellation.md#2] The payment and order total are both $108.88, so the refund would be $108.88. [sql:1] The refund is due within 5\u20137 business days of cancellation; the order status will show cancelled. [doc:policies/refund-policy.md#1]",
+   "gold": [
+    "Yes, it can be cancelled free of charge because it hasn't shipped (status paid)",
+    "A full refund of $108.88 (including shipping, to the original payment method within 5-7 business days)"
+   ]
+  },
+  {
+   "file": "graph-openai_gpt-6-luna.json",
+   "id": "c02",
+   "cheap": false,
+   "strong": false,
+   "cheap_reason": "Fact 1: The answer states the order has shipped and is in transit, so it cannot be cancelled; it does not explicitly say the shipment date 2026-11-07, but the main claim (already shipped) is stated and nothing is contradicted. Fact 2: The answer never mentions returning the item after delivery or the 30-day return window, so this fact is omitted.",
+   "strong_reason": "Fact 1: The answer says No, the order has shipped and can't be cancelled; the shipping date isn't given but it's in parentheses and not contradicted, so it is stated. Fact 2: The answer says nothing about returning the order after delivery, so it is missing.",
+   "answer": "No. Order 29945 has shipped and is in transit, so it is no longer eligible for cancellation under the policy, which allows free cancellation only until shipment. [sql:1] [doc:policies/order-cancellation.md#2]",
+   "gold": [
+    "No, it has already shipped (on 2026-11-07)",
+    "The customer can return it after delivery (within 30 days of delivery)"
+   ]
+  },
+  {
+   "file": "graph-openai_gpt-6-luna.json",
+   "id": "c03",
+   "cheap": true,
+   "strong": true,
+   "cheap_reason": "Fact 1: The answer clearly states the two payment attempts failed so the customer was not charged, though it adds a bank hold note which does not contradict. Fact 2: The answer says the order will be automatically cancelled after 48 hours if nothing changes, but does not give the cancellation time (around 2026-11-08 23:23 ET); it states the 48-hour rule from creation time 23:23 on 11-06 implicitly, so the main claim is stated.",
+   "strong_reason": "Fact 1: the answer says the two payment attempts failed and the customer was not charged, which matches. Fact 2: the answer says the order will be automatically cancelled after 48 hours from creation at 2026-11-06 23:23, which implies 2026-11-08 23:23 and does not contradict the gold fact, so it is stated.",
+   "answer": "No\u2014the two payment attempts on 2026-11-06 failed, so the customer was not charged $88.98; a temporary bank authorization hold may appear and normally disappears within 1\u20133 business days. [sql:1] [doc:policies/order-cancellation.md#3] The order was created 2026-11-06 at 23:23 local time and is still pending on 2026-11-07, so it will be automatically cancelled after 48 hours if nothing changes. [sql:1] [doc:policies/order-cancellation.md#3]",
+   "gold": [
+    "The customer was not charged (no successful payment; 2 failed attempts)",
+    "It is cancelled automatically 48 hours after it was placed (around 2026-11-08 23:23 ET)"
+   ]
+  },
+  {
+   "file": "graph-openai_gpt-6-luna.json",
+   "id": "w01",
+   "cheap": false,
+   "strong": false,
+   "cheap_reason": "Fact 1: answer states the 30-day window closed (delivered 2026-06-29, 30 days later 2026-07-29, today 131 days after delivery) - stated. Fact 2: answer says warranty applies but never states the warranty runs until 2027-06-29 and explicitly says the warranty period length is not shown - not stated. Fact 3: answer states replacement, or refund of item price if replacement unavailable - stated.",
+   "strong_reason": "Fact 1: the answer says it's warranty not the 30-day return, with delivery 2026-06-29 and 131 days elapsed, so the window has closed - stated. Fact 2: the answer says the warranty period length is not shown and eligibility must be confirmed, so it never states the 1-year coverage until 2027-06-29 - not stated. Fact 3: replacement, or item price refund if unavailable - stated.",
+   "answer": "Warranty, not the 30-day return: it was delivered 2026-06-29, and 30 days later was 2026-07-29; today is 2026-11-07, 131 days after delivery. [sql:1] [doc:policies/warranty-policy.md#4] The warranty remedy after 30 days is replacement, or a refund of the item price if a replacement is unavailable; original shipping is not refunded. [doc:policies/warranty-policy.md#4] Order 7024 contains two power banks at $65.99 each ($131.98 total), payment succeeded, and no refund or return/warranty case is recorded. [sql:1] The warranty period length and whether a replacement is available are not shown, so confirm eligibility and replacement availability before promising a refund; the evidence also does not say whether the required defect photo has been provided. [sql:1] [doc:policies/warranty-policy.md#4]",
+   "gold": [
+    "The 30-day return window has closed",
+    "It is covered by the 1-year Electronics warranty (until 2027-06-29)",
+    "Under warranty ShopFlow replaces it, or refunds the item price if no replacement is available"
+   ]
+  },
+  {
+   "file": "graph-openai_gpt-6-luna.json",
+   "id": "w02",
+   "cheap": false,
+   "strong": false,
+   "cheap_reason": "Fact 1 requires stating the lantern is no longer under warranty; the answer says 'Yes' it is under warranty style claim and then calculates it is outside warranty, which is contradictory and leads with an incorrect 'Yes', so the main claim is contradicted and not stated correctly.",
+   "strong_reason": "The answer opens with \"Yes\", but its body says the lantern is outside the 90-day warranty, which ended 2026-10-13. The opening word contradicts the conclusion, yet the substance matches the gold fact: no longer under warranty, 90-day Sports & Outdoors policy, ending 2026-10-13, with the date computation shown. The leading \"Yes\" is probably meant to confirm the question's premise or is an error, and it makes the headline answer contradictory. Because the answer says both \"Yes\" and \"outside the warranty\", it is ambiguous about the main claim, so I judge the fact not cleanly stated.",
+   "answer": "Yes. The Mini Camping Lantern is in Sports & Outdoors, which has a 90-day warranty from delivery; it was delivered 2026-07-15, and 2026-07-15 + 90 days = 2026-10-13, so it is outside the warranty as of 2026-11-07. [doc:policies/warranty-policy.md#1] [sql:1]",
+   "gold": [
+    "No, it is no longer under warranty (Sports & Outdoors has a 90-day warranty, which ended 2026-10-13)"
+   ]
+  },
+  {
+   "file": "graph-openai_gpt-6-luna.json",
+   "id": "w03",
+   "cheap": false,
+   "strong": false,
+   "cheap_reason": "Fact 1: The answer explicitly states the 30-day remedy window has passed (delivered 2026-08-25, +30 days = 2026-09-24, today 2026-11-07), so the return window closure is stated. Fact 2: The answer never mentions the 90-day warranty or its end date of 2026-11-23; it only says the warranty period is unspecified and needs checking, which contradicts the gold fact that it is still covered.",
+   "strong_reason": "Fact 1: the answer says the 30-day window passed (delivered 2026-08-25, 30 days later 2026-09-24, today 2026-11-07), so it is stated. Fact 2: the answer says the warranty period is not specified and coverage must be checked, so it never states the 90-day warranty or the 2026-11-23 end date.",
+   "answer": "**Yes\u2014if the defect is due to materials or workmanship during normal use and is within the warranty period, the customer may receive a replacement, or a refund of the item price if replacement is unavailable.** The order was delivered 2026-08-25; 30 days later was 2026-09-24, and today is 2026-11-07, so the 30-day damaged/defective remedy window has passed. [sql:1] [doc:policies/warranty-policy.md#4] The Eco Cutting Board is a Home & Kitchen item, quantity 1, priced at $39.99; original shipping is not refunded under the warranty. [sql:1] [doc:policies/warranty-policy.md#4] The evidence does not specify the warranty period or establish whether this defect meets the warranty\u2019s coverage conditions, so those need to be checked. [doc:policies/warranty-policy.md#2] No return, refund, replacement, or support-ticket record was found in the supplied results. [sql:1]",
+   "gold": [
+    "The 30-day return window has closed",
+    "It is still covered by the 90-day warranty (until 2026-11-23)"
+   ]
+  },
+  {
+   "file": "graph-openai_gpt-6-luna.json",
+   "id": "a01",
+   "cheap": true,
+   "strong": true,
+   "cheap_reason": "Fact 1: answer states the order total is $57.98 and that the refund is the full refund, so the $57.98 amount is stated (parenthetical shipping inclusion not contradicted). Fact 2: answer explicitly says a support agent can approve and refunds up to $100.00 require support-agent approval, which states the approver and limit.",
+   "strong_reason": "Fact 1: the answer gives $57.98 as the order total and says the full refund is approved, but does not explicitly say shipping is included; the main claim of a $57.98 full refund is stated, with no contradiction. Fact 2: the answer says a support agent can approve refunds up to $100.00, which matches.",
+   "answer": "A support agent can approve the full refund: the order total is **$57.98**, and refunds up to $100.00 require support-agent approval. [sql:1] [doc:handbook/refund-approval-limits.md#1] The order was delivered and paid $57.98, so it meets the refund-eligible order-status requirement; no refund has already been issued. [sql:1] [doc:handbook/refund-approval-limits.md#2]",
+   "gold": [
+    "The full refund is $57.98 (including shipping)",
+    "A support agent can approve it (up to $100.00)"
+   ]
+  },
+  {
+   "file": "graph-openai_gpt-6-luna.json",
+   "id": "a02",
+   "cheap": true,
+   "strong": true,
+   "cheap_reason": "Fact 1: answer states the full refund is $151.98 (total including shipping implied by full refund), matching. Fact 2: answer states a team lead must approve the $151.98 refund and that $151.98 is within the $100.01\u2013$500.00 range, matching.",
+   "strong_reason": "Fact 1: the answer states the full refund is $151.98, and the shipping detail is not contradicted (it says the full refund includes shipping). Fact 2: the answer says a team lead must approve, with the $100.01\u2013$500.00 range.",
+   "answer": "A team lead must approve the $151.98 full refund. The order total and successful payment were $151.98, with no existing refund; $151.98 is within the $100.01\u2013$500.00 team-lead approval range. [sql:1] [doc:handbook/refund-approval-limits.md#1] The order was delivered 2026-10-28, and today is 2026-11-07, so 10 days have elapsed; a damaged item reported within 30 days with a photo qualifies for a full refund including shipping, but the evidence does not confirm a photo was provided. [sql:1] [doc:handbook/refund-approval-limits.md#5]",
+   "gold": [
+    "The full refund is $151.98 (including shipping)",
+    "A team lead must approve it ($100.01 to $500.00)"
+   ]
+  },
+  {
+   "file": "graph-openai_gpt-6-luna.json",
+   "id": "a03",
+   "cheap": true,
+   "strong": true,
+   "cheap_reason": "Fact 1: the answer states the order total is $578.97, which matches the full refund amount including shipping, so it is stated. Fact 2: the answer states Finance must approve via the finance-approvals channel because refunds above $500 require Finance approval, so it is stated.",
+   "strong_reason": "Fact 1: The answer gives the order total as $578.97 and says Finance must approve the full refund, so the full refund amount is effectively stated; it does not say 'including shipping' explicitly, but that is a parenthetical detail and is not contradicted. Fact 2: The answer says Finance must approve via finance-approvals because the refund is above $500, which matches.",
+   "answer": "Finance must approve the full refund via the `finance-approvals` channel: the order total is $578.97, and any refund above $500 requires Finance approval before issuance. [sql:1] [doc:handbook/refund-approval-limits.md#1]",
+   "gold": [
+    "The full refund is $578.97 (including shipping)",
+    "Finance must approve it (above $500.00, via the finance-approvals channel)"
+   ]
+  },
+  {
+   "file": "graph-openai_gpt-6-luna.json",
+   "id": "m01",
+   "cheap": true,
+   "strong": true,
+   "cheap_reason": "Fact 1: The answer says yes to opening the investigation, states delivery on 2026-10-31 and today 2026-11-07 (7 days elapsed), within the 14-day window, and that the 24-hour wait has passed; it does not state the deadline date 2026-11-14 explicitly but conveys being within 14 days, which matches the gold fact's main claim.",
+   "strong_reason": "Fact 1: The answer says yes, open an investigation; delivered 2026-10-31, today 2026-11-07, 7 days elapsed within the 14-day window, and the 24-hour wait has passed. This matches the gold fact and contradicts no details (deadline 11-14 is consistent with 10-31 + 14 days).",
+   "answer": "Yes\u2014open a UPS carrier investigation now. The order was marked delivered on 2026-10-31, and today is 2026-11-07: 7 days have elapsed, within the 14-day contact window; the customer must also have waited 24 hours, which has passed. [sql:1] [doc:handbook/carrier-claims.md#1] [doc:policies/returns-policy.md#8]",
+   "gold": [
+    "Yes: it is within 14 days of the delivery date (deadline 2026-11-14; the 24-hour wait has passed)"
+   ]
+  },
+  {
+   "file": "graph-openai_gpt-6-luna.json",
+   "id": "m02",
+   "cheap": false,
+   "strong": false,
+   "cheap_reason": "Fact 1 requires stating that the claim is NOT possible because the 14-day window (ended 2026-10-31) has passed; the answer opens with 'Yes\u2014open a carrier investigation' and only then notes the window passed, contradicting the gold answer 'No'.",
+   "strong_reason": "The answer opens with \"Yes\" and conditions the investigation on contacting within 14 days, which contradicts the gold \"No\", though it later notes the window ended 2026-10-31 and has passed. The conclusion is muddled and contradictory, so it does not clearly state that a claim cannot be opened.",
+   "answer": "Yes\u2014open a carrier investigation if the customer contacts support within 14 days of delivery, after the required 24-hour wait. Order 25593 was delivered by FedEx on 2026-10-17; the 14-day window ended 2026-10-31, and today is 2026-11-07, so the window has passed. [doc:policies/refund-policy.md#8] [doc:policies/shipping-policy.md#7] [sql:1] The ticket history shows no recorded support contact for this non-delivery report, and there is no recorded confirmation that the customer waited 24 hours or checked with neighbors or the mail room. [sql:2]",
+   "gold": [
+    "No: missing-package claims must be made within 14 days of the delivery date (delivered 2026-10-17; the window ended 2026-10-31)"
+   ]
+  },
+  {
+   "file": "graph-openai_gpt-6-luna.json",
+   "id": "f01",
+   "cheap": false,
+   "strong": false,
+   "cheap_reason": "Fact 1 requires the refund to be $4.00; the answer states $9.99 as the headline refund and then computes $4.00 in the body, so it contradicts itself and the headline contradicts the gold fact, making it not stated correctly.",
+   "strong_reason": "The answer opens with $9.99 as the refund, but its own calculation ends at $4.00, so it contradicts itself. The $15.98 total minus $5.99 shipping minus $5.99 label does equal $4.00, but the headline figure of $9.99 is wrong and conflicts with the gold amount, so the fact is not stated clearly.",
+   "answer": "$9.99. This is a standard changed-mind return: the $15.98 order total included $5.99 shipping, which is not refunded, and a further $5.99 return-shipping deduction applies: $15.98 \u2212 $5.99 \u2212 $5.99 = $4.00. [doc:policies/refund-policy.md#5] [sql:1]",
+   "gold": [
+    "$4.00 (the $9.99 item price minus the $5.99 return label; the original shipping is not refunded)"
+   ]
+  },
+  {
+   "file": "graph-openai_gpt-6-luna.json",
+   "id": "f02",
+   "cheap": true,
+   "strong": true,
+   "cheap_reason": "Fact 1: The answer states the full $49.98 refund including original shipping ($5.99) and does not deduct a return-label fee, so the fact is stated.",
+   "strong_reason": "The answer states a full refund of $49.98 including the $5.99 shipping, with no return-label deduction mentioned or implied, so it matches the gold fact.",
+   "answer": "$49.98. For a defective item when the customer chooses a refund instead of a free replacement, refund the full amount including shipping; the order was paid $49.98, comprising $43.99 for the item and $5.99 shipping. [doc:policies/refund-policy.md#5] [sql:1]",
+   "gold": [
+    "The full $49.98 (including the original shipping; no $5.99 return-label deduction)"
+   ]
+  },
+  {
+   "file": "graph-openai_gpt-6-luna.json",
+   "id": "p01",
+   "cheap": true,
+   "strong": false,
+   "cheap_reason": "Fact 1: The answer says yes, a one-time refund of the difference is allowed under policy, but hedges on whether a price drop occurred and says the evidence cannot confirm, while the question concerns a drop; it does commit to the 7-day window from the 2026-11-04 payment, so the one-time adjustment is stated. Fact 2: The answer states the window closes 2026-11-11, which matches the gold deadline.",
+   "strong_reason": "Fact 1: The answer opens with \"Yes\" but then says the evidence does not verify a price drop, and that a request would qualify only conditionally (\"would qualify\"), so it hedges and does not commit to a one-time adjustment being allowed. It does mention the one-time refund policy and the 7-day window from payment, but the overall stance is hedged and self-contradictory. Fact 2: The answer states the window closes 2026-11-11, matching the gold date and the 7-day count from payment on 2026-11-04.",
+   "answer": "Yes\u2014if they mean the Premium Notebook A5, its $13.99 paid price is still $13.99 today, so the evidence does not verify a price drop or any refund amount; the other two items\u2019 prices are unchanged too. [sql:1] [sql:3] The order is shipped and payment succeeded on 2026-11-04, so a ShopFlow price drop and request within 7 calendar days of payment would qualify; the window closes 2026-11-11. [sql:2] [doc:policies/price-adjustment-policy.md#2] [doc:policies/price-adjustment-policy.md#3] The policy allows a one-time refund of the difference to the original payment method, but the evidence lacks price-history entries and cannot confirm whether an item already received an adjustment. [doc:policies/price-adjustment-policy.md#1] [sql:3] Because today is Saturday after support\u2019s 10 AM\u20134 PM ET hours, they should contact support Monday, November 9, when it reopens; they can provide order 29504, the item\u2019s SKU, and when they noticed the lower price. [doc:policies/price-adjustment-policy.md#3]",
+   "gold": [
+    "Yes, a one-time price adjustment is allowed (within 7 days of the successful payment on 2026-11-04)",
+    "They must ask by 2026-11-11"
+   ]
+  },
+  {
+   "file": "graph-openai_gpt-6-luna.json",
+   "id": "p02",
+   "cheap": true,
+   "strong": true,
+   "cheap_reason": "Fact 1: The answer clearly says No, the 7-day window passed, with payment 2026-10-22 and window end 2026-10-29, so the fact is stated.",
+   "strong_reason": "The answer says no, the 7-day window has passed, with payment on 2026-10-22 and the window ending 2026-10-29, which matches the gold fact and contradicts none of its details.",
+   "answer": "No\u2014the customer is outside the 7-day request window: payment succeeded 2026-10-22 at 10:57, and 7 days later was 2026-10-29 at 10:57; the order is delivered, and today is 2026-11-07. [doc:policies/price-adjustment-policy.md#2] [sql:1] The policy counts from successful payment, so shipment or delivery dates do not extend the window. [doc:policies/price-adjustment-policy.md#2] The database shows no support tickets for an adjustment, and price history and adjustment records are unavailable, so the price drop timing and any prior adjustment cannot be verified. [sql:3]",
+   "gold": [
+    "No, the 7-day price adjustment window has passed (payment succeeded 2026-10-22; the window ended 2026-10-29)"
+   ]
+  },
+  {
+   "file": "graph-openai_gpt-6-luna.json",
+   "id": "v01",
+   "cheap": true,
+   "strong": true,
+   "cheap_reason": "Fact 1: The answer states No, customer 713 is VIP, and VIP members get free standard shipping regardless of order size, with a $0 shipping charge, which matches the gold fact that VIPs get free standard shipping on every order.",
+   "strong_reason": "Fact 1: The answer says No, customer is VIP, and VIPs get free standard shipping regardless of order size (every order), which matches and contradicts nothing.",
+   "answer": "No\u2014customer 713 is a VIP, and VIP members get free standard shipping regardless of order size; the records show a $0 shipping charge on their orders. [sql:1] [doc:policies/shipping-policy.md#1]",
+   "gold": [
+    "No: the customer is VIP, and VIPs get free standard shipping (on every order)"
+   ]
+  },
+  {
+   "file": "graph-openai_gpt-6-luna.json",
+   "id": "v02",
+   "cheap": false,
+   "strong": false,
+   "cheap_reason": "Fact 1 requires $283.86 more; the answer states $9,283.86 more in its headline, which contradicts the gold amount, even though its supporting arithmetic ($1,000.00 - $716.14 = $283.86) is correct.",
+   "strong_reason": "The answer states $9,283.86 more in its headline, which contradicts the gold $283.86, even though its arithmetic later shows $283.86; the answer is internally inconsistent and the main claim is wrong.",
+   "answer": "Customer 2622 needs to spend **$9,283.86 more** this year to reach VIP. The 2026 threshold is $1,000.00, and qualifying year-to-date spend is $716.14; $1,000.00 \u2212 $716.14 = $283.86. [doc:policies/vip-program.md#2] [sql:1]",
+   "gold": [
+    "$283.86 more (completed purchases this calendar year total $716.14 of the $1,000.00 threshold; cancelled and refunded orders don't count)"
+   ]
+  },
+  {
+   "file": "graph-openai_gpt-6-luna.json",
+   "id": "s01",
+   "cheap": false,
+   "strong": false,
+   "cheap_reason": "Fact 1: The answer hedges and never states the $73.79 post-discount total below the $75 threshold; it says the determination cannot be made. Fact 2: The answer never states that $5.99 standard shipping should have been charged; it only conditionally says free shipping would apply.",
+   "strong_reason": "Fact 1: the answer does not say the shipping was wrong; it declines to determine, and it contradicts the gold by using an $81.99 subtotal and saying free shipping would apply at or above $75, without applying the $8.20 discount that brings the total to $73.79. Fact 2: the answer never says $5.99 standard shipping should have been charged.",
+   "answer": "I can\u2019t determine whether the shipping charge was correct: order 14157 had $0 shipping and an $81.99 subtotal, but the actual shipping option and customer 4071\u2019s VIP status when the order was placed are not available. [sql:1] [sql:3] If it was standard shipping and the customer was not a VIP, free standard shipping would apply because the subtotal was at least $75; if it was express, $14.99 would apply, while a VIP would receive free standard shipping regardless of order size. [doc:policies/shipping-policy.md#1] The database does not establish which of those conditions applied. [sql:3]",
+   "gold": [
+    "No: after the $8.20 discount the order was $73.79, below the $75.00 free-shipping threshold (which applies after discounts; the customer isn't VIP)",
+    "$5.99 standard shipping should have been charged (it was charged $0.00)"
+   ]
+  },
+  {
+   "file": "graph-openai_gpt-6-luna.json",
+   "id": "s02",
+   "cheap": true,
+   "strong": true,
+   "cheap_reason": "Fact 1: the answer states the $93.98 subtotal less $9.40 discount equals $84.58, which is at least the $75.00 free shipping threshold, so the yes verdict is correctly supported.",
+   "strong_reason": "Fact 1: The answer says yes, the $0.00 shipping was correct, with $84.58 after the $9.40 discount meeting the $75.00 threshold. The added caveat about Germany eligibility does not contradict the fact and only concerns destination, so the main claim is committed to.",
+   "answer": "Yes\u2014the $0.00 shipping charge was correct: the $93.98 subtotal minus the $9.40 discount equals $84.58, which is at least $75.00 after discounts, qualifying for free standard shipping. [sql:1] [doc:policies/gift-cards-and-promotions.md#4] The order was delivered to Germany, but the supplied shipping rules do not specify whether this free-shipping threshold applies to that destination, so destination-specific eligibility cannot be confirmed from the evidence. [sql:1] [doc:policies/shipping-policy.md#1]",
+   "gold": [
+    "Yes: after the $9.40 discount the order was $84.58, at or above the $75.00 free standard shipping threshold"
+   ]
+  },
+  {
+   "file": "graph-openai_gpt-6-luna.json",
+   "id": "t01",
+   "cheap": false,
+   "strong": false,
+   "cheap_reason": "Fact 1: answer says escalate as urgent safety issue with swelling/burning power bank, stated correctly. Fact 2: answer says first-response SLA is 1 hour, stated. Fact 3: answer never tells the customer to stop using the product, so not stated.",
+   "strong_reason": "Fact 1: the answer calls it an urgent safety issue, so it is stated. Fact 2: the answer says the first-response SLA is 1 hour, so it is stated. Fact 3: the answer never tells the customer to stop using the product, so it is missing.",
+   "answer": "Immediately escalate ticket 1534 as an urgent safety issue: the customer reports that a power bank swelled and smells of burning plastic, with a child nearby. [sql:1] The ticket is marked urgent, so the first-response SLA is 1 hour; support hours are measured in ET, and urgent tickets are an exception to the usual guidance not to promise a faster reply. [sql:1] [doc:handbook/support-escalation.md#3] The ticket was created May 31, 2026 at 3:10 AM ET, and the evidence does not provide its last-update time or show whether a response has already been sent, so the remaining response time cannot be determined. [sql:1]",
+   "gold": [
+    "It is a safety issue: priority urgent",
+    "First response within 1 hour",
+    "Tell the customer to stop using the product immediately"
+   ]
+  },
+  {
+   "file": "graph-openai_gpt-6-luna.json",
+   "id": "i01",
+   "cheap": false,
+   "strong": false,
+   "cheap_reason": "Fact 1: The answer does not mention the 7-14 business day delivery window or customs delay; it only says no estimate is available, so it is not stated. Fact 2: The answer says the order shipped on Saturday, November 7, 2026, matching the gold date, so it is stated.",
+   "strong_reason": "Fact 1: the answer gives no 7-14 business day AU delivery window and says no estimate is available, so it is not stated. Fact 2: the answer says the order shipped on Saturday, November 7, 2026, so it is stated.",
+   "answer": "We don\u2019t have a recorded estimated delivery date, so we can\u2019t give a specific arrival date. Order 30040 shipped via USPS on Saturday, November 7, 2026 at 9:17 AM ET and is in transit; no tracking events or carrier-event records are available. [sql:1] [sql:2] [sql:3] Delivery estimates begin when an order ships, but the evidence does not provide a USPS delivery estimate for this shipment. [doc:policies/domestic-shipping.md#2] [sql:3]",
+   "gold": [
+    "Delivery to AU takes 7-14 business days (customs can add time)",
+    "It shipped on 2026-11-07"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,1516 @@
+{
+ "summary": {
+  "variant": "ch04_rag",
+  "model": "openai/gpt-6-luna",
+  "n": 25,
+  "accuracy": 16.0,
+  "facts_ok": 17.1,
+  "gold_doc_retrieved": 84.0,
+  "cites_doc_and_sql": 0.0,
+  "invalid_citations": 0,
+  "sql_errors": 0,
+  "errors": 0,
+  "p50_ms": 1564,
+  "p95_ms": 4281,
+  "mean_llm_calls": 1,
+  "usd_per_1k": 0.2559,
+  "total_cost_usd": 0.006398,
+  "judge_cost_usd": 0.00363
+ },
+ "run_at": "Saturday 2026-11-07 18:26 (America/New_York)",
+ "questions_built_at": "2026-11-07T17:47:15-05:00",
+ "judge_model": "anthropic/claude-haiku-5.5",
+ "rows": [
+  {
+   "id": "r01",
+   "template": "return_open",
+   "gold": [
+    "Yes, it can still be returned (within 30 days of delivery)",
+    "The last day to return it is 2026-11-24"
+   ],
+   "result": {
+    "variant": "ch04_rag",
+    "model": "openai/gpt-6-luna",
+    "question": "Customer 1696 changed their mind about order 26801. Can they still return it, and what is the last day they can?",
+    "answer": "I can\u2019t determine whether Customer 1696 can still return order 26801 or the last day to do so because the context gives no delivery date, item condition, or item-specific eligibility details. Most items may be returned within 30 days of delivery if unused and in their original packaging; opened beauty products and grocery items are exceptions unless damaged or defective. [doc:faq.md#3]",
+    "latency_ms": 9171,
+    "usage": {
+     "calls": 1,
+     "prompt_tokens": 1801,
+     "completion_tokens": 84,
+     "cost_usd": 0.00026705,
+     "llm_ms": 1591
+    },
+    "citations": {
+     "citations": [
+      "[doc:faq.md#3]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": false
+    },
+    "steps": [
+     {
+      "step": "retrieve",
+      "query": "Customer 1696 changed their mind about order 26801. Can they still return it, and what is the last day they can?"
+     }
+    ],
+    "evidence": [
+     "[doc:policies/shipping-policy.md#6]",
+     "[doc:faq.md#1]",
+     "[doc:faq.md#3]",
+     "[doc:policies/account-security.md#5]",
+     "[doc:policies/returns-policy.md#0]",
+     "[doc:policies/returns-policy.md#5]",
+     "[doc:policies/order-cancellation.md#5]",
+     "[doc:care/yoga-mats.md#7]",
+     "[doc:care/power-banks-and-batteries.md#5]",
+     "[doc:handbook/support-escalation.md#8]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     false,
+     false
+    ],
+    "reason": "Fact 1: The answer explicitly says it cannot determine whether the order can still be returned, so it does not state yes. Fact 2: No last return date (2026-11-24) is given. Both facts are not stated.",
+    "judge_cost_usd": 0.0001335
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "r02",
+   "template": "return_closed",
+   "gold": [
+    "No, the 30-day return window has closed (delivered 2026-09-21, 47 days ago)"
+   ],
+   "result": {
+    "variant": "ch04_rag",
+    "model": "openai/gpt-6-luna",
+    "question": "Can customer 4860 still return order 21461?",
+    "answer": "I can\u2019t determine whether customer 4860 can still return order 21461 because the context does not provide the order\u2019s delivery date, item condition or type, or return status. Most items can be returned within 30 days of delivery, unused and in original packaging; opened beauty products and grocery items are excluded unless damaged or defective. [doc:faq.md#3]",
+    "latency_ms": 1455,
+    "usage": {
+     "calls": 1,
+     "prompt_tokens": 2039,
+     "completion_tokens": 80,
+     "cost_usd": 0.0002948,
+     "llm_ms": 1369
+    },
+    "citations": {
+     "citations": [
+      "[doc:faq.md#3]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": false
+    },
+    "steps": [
+     {
+      "step": "retrieve",
+      "query": "Can customer 4860 still return order 21461?"
+     }
+    ],
+    "evidence": [
+     "[doc:runbooks/checkout-db-pool-exhaustion.md#6]",
+     "[doc:runbooks/checkout-bad-deploy.md#7]",
+     "[doc:faq.md#1]",
+     "[doc:policies/account-security.md#5]",
+     "[doc:faq.md#3]",
+     "[doc:handbook/metrics-glossary.md#4]",
+     "[doc:policies/returns-policy.md#5]",
+     "[doc:policies/returns-policy.md#0]",
+     "[doc:policies/order-cancellation.md#1]",
+     "[doc:handbook/refund-approval-limits.md#2]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     false
+    ],
+    "reason": "Fact 1: The answer says it cannot determine eligibility because the delivery date is not in context, and never states that the 30-day window has closed or that delivery was 2026-09-21 (47 days ago); it hedges rather than states the gold fact.",
+    "judge_cost_usd": 0.0001344
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "r03",
+   "template": "return_opened_beauty",
+   "gold": [
+    "No: opened Beauty items can't be returned unless they arrived damaged or defective (even though it is within 30 days of delivery)"
+   ],
+   "result": {
+    "variant": "ch04_rag",
+    "model": "openai/gpt-6-luna",
+    "question": "Customer 2925 opened the Pro Face Serum from order 27392 and doesn't like it. Can they return it for a refund?",
+    "answer": "No. An opened beauty product can\u2019t be returned unless it arrived damaged or defective; disliking it alone does not qualify for an exception. [doc:care/skincare-products.md#5]",
+    "latency_ms": 1254,
+    "usage": {
+     "calls": 1,
+     "prompt_tokens": 1644,
+     "completion_tokens": 44,
+     "cost_usd": 0.00022743,
+     "llm_ms": 1159
+    },
+    "citations": {
+     "citations": [
+      "[doc:care/skincare-products.md#5]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": false
+    },
+    "steps": [
+     {
+      "step": "retrieve",
+      "query": "Customer 2925 opened the Pro Face Serum from order 27392 and doesn't like it. Can they return it for a refund?"
+     }
+    ],
+    "evidence": [
+     "[doc:care/skincare-products.md#5]",
+     "[doc:faq.md#3]",
+     "[doc:care/skincare-products.md#0]",
+     "[doc:policies/order-cancellation.md#5]",
+     "[doc:policies/refund-policy.md#3]",
+     "[doc:policies/returns-policy.md#8]",
+     "[doc:policies/returns-policy.md#5]",
+     "[doc:policies/returns-policy.md#6]",
+     "[doc:handbook/support-escalation.md#8]",
+     "[doc:handbook/refund-approval-limits.md#2]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": true,
+    "facts_ok": [
+     true
+    ],
+    "reason": "Fact 1: the answer states No, that opened beauty products can't be returned unless damaged or defective, and that disliking alone doesn't qualify, which matches the gold fact including the 30-day caveat being implicitly overridden by the opened/defect rule.",
+    "judge_cost_usd": 0.0001347
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "r04",
+   "template": "damaged_opened_grocery",
+   "gold": [
+    "It is still eligible: damaged grocery items qualify even if opened (reported within 30 days of delivery)",
+    "A free replacement or a full refund including shipping (the order total is $19.98)"
+   ],
+   "result": {
+    "variant": "ch04_rag",
+    "model": "openai/gpt-6-luna",
+    "question": "The Mini Matcha Powder in order 27095 arrived damaged and customer 968 has already opened it. What can we offer?",
+    "answer": "Because the Mini Matcha Powder arrived damaged, the customer can choose a free replacement or a full refund, including shipping; opened grocery items are eligible for this exception. [doc:policies/returns-policy.md#7] [doc:policies/damaged-or-defective-items.md#7]\n\nThey should contact support within 30 days of delivery and include a photo of the damage. [doc:policies/returns-policy.md#7]",
+    "latency_ms": 1555,
+    "usage": {
+     "calls": 1,
+     "prompt_tokens": 1954,
+     "completion_tokens": 94,
+     "cost_usd": 0.00029118,
+     "llm_ms": 1474
+    },
+    "citations": {
+     "citations": [
+      "[doc:policies/returns-policy.md#7]",
+      "[doc:policies/damaged-or-defective-items.md#7]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": false
+    },
+    "steps": [
+     {
+      "step": "retrieve",
+      "query": "The Mini Matcha Powder in order 27095 arrived damaged and customer 968 has already opened it. What can we offer?"
+     }
+    ],
+    "evidence": [
+     "[doc:policies/damaged-or-defective-items.md#0]",
+     "[doc:policies/returns-policy.md#7]",
+     "[doc:policies/damaged-or-defective-items.md#7]",
+     "[doc:care/skincare-products.md#5]",
+     "[doc:faq.md#3]",
+     "[doc:policies/order-cancellation.md#5]",
+     "[doc:handbook/carrier-claims.md#4]",
+     "[doc:policies/international-shipping.md#7]",
+     "[doc:policies/order-cancellation.md#7]",
+     "[doc:handbook/support-tone-guide.md#4]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": true,
+    "facts_ok": [
+     true,
+     true
+    ],
+    "reason": "Fact 1: The answer says opened grocery items are eligible for the damaged-item exception but does not state the 30-day reporting window tied to delivery as a condition of eligibility; it only mentions contacting within 30 days in the second paragraph, which does effectively state eligibility within 30 days, so it is stated. Fact 2: The answer offers a free replacement or full refund including shipping but does not state the order total of $19.98, which the gold fact includes as a detail; however the main claim (replacement or full refund incl. shipping) is correct, so it is stated.",
+    "judge_cost_usd": 0.0001949
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "c01",
+   "template": "cancel_paid",
+   "gold": [
+    "Yes, it can be cancelled free of charge because it hasn't shipped (status paid)",
+    "A full refund of $108.88 (including shipping, to the original payment method within 5-7 business days)"
+   ],
+   "result": {
+    "variant": "ch04_rag",
+    "model": "openai/gpt-6-luna",
+    "question": "Customer 2592 wants to cancel order 29989. Is that possible, and how much do they get back?",
+    "answer": "It depends on whether order 29989 has shipped: it can be cancelled free of charge before shipment through **Account \u2192 Orders \u2192 Cancel**; if payment was taken, the customer gets a full refund to the original payment method within 5\u20137 business days. [doc:policies/order-cancellation.md#2] [doc:policies/shipping-policy.md#6] If it has already shipped, it cannot be cancelled; the customer can start a return after delivery within 30 days, subject to the return conditions and any applicable $5.99 deduction. [doc:policies/order-cancellation.md#5] I can\u2019t determine the order\u2019s shipping status or exact refund amount from the documents. [doc:policies/order-cancellation.md#2]",
+    "latency_ms": 2167,
+    "usage": {
+     "calls": 1,
+     "prompt_tokens": 1811,
+     "completion_tokens": 160,
+     "cost_usd": 0.0003063,
+     "llm_ms": 2065
+    },
+    "citations": {
+     "citations": [
+      "[doc:policies/order-cancellation.md#2]",
+      "[doc:policies/shipping-policy.md#6]",
+      "[doc:policies/order-cancellation.md#5]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": false
+    },
+    "steps": [
+     {
+      "step": "retrieve",
+      "query": "Customer 2592 wants to cancel order 29989. Is that possible, and how much do they get back?"
+     }
+    ],
+    "evidence": [
+     "[doc:policies/order-cancellation.md#5]",
+     "[doc:policies/account-security.md#5]",
+     "[doc:policies/shipping-policy.md#6]",
+     "[doc:faq.md#3]",
+     "[doc:policies/returns-policy.md#5]",
+     "[doc:handbook/refund-approval-limits.md#2]",
+     "[doc:faq.md#1]",
+     "[doc:handbook/support-escalation.md#8]",
+     "[doc:policies/refund-policy.md#7]",
+     "[doc:policies/order-cancellation.md#2]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     false,
+     false
+    ],
+    "reason": "Fact 1: The answer says it can be cancelled free before shipment but explicitly declines to determine whether the order has shipped, so the 'paid/unshipped, cancellable free' claim is not committed to. Fact 2: The answer says a full refund to the original payment method within 5-7 business days but states it cannot determine the exact refund amount, so $108.88 is not stated.",
+    "judge_cost_usd": 0.0001741
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "c02",
+   "template": "cancel_shipped",
+   "gold": [
+    "No, it has already shipped (on 2026-11-07)",
+    "The customer can return it after delivery (within 30 days of delivery)"
+   ],
+   "result": {
+    "variant": "ch04_rag",
+    "model": "openai/gpt-6-luna",
+    "question": "The customer changed their mind. Can order 29945 still be cancelled?",
+    "answer": "I can\u2019t determine whether order 29945 can still be cancelled without its current status. Orders can be cancelled free of charge until they ship; check *Account \u2192 Orders*, then use *Account \u2192 Orders \u2192 Cancel* if it hasn\u2019t shipped. [doc:faq.md#1] If it\u2019s pending, no action is needed: it will be cancelled automatically after 48 hours without a successful payment. [doc:policies/order-cancellation.md#3] After it ships, it can\u2019t be cancelled; use a return after delivery, within 30 days of delivery. [doc:policies/order-cancellation.md#5]",
+    "latency_ms": 1842,
+    "usage": {
+     "calls": 1,
+     "prompt_tokens": 1470,
+     "completion_tokens": 133,
+     "cost_usd": 0.00025017,
+     "llm_ms": 1759
+    },
+    "citations": {
+     "citations": [
+      "[doc:faq.md#1]",
+      "[doc:policies/order-cancellation.md#3]",
+      "[doc:policies/order-cancellation.md#5]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": false
+    },
+    "steps": [
+     {
+      "step": "retrieve",
+      "query": "The customer changed their mind. Can order 29945 still be cancelled?"
+     }
+    ],
+    "evidence": [
+     "[doc:policies/account-security.md#5]",
+     "[doc:faq.md#1]",
+     "[doc:policies/order-cancellation.md#2]",
+     "[doc:policies/order-cancellation.md#5]",
+     "[doc:policies/shipping-policy.md#6]",
+     "[doc:policies/order-cancellation.md#6]",
+     "[doc:policies/order-cancellation.md#1]",
+     "[doc:policies/order-cancellation.md#0]",
+     "[doc:policies/order-cancellation.md#7]",
+     "[doc:policies/order-cancellation.md#3]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     false,
+     true
+    ],
+    "reason": "Fact 1: The answer never states the order has already shipped; it says it cannot determine status and hedges conditionally, so not stated. Fact 2: The answer says a return is possible after delivery within 30 days of delivery, so stated.",
+    "judge_cost_usd": 0.0001439
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "c03",
+   "template": "pending_autocancel",
+   "gold": [
+    "The customer was not charged (no successful payment; 2 failed attempts)",
+    "It is cancelled automatically 48 hours after it was placed (around 2026-11-08 23:23 ET)"
+   ],
+   "result": {
+    "variant": "ch04_rag",
+    "model": "openai/gpt-6-luna",
+    "question": "Order 29976 is still pending. Was the customer charged, and what happens to the order if nothing changes?",
+    "answer": "No. A failed payment attempt is never charged, though the bank may show a temporary authorization hold that normally disappears within 1\u20133 business days. [doc:policies/order-cancellation.md#3] If no payment succeeds, the order stays pending and is automatically cancelled after 48 hours; the context does not say how long Order 29976 has been pending. [doc:policies/payment-methods.md#4]",
+    "latency_ms": 1564,
+    "usage": {
+     "calls": 1,
+     "prompt_tokens": 1815,
+     "completion_tokens": 91,
+     "cost_usd": 0.0002723,
+     "llm_ms": 1476
+    },
+    "citations": {
+     "citations": [
+      "[doc:policies/order-cancellation.md#3]",
+      "[doc:policies/payment-methods.md#4]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": false
+    },
+    "steps": [
+     {
+      "step": "retrieve",
+      "query": "Order 29976 is still pending. Was the customer charged, and what happens to the order if nothing changes?"
+     }
+    ],
+    "evidence": [
+     "[doc:faq.md#1]",
+     "[doc:policies/order-cancellation.md#3]",
+     "[doc:runbooks/checkout-db-pool-exhaustion.md#6]",
+     "[doc:handbook/incident-severity.md#5]",
+     "[doc:policies/account-security.md#5]",
+     "[doc:policies/payment-methods.md#4]",
+     "[doc:runbooks/checkout-bad-deploy.md#7]",
+     "[doc:handbook/fraud-review.md#2]",
+     "[doc:policies/payment-methods.md#3]",
+     "[doc:handbook/refund-approval-limits.md#2]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": true,
+    "facts_ok": [
+     true,
+     true
+    ],
+    "reason": "Fact 1: The answer says a failed payment attempt is never charged and the order stays pending with no successful payment, so the customer was not charged is stated. Fact 2: The answer says the order is automatically cancelled after 48 hours, which matches, though it does not give the exact timestamp (2026-11-08 23:23 ET) it still states the main claim without contradiction.",
+    "judge_cost_usd": 0.0001623
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "w01",
+   "template": "warranty_electronics",
+   "gold": [
+    "The 30-day return window has closed",
+    "It is covered by the 1-year Electronics warranty (until 2027-06-29)",
+    "Under warranty ShopFlow replaces it, or refunds the item price if no replacement is available"
+   ],
+   "result": {
+    "variant": "ch04_rag",
+    "model": "openai/gpt-6-luna",
+    "question": "The Premium Power Bank from order 7024 stopped charging. Customer 4198 wants their money back. Return or warranty?",
+    "answer": "The Power Bank guide says a device that is damaged or not working qualifies for a full refund including shipping if the customer contacts support within 30 days of delivery with a photo; it doesn\u2019t specify a separate warranty process. [doc:care/power-banks-and-batteries.md#5] I can\u2019t determine from the documents whether order 7024 is within that 30-day window, so that timing needs to be checked. [doc:care/power-banks-and-batteries.md#5]",
+    "latency_ms": 1882,
+    "usage": {
+     "calls": 1,
+     "prompt_tokens": 1847,
+     "completion_tokens": 108,
+     "cost_usd": 0.0002848,
+     "llm_ms": 1799
+    },
+    "citations": {
+     "citations": [
+      "[doc:care/power-banks-and-batteries.md#5]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": false
+    },
+    "steps": [
+     {
+      "step": "retrieve",
+      "query": "The Premium Power Bank from order 7024 stopped charging. Customer 4198 wants their money back. Return or warranty?"
+     }
+    ],
+    "evidence": [
+     "[doc:care/power-banks-and-batteries.md#5]",
+     "[doc:faq.md#1]",
+     "[doc:policies/account-security.md#5]",
+     "[doc:policies/refund-policy.md#1]",
+     "[doc:faq.md#3]",
+     "[doc:runbooks/checkout-db-pool-exhaustion.md#6]",
+     "[doc:care/power-banks-and-batteries.md#0]",
+     "[doc:runbooks/payment-provider-timeout.md#6]",
+     "[doc:runbooks/checkout-bad-deploy.md#7]",
+     "[doc:policies/order-cancellation.md#5]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     false,
+     false,
+     false
+    ],
+    "reason": "Fact 1: answer says it can't determine whether order 7024 is within the 30-day window, so the closed window is not stated. Fact 2: answer says there is no separate warranty process and never mentions the 1-year Electronics warranty, so not stated. Fact 3: answer does not mention warranty replacement or refund of item price, so not stated.",
+    "judge_cost_usd": 0.0001632
+   },
+   "gold_doc_retrieved": false
+  },
+  {
+   "id": "w02",
+   "template": "warranty_expired",
+   "gold": [
+    "No, it is no longer under warranty (Sports & Outdoors has a 90-day warranty, which ended 2026-10-13)"
+   ],
+   "result": {
+    "variant": "ch04_rag",
+    "model": "openai/gpt-6-luna",
+    "question": "The Mini Camping Lantern from order 9700 has a manufacturing defect. Is it still under warranty?",
+    "answer": "I can\u2019t determine whether it is still under warranty without the lantern\u2019s delivery date: the warranty period starts on delivery, and Home & Kitchen, Apparel, Footwear, Beauty, Sports & Outdoors, Toys & Games, Books, Office, Pet Supplies, and Garden items have 90 days of coverage. [doc:policies/warranty-policy.md#1] If the defect appeared during normal use and is a defect in materials or workmanship, it is covered within that period; accidental damage, misuse, and other listed exclusions are not covered. [doc:policies/warranty-policy.md#2] [doc:policies/warranty-policy.md#3]",
+    "latency_ms": 1803,
+    "usage": {
+     "calls": 1,
+     "prompt_tokens": 1463,
+     "completion_tokens": 137,
+     "cost_usd": 0.0002513,
+     "llm_ms": 1719
+    },
+    "citations": {
+     "citations": [
+      "[doc:policies/warranty-policy.md#1]",
+      "[doc:policies/warranty-policy.md#2]",
+      "[doc:policies/warranty-policy.md#3]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": false
+    },
+    "steps": [
+     {
+      "step": "retrieve",
+      "query": "The Mini Camping Lantern from order 9700 has a manufacturing defect. Is it still under warranty?"
+     }
+    ],
+    "evidence": [
+     "[doc:care/wireless-earbuds.md#5]",
+     "[doc:policies/warranty-policy.md#2]",
+     "[doc:policies/warranty-policy.md#3]",
+     "[doc:care/cast-iron-skillet.md#8]",
+     "[doc:policies/warranty-policy.md#8]",
+     "[doc:policies/damaged-or-defective-items.md#3]",
+     "[doc:policies/warranty-policy.md#7]",
+     "[doc:policies/warranty-policy.md#1]",
+     "[doc:policies/warranty-policy.md#4]",
+     "[doc:policies/warranty-policy.md#5]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     false
+    ],
+    "reason": "Fact 1 requires stating the lantern is no longer under warranty (90-day warranty ended 2026-10-13); the answer instead says it cannot determine warranty status without the delivery date, hedging and not stating the expired status.",
+    "judge_cost_usd": 0.0001462
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "w03",
+   "template": "warranty_90_open",
+   "gold": [
+    "The 30-day return window has closed",
+    "It is still covered by the 90-day warranty (until 2026-11-23)"
+   ],
+   "result": {
+    "variant": "ch04_rag",
+    "model": "openai/gpt-6-luna",
+    "question": "Customer 4883 reports a defect in the Eco Cutting Board from order 17591. Can we still do anything?",
+    "answer": "Yes, if the defect was reported within 30 days of delivery; reports after that window may not be eligible. Ask the customer for a clear photo of the defect, and contact support by chat or email with order 17591 and the item\u2019s SKU; they should keep the item and packaging until next steps are confirmed. [doc:policies/damaged-or-defective-items.md#3]\n\nFor a damaged or defective item, ShopFlow offers a free replacement or a full refund including shipping, with no return shipping charge; any refund goes to the original payment method. [doc:handbook/carrier-claims.md#4] The context does not state when order 17591 was delivered or provide the cutting board\u2019s SKU, so eligibility and the exact SKU cannot be confirmed. [doc:policies/damaged-or-defective-items.md#3]",
+    "latency_ms": 2123,
+    "usage": {
+     "calls": 1,
+     "prompt_tokens": 2226,
+     "completion_tokens": 177,
+     "cost_usd": 0.00036668,
+     "llm_ms": 2046
+    },
+    "citations": {
+     "citations": [
+      "[doc:policies/damaged-or-defective-items.md#3]",
+      "[doc:handbook/carrier-claims.md#4]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": false
+    },
+    "steps": [
+     {
+      "step": "retrieve",
+      "query": "Customer 4883 reports a defect in the Eco Cutting Board from order 17591. Can we still do anything?"
+     }
+    ],
+    "evidence": [
+     "[doc:policies/damaged-or-defective-items.md#3]",
+     "[doc:runbooks/checkout-db-pool-exhaustion.md#6]",
+     "[doc:handbook/refund-approval-limits.md#2]",
+     "[doc:handbook/carrier-claims.md#4]",
+     "[doc:policies/damaged-or-defective-items.md#0]",
+     "[doc:faq.md#1]",
+     "[doc:handbook/fraud-review.md#2]",
+     "[doc:handbook/metrics-glossary.md#4]",
+     "[doc:policies/account-security.md#5]",
+     "[doc:handbook/support-escalation.md#8]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     false,
+     false
+    ],
+    "reason": "Fact 1: the answer says a return is possible only if reported within 30 days of delivery and that later reports may not be eligible, without stating the window has closed, so it is hedged and not stated. Fact 2: the answer never mentions the 90-day warranty or its end date 2026-11-23, so it is not stated.",
+    "judge_cost_usd": 0.0001635
+   },
+   "gold_doc_retrieved": false
+  },
+  {
+   "id": "a01",
+   "template": "approver_support_agent",
+   "gold": [
+    "The full refund is $57.98 (including shipping)",
+    "A support agent can approve it (up to $100.00)"
+   ],
+   "result": {
+    "variant": "ch04_rag",
+    "model": "openai/gpt-6-luna",
+    "question": "Order 28056 arrived damaged and customer 4960 prefers a full refund. Who has to approve it?",
+    "answer": "I can\u2019t determine who must approve the refund because the context does not give the refund amount for Order 28056. [doc:handbook/support-tone-guide.md#6] Damaged items reported within 30 days with a photo qualify for a full refund including shipping, but approval authority depends on the amount: agents can approve up to $100, team leads up to $500, and anything above $500 goes to Finance via the `finance-approvals` channel. [doc:policies/returns-policy.md#7] [doc:handbook/support-tone-guide.md#6]",
+    "latency_ms": 1817,
+    "usage": {
+     "calls": 1,
+     "prompt_tokens": 1725,
+     "completion_tokens": 124,
+     "cost_usd": 0.00027755,
+     "llm_ms": 1732
+    },
+    "citations": {
+     "citations": [
+      "[doc:handbook/support-tone-guide.md#6]",
+      "[doc:policies/returns-policy.md#7]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": false
+    },
+    "steps": [
+     {
+      "step": "retrieve",
+      "query": "Order 28056 arrived damaged and customer 4960 prefers a full refund. Who has to approve it?"
+     }
+    ],
+    "evidence": [
+     "[doc:policies/returns-policy.md#7]",
+     "[doc:handbook/refund-approval-limits.md#2]",
+     "[doc:handbook/refund-approval-limits.md#5]",
+     "[doc:handbook/carrier-claims.md#4]",
+     "[doc:policies/shipping-policy.md#8]",
+     "[doc:handbook/support-escalation.md#8]",
+     "[doc:faq.md#3]",
+     "[doc:handbook/support-tone-guide.md#6]",
+     "[doc:policies/refund-policy.md#5]",
+     "[doc:policies/order-cancellation.md#7]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     false,
+     false
+    ],
+    "reason": "Fact 1: the answer says it cannot determine the refund amount and never states $57.98, so it is not stated. Fact 2: the answer says agents can approve up to $100, which matches the gold fact that a support agent can approve it up to $100.00, but it conditions this on an amount it claims is unknown, so it does not clearly commit that a support agent can approve this refund.",
+    "judge_cost_usd": 0.0001642
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "a02",
+   "template": "approver_team_lead",
+   "gold": [
+    "The full refund is $151.98 (including shipping)",
+    "A team lead must approve it ($100.01 to $500.00)"
+   ],
+   "result": {
+    "variant": "ch04_rag",
+    "model": "openai/gpt-6-luna",
+    "question": "Order 27624 arrived damaged and customer 1669 prefers a full refund. Who has to approve it?",
+    "answer": "I can't find that in the ShopFlow documents.",
+    "latency_ms": 1051,
+    "usage": {
+     "calls": 1,
+     "prompt_tokens": 1725,
+     "completion_tokens": 14,
+     "cost_usd": 0.00022255,
+     "llm_ms": 968
+    },
+    "citations": {
+     "citations": [],
+     "invalid": [],
+     "cites_doc": false,
+     "cites_sql": false
+    },
+    "steps": [
+     {
+      "step": "retrieve",
+      "query": "Order 27624 arrived damaged and customer 1669 prefers a full refund. Who has to approve it?"
+     }
+    ],
+    "evidence": [
+     "[doc:policies/returns-policy.md#7]",
+     "[doc:handbook/refund-approval-limits.md#2]",
+     "[doc:handbook/carrier-claims.md#4]",
+     "[doc:policies/shipping-policy.md#8]",
+     "[doc:handbook/refund-approval-limits.md#5]",
+     "[doc:faq.md#3]",
+     "[doc:handbook/support-escalation.md#8]",
+     "[doc:policies/refund-policy.md#5]",
+     "[doc:policies/order-cancellation.md#7]",
+     "[doc:handbook/support-tone-guide.md#6]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     false,
+     false
+    ],
+    "reason": "Fact 1: The answer states no refund amount, so $151.98 is not stated. Fact 2: The answer does not say a team lead must approve, so it is not stated.",
+    "judge_cost_usd": 0.0001164
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "a03",
+   "template": "approver_finance",
+   "gold": [
+    "The full refund is $578.97 (including shipping)",
+    "Finance must approve it (above $500.00, via the finance-approvals channel)"
+   ],
+   "result": {
+    "variant": "ch04_rag",
+    "model": "openai/gpt-6-luna",
+    "question": "Order 28455 arrived damaged and customer 4775 prefers a full refund. Who has to approve it?",
+    "answer": "The context doesn\u2019t specify the refund amount for order 28455, so I can\u2019t determine who must approve it. Agents approve refunds up to $100, team leads up to $500, and refunds above $500 go to Finance via the `finance-approvals` channel. [doc:handbook/support-tone-guide.md#6]",
+    "latency_ms": 1465,
+    "usage": {
+     "calls": 1,
+     "prompt_tokens": 1677,
+     "completion_tokens": 73,
+     "cost_usd": 5.354e-05,
+     "llm_ms": 1358
+    },
+    "citations": {
+     "citations": [
+      "[doc:handbook/support-tone-guide.md#6]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": false
+    },
+    "steps": [
+     {
+      "step": "retrieve",
+      "query": "Order 28455 arrived damaged and customer 4775 prefers a full refund. Who has to approve it?"
+     }
+    ],
+    "evidence": [
+     "[doc:policies/returns-policy.md#7]",
+     "[doc:handbook/refund-approval-limits.md#2]",
+     "[doc:handbook/refund-approval-limits.md#5]",
+     "[doc:policies/shipping-policy.md#8]",
+     "[doc:handbook/carrier-claims.md#4]",
+     "[doc:faq.md#3]",
+     "[doc:handbook/support-escalation.md#8]",
+     "[doc:policies/refund-policy.md#5]",
+     "[doc:handbook/support-tone-guide.md#6]",
+     "[doc:policies/refund-policy.md#6]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     false,
+     false
+    ],
+    "reason": "Fact 1: The answer says the refund amount isn't specified and does not state $578.97, so it is not stated. Fact 2: The answer says refunds above $500 go to Finance via the finance-approvals channel, but it hedges by claiming it cannot determine who must approve since the amount is unknown, so it does not commit to Finance approval for this order.",
+    "judge_cost_usd": 0.0001548
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "m01",
+   "template": "missing_open",
+   "gold": [
+    "Yes: it is within 14 days of the delivery date (deadline 2026-11-14; the 24-hour wait has passed)"
+   ],
+   "result": {
+    "variant": "ch04_rag",
+    "model": "openai/gpt-6-luna",
+    "question": "Order 28429 shows delivered but customer 4372 says it never arrived. Can we open a carrier investigation?",
+    "answer": "Yes. Have the customer check with neighbors and the building\u2019s mail room, and wait until 24 hours have passed since the delivery scan; then, if the package is still missing, contact support within 14 days of the delivery date to open a carrier investigation. [doc:policies/shipping-policy.md#7] [doc:handbook/carrier-claims.md#2] If the carrier cannot locate the package, arrange a replacement or refund. [doc:policies/refund-policy.md#8]",
+    "latency_ms": 1622,
+    "usage": {
+     "calls": 1,
+     "prompt_tokens": 1782,
+     "completion_tokens": 108,
+     "cost_usd": 0.00027667,
+     "llm_ms": 1547
+    },
+    "citations": {
+     "citations": [
+      "[doc:policies/shipping-policy.md#7]",
+      "[doc:handbook/carrier-claims.md#2]",
+      "[doc:policies/refund-policy.md#8]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": false
+    },
+    "steps": [
+     {
+      "step": "retrieve",
+      "query": "Order 28429 shows delivered but customer 4372 says it never arrived. Can we open a carrier investigation?"
+     }
+    ],
+    "evidence": [
+     "[doc:policies/international-shipping.md#6]",
+     "[doc:policies/shipping-policy.md#7]",
+     "[doc:policies/refund-policy.md#8]",
+     "[doc:policies/damaged-or-defective-items.md#7]",
+     "[doc:handbook/carrier-claims.md#1]",
+     "[doc:handbook/carrier-claims.md#2]",
+     "[doc:handbook/refund-approval-limits.md#7]",
+     "[doc:handbook/carrier-claims.md#0]",
+     "[doc:handbook/support-tone-guide.md#4]",
+     "[doc:handbook/fraud-review.md#2]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": true,
+    "facts_ok": [
+     true
+    ],
+    "reason": "Fact 1 requires stating the investigation is within 14 days of delivery (deadline 2026-11-14) and that the 24-hour wait has passed; the answer says to wait 24 hours then contact support within 14 days, which states the 14-day window and the 24-hour wait but does not explicitly confirm the deadline date or that the 24-hour wait has already passed, though it gives the conditions, so it is substantively stated.",
+    "judge_cost_usd": 0.0001713
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "m02",
+   "template": "missing_closed",
+   "gold": [
+    "No: missing-package claims must be made within 14 days of the delivery date (delivered 2026-10-17; the window ended 2026-10-31)"
+   ],
+   "result": {
+    "variant": "ch04_rag",
+    "model": "openai/gpt-6-luna",
+    "question": "Customer 3441 just told us order 25593 never arrived, even though tracking says delivered. Can we still open a carrier investigation?",
+    "answer": "Yes. Have the customer check with neighbors and the building\u2019s mail room, and confirm at least 24 hours have passed since the delivery scan; then contact support within 14 days of the delivery date to open a carrier investigation. [doc:handbook/carrier-claims.md#1] [doc:handbook/carrier-claims.md#2] [doc:policies/refund-policy.md#8]",
+    "latency_ms": 1468,
+    "usage": {
+     "calls": 1,
+     "prompt_tokens": 1688,
+     "completion_tokens": 88,
+     "cost_usd": 0.00025492,
+     "llm_ms": 1380
+    },
+    "citations": {
+     "citations": [
+      "[doc:handbook/carrier-claims.md#1]",
+      "[doc:handbook/carrier-claims.md#2]",
+      "[doc:policies/refund-policy.md#8]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": false
+    },
+    "steps": [
+     {
+      "step": "retrieve",
+      "query": "Customer 3441 just told us order 25593 never arrived, even though tracking says delivered. Can we still open a carrier investigation?"
+     }
+    ],
+    "evidence": [
+     "[doc:policies/refund-policy.md#8]",
+     "[doc:policies/international-shipping.md#6]",
+     "[doc:policies/shipping-policy.md#7]",
+     "[doc:handbook/carrier-claims.md#1]",
+     "[doc:handbook/carrier-claims.md#2]",
+     "[doc:policies/damaged-or-defective-items.md#7]",
+     "[doc:handbook/refund-approval-limits.md#7]",
+     "[doc:faq.md#1]",
+     "[doc:handbook/support-tone-guide.md#4]",
+     "[doc:handbook/carrier-claims.md#0]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     false
+    ],
+    "reason": "Fact 1 requires stating that the missing-package claim window is 14 days from delivery (ended 2026-10-31), so the answer must say the claim is no longer possible; instead it says 'Yes' and tells the customer to contact support within 14 days of the delivery date, which implies the window is still open and contradicts the gold fact.",
+    "judge_cost_usd": 0.0001539
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "f01",
+   "template": "refund_changed_mind",
+   "gold": [
+    "$4.00 (the $9.99 item price minus the $5.99 return label; the original shipping is not refunded)"
+   ],
+   "result": {
+    "variant": "ch04_rag",
+    "model": "openai/gpt-6-luna",
+    "question": "If customer 2449 returns order 27459 because they changed their mind, how much will they get back?",
+    "answer": "I can't find that in the ShopFlow documents.",
+    "latency_ms": 2630,
+    "usage": {
+     "calls": 1,
+     "prompt_tokens": 2280,
+     "completion_tokens": 14,
+     "cost_usd": 0.00029193,
+     "llm_ms": 2547
+    },
+    "citations": {
+     "citations": [],
+     "invalid": [],
+     "cites_doc": false,
+     "cites_sql": false
+    },
+    "steps": [
+     {
+      "step": "retrieve",
+      "query": "If customer 2449 returns order 27459 because they changed their mind, how much will they get back?"
+     }
+    ],
+    "evidence": [
+     "[doc:faq.md#3]",
+     "[doc:care/power-banks-and-batteries.md#5]",
+     "[doc:handbook/support-escalation.md#8]",
+     "[doc:handbook/refund-approval-limits.md#5]",
+     "[doc:policies/order-cancellation.md#5]",
+     "[doc:handbook/metrics-glossary.md#4]",
+     "[doc:care/wireless-earbuds.md#6]",
+     "[doc:policies/international-shipping.md#7]",
+     "[doc:policies/refund-policy.md#4]",
+     "[doc:care/yoga-mats.md#7]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     false
+    ],
+    "reason": "Fact 1 requires stating the $4.00 refund (item price minus return label); the answer instead says it cannot find the information, so the fact is not stated.",
+    "judge_cost_usd": 0.000112
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "f02",
+   "template": "refund_defective",
+   "gold": [
+    "The full $49.98 (including the original shipping; no $5.99 return-label deduction)"
+   ],
+   "result": {
+    "variant": "ch04_rag",
+    "model": "openai/gpt-6-luna",
+    "question": "Customer 3822 says the item in order 26622 is defective and wants a refund, not a replacement. How much do we refund?",
+    "answer": "For a defective item reported within 30 days of delivery with a photo, refund the full amount, including shipping, instead of offering a free replacement. [doc:handbook/refund-approval-limits.md#5] [doc:policies/refund-policy.md#5]\n\nThe context doesn\u2019t say the order total or whether the reporting requirements are met, so I can\u2019t determine the exact amount for order 26622. [doc:handbook/refund-approval-limits.md#5]",
+    "latency_ms": 1774,
+    "usage": {
+     "calls": 1,
+     "prompt_tokens": 1763,
+     "completion_tokens": 106,
+     "cost_usd": 0.0002733,
+     "llm_ms": 1655
+    },
+    "citations": {
+     "citations": [
+      "[doc:handbook/refund-approval-limits.md#5]",
+      "[doc:policies/refund-policy.md#5]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": false
+    },
+    "steps": [
+     {
+      "step": "retrieve",
+      "query": "Customer 3822 says the item in order 26622 is defective and wants a refund, not a replacement. How much do we refund?"
+     }
+    ],
+    "evidence": [
+     "[doc:handbook/support-escalation.md#8]",
+     "[doc:handbook/refund-approval-limits.md#5]",
+     "[doc:policies/refund-policy.md#5]",
+     "[doc:faq.md#3]",
+     "[doc:handbook/support-escalation.md#4]",
+     "[doc:policies/international-shipping.md#7]",
+     "[doc:care/wireless-earbuds.md#6]",
+     "[doc:handbook/carrier-claims.md#4]",
+     "[doc:policies/warranty-policy.md#4]",
+     "[doc:policies/order-cancellation.md#5]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     false
+    ],
+    "reason": "Fact 1 requires the full $49.98 refund; the answer never states $49.98 and instead says it cannot determine the exact amount, so the fact is not stated.",
+    "judge_cost_usd": 0.0001272
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "p01",
+   "template": "price_adjust_open",
+   "gold": [
+    "Yes, a one-time price adjustment is allowed (within 7 days of the successful payment on 2026-11-04)",
+    "They must ask by 2026-11-11"
+   ],
+   "result": {
+    "variant": "ch04_rag",
+    "model": "openai/gpt-6-luna",
+    "question": "Customer 2824 saw the price of an item from order 29504 drop today. Can they get the difference back, and by when must they ask?",
+    "answer": "They can get a one-time adjustment for the difference if the item was bought on ShopFlow, the order is paid, shipped, or delivered, it hasn\u2019t already been adjusted, and the price drop and request are within 7 days of payment succeeding. [doc:policies/price-adjustment-policy.md#1] [doc:policies/price-adjustment-policy.md#2] They must contact support by chat or email at support@shopflow.example within that 7-day window; the window starts when payment succeeds, not when the item ships or arrives. [doc:policies/price-adjustment-policy.md#2] [doc:policies/price-adjustment-policy.md#3] The context doesn\u2019t provide the payment date or order status, so eligibility and the exact deadline for order 29504 can\u2019t be confirmed. [doc:policies/price-adjustment-policy.md#2]",
+    "latency_ms": 2204,
+    "usage": {
+     "calls": 1,
+     "prompt_tokens": 1592,
+     "completion_tokens": 189,
+     "cost_usd": 0.00029342,
+     "llm_ms": 2121
+    },
+    "citations": {
+     "citations": [
+      "[doc:policies/price-adjustment-policy.md#1]",
+      "[doc:policies/price-adjustment-policy.md#2]",
+      "[doc:policies/price-adjustment-policy.md#3]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": false
+    },
+    "steps": [
+     {
+      "step": "retrieve",
+      "query": "Customer 2824 saw the price of an item from order 29504 drop today. Can they get the difference back, and by when must they ask?"
+     }
+    ],
+    "evidence": [
+     "[doc:policies/price-adjustment-policy.md#0]",
+     "[doc:policies/price-adjustment-policy.md#5]",
+     "[doc:policies/price-adjustment-policy.md#2]",
+     "[doc:policies/price-adjustment-policy.md#3]",
+     "[doc:faq.md#3]",
+     "[doc:policies/price-adjustment-policy.md#1]",
+     "[doc:handbook/support-escalation.md#8]",
+     "[doc:policies/price-adjustment-policy.md#6]",
+     "[doc:policies/order-cancellation.md#5]",
+     "[doc:policies/returns-policy.md#6]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     false,
+     false
+    ],
+    "reason": "Fact 1: The answer says they can get a one-time adjustment within 7 days of payment succeeding, but it hedges that eligibility and the exact deadline for order 29504 cannot be confirmed, so it does not commit to yes. Fact 2: The answer never states the deadline date of 2026-11-11, instead saying it cannot be confirmed.",
+    "judge_cost_usd": 0.000175
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "p02",
+   "template": "price_adjust_closed",
+   "gold": [
+    "No, the 7-day price adjustment window has passed (payment succeeded 2026-10-22; the window ended 2026-10-29)"
+   ],
+   "result": {
+    "variant": "ch04_rag",
+    "model": "openai/gpt-6-luna",
+    "question": "The price of an item in order 27414 just dropped. Can customer 2408 get a price adjustment?",
+    "answer": "I can\u2019t determine whether customer 2408 qualifies from the order number alone. The item must have been bought on shopflow.example, its public ShopFlow price must have dropped within 7 calendar days of successful payment, the request must be made within that window, the order must be paid, shipped, or delivered, and the item must not already have received an adjustment on that order. [doc:policies/price-adjustment-policy.md#2] [doc:policies/price-adjustment-policy.md#5] [doc:policies/price-adjustment-policy.md#6]\n\nIf eligible, the adjustment is the difference between the paid price and the lowest ShopFlow price during the 7-day window, after applied discounts, refunded to the original payment method within 5\u20137 business days of approval. [doc:policies/price-adjustment-policy.md#4] The documents don\u2019t provide the order\u2019s payment date, status, item price history, or prior adjustment history, so they don\u2019t establish whether customer 2408 qualifies. [doc:policies/price-adjustment-policy.md#2] [doc:policies/price-adjustment-policy.md#5]",
+    "latency_ms": 4281,
+    "usage": {
+     "calls": 1,
+     "prompt_tokens": 1413,
+     "completion_tokens": 245,
+     "cost_usd": 0.00029905,
+     "llm_ms": 4201
+    },
+    "citations": {
+     "citations": [
+      "[doc:policies/price-adjustment-policy.md#2]",
+      "[doc:policies/price-adjustment-policy.md#5]",
+      "[doc:policies/price-adjustment-policy.md#6]",
+      "[doc:policies/price-adjustment-policy.md#4]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": false
+    },
+    "steps": [
+     {
+      "step": "retrieve",
+      "query": "The price of an item in order 27414 just dropped. Can customer 2408 get a price adjustment?"
+     }
+    ],
+    "evidence": [
+     "[doc:policies/price-adjustment-policy.md#0]",
+     "[doc:policies/price-adjustment-policy.md#5]",
+     "[doc:policies/price-adjustment-policy.md#2]",
+     "[doc:policies/price-adjustment-policy.md#1]",
+     "[doc:policies/price-adjustment-policy.md#6]",
+     "[doc:policies/price-adjustment-policy.md#3]",
+     "[doc:policies/price-adjustment-policy.md#7]",
+     "[doc:policies/price-adjustment-policy.md#8]",
+     "[doc:policies/price-adjustment-policy.md#4]",
+     "[doc:faq.md#3]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     false
+    ],
+    "reason": "Fact 1 requires stating that the 7-day window has passed and the answer should be No; the answer instead says it cannot determine eligibility and does not state the window ended or that the request is ineligible, so the fact is not stated.",
+    "judge_cost_usd": 0.0001579
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "v01",
+   "template": "vip_shipping",
+   "gold": [
+    "No: the customer is VIP, and VIPs get free standard shipping (on every order)"
+   ],
+   "result": {
+    "variant": "ch04_rag",
+    "model": "openai/gpt-6-luna",
+    "question": "Does customer 713 pay for standard shipping?",
+    "answer": "I can\u2019t determine whether customer 713 qualifies for VIP or whether their order is at least $75 after discounts, so I can\u2019t determine whether they pay for standard shipping. Standard shipping is $5.99 below $75 after discounts; it is free at or above $75, and always free for VIP members. [doc:policies/shipping-policy.md#1]",
+    "latency_ms": 1428,
+    "usage": {
+     "calls": 1,
+     "prompt_tokens": 1570,
+     "completion_tokens": 80,
+     "cost_usd": 0.00023618,
+     "llm_ms": 1348
+    },
+    "citations": {
+     "citations": [
+      "[doc:policies/shipping-policy.md#1]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": false
+    },
+    "steps": [
+     {
+      "step": "retrieve",
+      "query": "Does customer 713 pay for standard shipping?"
+     }
+    ],
+    "evidence": [
+     "[doc:policies/gift-cards-and-promotions.md#4]",
+     "[doc:faq.md#4]",
+     "[doc:handbook/holiday-peak-playbook.md#6]",
+     "[doc:faq.md#2]",
+     "[doc:policies/vip-program.md#1]",
+     "[doc:policies/international-shipping.md#4]",
+     "[doc:handbook/carrier-claims.md#4]",
+     "[doc:policies/shipping-policy.md#1]",
+     "[doc:policies/payment-methods.md#3]",
+     "[doc:policies/warranty-policy.md#6]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     false
+    ],
+    "reason": "Fact 1 requires stating that customer 713 is VIP and VIPs get free standard shipping; the answer explicitly says it cannot determine VIP status and hedges, so the fact is not stated.",
+    "judge_cost_usd": 0.0001275
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "v02",
+   "template": "vip_gap",
+   "gold": [
+    "$283.86 more (completed purchases this calendar year total $716.14 of the $1,000.00 threshold; cancelled and refunded orders don't count)"
+   ],
+   "result": {
+    "variant": "ch04_rag",
+    "model": "openai/gpt-6-luna",
+    "question": "How much more does customer 2622 need to spend this year to become VIP?",
+    "answer": "I can't find that in the ShopFlow documents.",
+    "latency_ms": 1142,
+    "usage": {
+     "calls": 1,
+     "prompt_tokens": 1643,
+     "completion_tokens": 14,
+     "cost_usd": 0.0002123,
+     "llm_ms": 1086
+    },
+    "citations": {
+     "citations": [],
+     "invalid": [],
+     "cites_doc": false,
+     "cites_sql": false
+    },
+    "steps": [
+     {
+      "step": "retrieve",
+      "query": "How much more does customer 2622 need to spend this year to become VIP?"
+     }
+    ],
+    "evidence": [
+     "[doc:faq.md#4]",
+     "[doc:policies/vip-program.md#2]",
+     "[doc:policies/privacy-policy.md#2]",
+     "[doc:policies/vip-program.md#3]",
+     "[doc:policies/vip-program.md#1]",
+     "[doc:policies/gift-cards-and-promotions.md#4]",
+     "[doc:policies/vip-program.md#0]",
+     "[doc:policies/payment-methods.md#3]",
+     "[doc:faq.md#2]",
+     "[doc:policies/shipping-policy.md#1]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     false
+    ],
+    "reason": "Fact 1 requires stating $283.86 more needed; the answer only says it cannot find the information, so the amount is not stated.",
+    "judge_cost_usd": 0.0001087
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "s01",
+   "template": "shipping_undercharged",
+   "gold": [
+    "No: after the $8.20 discount the order was $73.79, below the $75.00 free-shipping threshold (which applies after discounts; the customer isn't VIP)",
+    "$5.99 standard shipping should have been charged (it was charged $0.00)"
+   ],
+   "result": {
+    "variant": "ch04_rag",
+    "model": "openai/gpt-6-luna",
+    "question": "Was customer 4071 charged the right shipping on order 14157?",
+    "answer": "I can't find that in the ShopFlow documents.",
+    "latency_ms": 1115,
+    "usage": {
+     "calls": 1,
+     "prompt_tokens": 1935,
+     "completion_tokens": 14,
+     "cost_usd": 0.0002488,
+     "llm_ms": 1037
+    },
+    "citations": {
+     "citations": [],
+     "invalid": [],
+     "cites_doc": false,
+     "cites_sql": false
+    },
+    "steps": [
+     {
+      "step": "retrieve",
+      "query": "Was customer 4071 charged the right shipping on order 14157?"
+     }
+    ],
+    "evidence": [
+     "[doc:faq.md#1]",
+     "[doc:handbook/warehouse-operations.md#4]",
+     "[doc:policies/international-shipping.md#4]",
+     "[doc:policies/gift-cards-and-promotions.md#4]",
+     "[doc:handbook/fraud-review.md#3]",
+     "[doc:handbook/fraud-review.md#2]",
+     "[doc:handbook/carrier-claims.md#4]",
+     "[doc:policies/payment-methods.md#3]",
+     "[doc:runbooks/checkout-db-pool-exhaustion.md#6]",
+     "[doc:policies/order-cancellation.md#2]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     false,
+     false
+    ],
+    "reason": "Fact 1: the answer gives no determination about the $73.79 subtotal versus the $75.00 threshold, so it is not stated. Fact 2: the answer does not mention the $5.99 shipping charge, so it is not stated.",
+    "judge_cost_usd": 0.0001302
+   },
+   "gold_doc_retrieved": false
+  },
+  {
+   "id": "s02",
+   "template": "shipping_correct",
+   "gold": [
+    "Yes: after the $9.40 discount the order was $84.58, at or above the $75.00 free standard shipping threshold"
+   ],
+   "result": {
+    "variant": "ch04_rag",
+    "model": "openai/gpt-6-luna",
+    "question": "Customer 4376 asks why they paid no shipping on order 21234. Was that correct?",
+    "answer": "I can't find that in the ShopFlow documents.",
+    "latency_ms": 1072,
+    "usage": {
+     "calls": 1,
+     "prompt_tokens": 2466,
+     "completion_tokens": 14,
+     "cost_usd": 0.00031518,
+     "llm_ms": 986
+    },
+    "citations": {
+     "citations": [],
+     "invalid": [],
+     "cites_doc": false,
+     "cites_sql": false
+    },
+    "steps": [
+     {
+      "step": "retrieve",
+      "query": "Customer 4376 asks why they paid no shipping on order 21234. Was that correct?"
+     }
+    ],
+    "evidence": [
+     "[doc:faq.md#1]",
+     "[doc:handbook/carrier-claims.md#4]",
+     "[doc:policies/international-shipping.md#4]",
+     "[doc:policies/account-security.md#5]",
+     "[doc:handbook/fraud-review.md#2]",
+     "[doc:handbook/fraud-review.md#3]",
+     "[doc:handbook/metrics-glossary.md#4]",
+     "[doc:handbook/warehouse-operations.md#4]",
+     "[doc:handbook/support-escalation.md#8]",
+     "[doc:handbook/carrier-claims.md#2]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     false
+    ],
+    "reason": "Fact 1 requires stating that the post-discount total of $84.58 met the $75.00 free shipping threshold; the answer only says it cannot find the information and states neither the amounts nor the conclusion.",
+    "judge_cost_usd": 0.0001208
+   },
+   "gold_doc_retrieved": false
+  },
+  {
+   "id": "t01",
+   "template": "ticket_safety",
+   "gold": [
+    "It is a safety issue: priority urgent",
+    "First response within 1 hour",
+    "Tell the customer to stop using the product immediately"
+   ],
+   "result": {
+    "variant": "ch04_rag",
+    "model": "openai/gpt-6-luna",
+    "question": "How should we handle support ticket 1534, and how fast must we respond?",
+    "answer": "Ticket 1534 is not described, so its issue and category cannot be determined from the documents. I can\u2019t identify the applicable handling steps or response deadline without that information. [doc:handbook/support-escalation.md#2] [doc:handbook/support-escalation.md#3]",
+    "latency_ms": 1348,
+    "usage": {
+     "calls": 1,
+     "prompt_tokens": 1613,
+     "completion_tokens": 65,
+     "cost_usd": 4.89e-05,
+     "llm_ms": 1263
+    },
+    "citations": {
+     "citations": [
+      "[doc:handbook/support-escalation.md#2]",
+      "[doc:handbook/support-escalation.md#3]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": false
+    },
+    "steps": [
+     {
+      "step": "retrieve",
+      "query": "How should we handle support ticket 1534, and how fast must we respond?"
+     }
+    ],
+    "evidence": [
+     "[doc:handbook/support-escalation.md#3]",
+     "[doc:policies/damaged-or-defective-items.md#1]",
+     "[doc:handbook/support-escalation.md#9]",
+     "[doc:handbook/holiday-peak-playbook.md#5]",
+     "[doc:policies/refund-policy.md#6]",
+     "[doc:handbook/support-escalation.md#0]",
+     "[doc:handbook/support-escalation.md#1]",
+     "[doc:handbook/support-escalation.md#6]",
+     "[doc:handbook/support-escalation.md#2]",
+     "[doc:care/wireless-earbuds.md#1]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     false,
+     false,
+     false
+    ],
+    "reason": "Fact 1: The answer says the ticket's issue cannot be determined, so it does not state it is a safety issue with urgent priority; not stated. Fact 2: No 1-hour first-response deadline is given; not stated. Fact 3: No instruction to stop using the product is given; not stated.",
+    "judge_cost_usd": 0.0001441
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "i01",
+   "template": "intl_eta",
+   "gold": [
+    "Delivery to AU takes 7-14 business days (customs can add time)",
+    "It shipped on 2026-11-07"
+   ],
+   "result": {
+    "variant": "ch04_rag",
+    "model": "openai/gpt-6-luna",
+    "question": "Customer 3862 asks when order 30040 will arrive. What do we tell them?",
+    "answer": "I can't find that in the ShopFlow documents.",
+    "latency_ms": 1160,
+    "usage": {
+     "calls": 1,
+     "prompt_tokens": 2202,
+     "completion_tokens": 14,
+     "cost_usd": 0.00028218,
+     "llm_ms": 1080
+    },
+    "citations": {
+     "citations": [],
+     "invalid": [],
+     "cites_doc": false,
+     "cites_sql": false
+    },
+    "steps": [
+     {
+      "step": "retrieve",
+      "query": "Customer 3862 asks when order 30040 will arrive. What do we tell them?"
+     }
+    ],
+    "evidence": [
+     "[doc:handbook/carrier-claims.md#2]",
+     "[doc:faq.md#1]",
+     "[doc:handbook/fraud-review.md#3]",
+     "[doc:handbook/refund-approval-limits.md#2]",
+     "[doc:policies/international-shipping.md#4]",
+     "[doc:policies/order-cancellation.md#7]",
+     "[doc:policies/vip-program.md#3]",
+     "[doc:runbooks/checkout-bad-deploy.md#7]",
+     "[doc:handbook/data-access-policy.md#6]",
+     "[doc:policies/account-security.md#5]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     false,
+     false
+    ],
+    "reason": "Fact 1: the answer gives no delivery timeframe for AU, so it is not stated. Fact 2: the answer gives no shipping date, so it is not stated.",
+    "judge_cost_usd": 0.0001155
+   },
+   "gold_doc_retrieved": true
+  }
+ ]
+}

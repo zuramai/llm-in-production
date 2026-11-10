@@ -1,0 +1,3164 @@
+{
+ "summary": {
+  "variant": "graph",
+  "model": "openai/gpt-6-luna",
+  "n": 25,
+  "accuracy": 76.0,
+  "facts_ok": 80.5,
+  "gold_doc_retrieved": 92.0,
+  "cites_doc_and_sql": 96.0,
+  "invalid_citations": 0,
+  "sql_errors": 0,
+  "errors": 0,
+  "p50_ms": 12752,
+  "p95_ms": 38891,
+  "mean_llm_calls": 6.48,
+  "usd_per_1k": 1.4917,
+  "total_cost_usd": 0.037293,
+  "judge_cost_usd": 0.003804
+ },
+ "run_at": "Saturday 2026-11-07 17:58 (America/New_York)",
+ "questions_built_at": "2026-11-07T17:47:18-05:00",
+ "judge_model": "anthropic/claude-haiku-5.5",
+ "rows": [
+  {
+   "id": "r01",
+   "template": "return_open",
+   "gold": [
+    "Yes, it can still be returned (within 30 days of delivery)",
+    "The last day to return it is 2026-11-28"
+   ],
+   "result": {
+    "variant": "graph",
+    "model": "openai/gpt-6-luna",
+    "question": "Customer 2564 changed their mind about order 27808. Can they still return it, and what is the last day they can?",
+    "answer": "Yes\u2014Toys & Games is returnable, and the order was delivered 2026-10-29; 30 days from delivery is 2026-11-28, the last day to return it. The item must be unused and in its original packaging. [sql:1] [doc:policies/returns-policy.md#1]",
+    "latency_ms": 12752,
+    "usage": {
+     "calls": 6,
+     "prompt_tokens": 7112,
+     "completion_tokens": 878,
+     "cost_usd": 0.001305,
+     "llm_ms": 12660
+    },
+    "citations": {
+     "citations": [
+      "[sql:1]",
+      "[doc:policies/returns-policy.md#1]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": true
+    },
+    "steps": [
+     {
+      "node": "route",
+      "ms": 1497,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 100,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 5893,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1454,
+      "llm_calls": 1
+     },
+     {
+      "node": "rewrite",
+      "ms": 1196,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 65,
+      "llm_calls": 0
+     },
+     {
+      "node": "grade",
+      "ms": 1079,
+      "llm_calls": 1
+     },
+     {
+      "node": "answer",
+      "ms": 1560,
+      "llm_calls": 1
+     },
+     {
+      "query": {
+       "step": "route",
+       "doc_query": "return window after delivery for change-of-mind returns",
+       "sql_question": "For order 27808 and customer 2564, fetch order status, order and delivery dates, product category, amounts, customer segment and country; include any return or refund already started or completed."
+      }
+     },
+     {
+      "query": {
+       "step": "rewrite1",
+       "doc_query": "Toys & Games change-of-mind return eligibility conditions and how to calculate the return-window deadline from delivery",
+       "sql_question": null
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Look up the change-of-mind return policy for the product category (Toys & Games), including its eligibility conditions and the applicable return-window deadline calculation.",
+       "relevant": [
+        "[doc:handbook/support-escalation.md#8]",
+        "[sql:1]"
+       ]
+      }
+     },
+     {
+      "grade": {
+       "sufficient": true,
+       "missing": "",
+       "relevant": [
+        "[sql:1]",
+        "[doc:policies/returns-policy.md#1]"
+       ]
+      }
+     }
+    ],
+    "evidence": [
+     "[doc:care/yoga-mats.md#7]",
+     "[doc:policies/price-adjustment-policy.md#7]",
+     "[doc:handbook/support-escalation.md#8]",
+     "[doc:care/power-banks-and-batteries.md#5]",
+     "[sql:1]",
+     "[doc:policies/returns-policy.md#1]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": true,
+    "facts_ok": [
+     true,
+     true
+    ],
+    "reason": "Fact 1: The answer clearly says yes, it is returnable, and states 30 days from delivery, so it is stated. Fact 2: The answer gives 2026-11-28 as the last day to return, which matches the gold fact.",
+    "judge_cost_usd": 0.0001337
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "r02",
+   "template": "return_closed",
+   "gold": [
+    "No, the 30-day return window has closed (delivered 2026-09-08, 60 days ago)"
+   ],
+   "result": {
+    "variant": "graph",
+    "model": "openai/gpt-6-luna",
+    "question": "Can customer 534 still return order 19682?",
+    "answer": "No. The order was delivered on 2026-09-08, and 60 days had passed by 2026-11-07; the policy allows returns only within 30 days of delivery, so the deadline was 2026-10-08 (2026-09-08 + 30 days). [sql:1] [doc:policies/returns-policy.md#8] The item is Garden, a returnable category, but it must be unused and in its original packaging; the order has no return or refund recorded. [sql:1] [doc:policies/returns-policy.md#1]",
+    "latency_ms": 9805,
+    "usage": {
+     "calls": 4,
+     "prompt_tokens": 3381,
+     "completion_tokens": 596,
+     "cost_usd": 0.00069827,
+     "llm_ms": 9789
+    },
+    "citations": {
+     "citations": [
+      "[sql:1]",
+      "[doc:policies/returns-policy.md#8]",
+      "[doc:policies/returns-policy.md#1]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": true
+    },
+    "steps": [
+     {
+      "node": "route",
+      "ms": 1389,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 64,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 4836,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1549,
+      "llm_calls": 1
+     },
+     {
+      "node": "answer",
+      "ms": 2026,
+      "llm_calls": 1
+     },
+     {
+      "query": {
+       "step": "route",
+       "doc_query": "return eligibility window and exceptions",
+       "sql_question": "For customer 534, order 19682: fetch order status, delivery date, items and product categories, country, customer segment, and any return/refund already requested or completed."
+      }
+     },
+     {
+      "grade": {
+       "sufficient": true,
+       "missing": "",
+       "relevant": [
+        "[sql:1]",
+        "[doc:policies/returns-policy.md#1]",
+        "[doc:policies/returns-policy.md#8]"
+       ]
+      }
+     }
+    ],
+    "evidence": [
+     "[doc:handbook/support-tone-guide.md#7]",
+     "[doc:handbook/refund-approval-limits.md#6]",
+     "[doc:policies/returns-policy.md#8]",
+     "[doc:policies/returns-policy.md#1]",
+     "[sql:1]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": true,
+    "facts_ok": [
+     true
+    ],
+    "reason": "Fact 1: The answer clearly says No, the return is not allowed, citing delivery on 2026-09-08 and 60 days elapsed with a 30-day window whose deadline was 2026-10-08, which matches the gold fact that the 30-day window has closed.",
+    "judge_cost_usd": 0.0001434
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "r03",
+   "template": "return_opened_beauty",
+   "gold": [
+    "No: opened Beauty items can't be returned unless they arrived damaged or defective (even though it is within 30 days of delivery)"
+   ],
+   "result": {
+    "variant": "graph",
+    "model": "openai/gpt-6-luna",
+    "question": "Customer 818 opened the Pro Face Serum from order 27216 and doesn't like it. Can they return it for a refund?",
+    "answer": "No, not just because they don\u2019t like it: opened beauty products cannot be returned unless they arrived damaged or defective. [doc:care/skincare-products.md#5] The serum is a Beauty item, delivered 2026-10-26; 12 days have elapsed as of 2026-11-07, so the 30-day window has not passed, but the opened-item rule still applies. [sql:1] [doc:policies/refund-policy.md#3] If it arrived damaged or defective, they should contact support within 30 days of delivery with a photo; support can issue a full refund, including shipping, or send a free replacement. [doc:care/skincare-products.md#5]",
+    "latency_ms": 12057,
+    "usage": {
+     "calls": 4,
+     "prompt_tokens": 4189,
+     "completion_tokens": 968,
+     "cost_usd": 0.0009846,
+     "llm_ms": 12032
+    },
+    "citations": {
+     "citations": [
+      "[doc:care/skincare-products.md#5]",
+      "[sql:1]",
+      "[doc:policies/refund-policy.md#3]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": true
+    },
+    "steps": [
+     {
+      "node": "route",
+      "ms": 1376,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 81,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 7077,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1314,
+      "llm_calls": 1
+     },
+     {
+      "node": "answer",
+      "ms": 2287,
+      "llm_calls": 1
+     },
+     {
+      "query": {
+       "step": "route",
+       "doc_query": "opened skincare product return eligibility and refund window",
+       "sql_question": "For customer 818 and order 27216, fetch the order status, purchase and delivery dates, items and product categories, amounts paid, and customer segment and country. Also fetch any return or refund policy-relevant details recorded for the order."
+      }
+     },
+     {
+      "grade": {
+       "sufficient": true,
+       "missing": "",
+       "relevant": [
+        "[doc:care/skincare-products.md#5]",
+        "[doc:policies/refund-policy.md#3]",
+        "[doc:handbook/refund-approval-limits.md#6]",
+        "[sql:1]"
+       ]
+      }
+     }
+    ],
+    "evidence": [
+     "[doc:care/skincare-products.md#5]",
+     "[doc:policies/refund-policy.md#3]",
+     "[doc:handbook/refund-approval-limits.md#6]",
+     "[doc:policies/price-adjustment-policy.md#7]",
+     "[sql:1]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": true,
+    "facts_ok": [
+     true
+    ],
+    "reason": "Fact 1: The answer clearly states No, opened beauty products cannot be returned unless damaged or defective, and notes the 30-day window has not passed but the opened-item rule still applies, matching the gold fact.",
+    "judge_cost_usd": 0.0001426
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "r04",
+   "template": "damaged_opened_grocery",
+   "gold": [
+    "It is still eligible: damaged grocery items qualify even if opened (reported within 30 days of delivery)",
+    "A free replacement or a full refund including shipping (the order total is $22.18)"
+   ],
+   "result": {
+    "variant": "graph",
+    "model": "openai/gpt-6-luna",
+    "question": "The Eco Dark Chocolate Bar in order 27274 arrived damaged and customer 443 has already opened it. What can we offer?",
+    "answer": "Offer a free replacement or a full refund including shipping, at the customer\u2019s choice. The grocery item\u2019s being opened does not disqualify it; delivery was 2026-10-27, and the 30-day contact window ends 2026-11-26 (2026-10-27 + 30 days), so the customer is within the window today, 2026-11-07. [doc:policies/returns-policy.md#7] [doc:policies/damaged-or-defective-items.md#7] [sql:1] They must contact support within that window and include a photo of the damage. [doc:policies/returns-policy.md#7]",
+    "latency_ms": 11772,
+    "usage": {
+     "calls": 4,
+     "prompt_tokens": 4609,
+     "completion_tokens": 1044,
+     "cost_usd": 0.00107503,
+     "llm_ms": 11746
+    },
+    "citations": {
+     "citations": [
+      "[doc:policies/returns-policy.md#7]",
+      "[doc:policies/damaged-or-defective-items.md#7]",
+      "[sql:1]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": true
+    },
+    "steps": [
+     {
+      "node": "route",
+      "ms": 1655,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 85,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 6648,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1230,
+      "llm_calls": 1
+     },
+     {
+      "node": "answer",
+      "ms": 2237,
+      "llm_calls": 1
+     },
+     {
+      "query": {
+       "step": "route",
+       "doc_query": "Damaged product remedies when food or consumable product has been opened; refund, replacement, or other offer eligibility",
+       "sql_question": "Order 27274 for customer 443: fetch order and line-item status, purchase and delivery dates, amounts, product category, customer segment and country; confirm the Eco Dark Chocolate Bar item and any related damage report, return, refund, or replacement records."
+      }
+     },
+     {
+      "grade": {
+       "sufficient": true,
+       "missing": "",
+       "relevant": [
+        "[doc:policies/returns-policy.md#7]",
+        "[doc:policies/damaged-or-defective-items.md#7]",
+        "[sql:1]"
+       ]
+      }
+     }
+    ],
+    "evidence": [
+     "[doc:policies/returns-policy.md#7]",
+     "[doc:care/skincare-products.md#5]",
+     "[doc:policies/refund-policy.md#3]",
+     "[doc:policies/damaged-or-defective-items.md#7]",
+     "[sql:1]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     true,
+     false
+    ],
+    "reason": "Fact 1: The answer states the item is still eligible despite being opened, with delivery 2026-10-27 and a 30-day window ending 2026-11-26, which is within the window today (2026-11-07). Fact 2: The answer offers a free replacement or a full refund including shipping, but does not state the order total of $22.18; the gold fact requires the total to be stated, so it is omitted.",
+    "judge_cost_usd": 0.0001728
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "c01",
+   "template": "cancel_paid",
+   "gold": [
+    "Yes, it can be cancelled free of charge because it hasn't shipped (status paid)",
+    "A full refund of $19.98 (including shipping, to the original payment method within 5-7 business days)"
+   ],
+   "result": {
+    "variant": "graph",
+    "model": "openai/gpt-6-luna",
+    "question": "Customer 1929 wants to cancel order 29810. Is that possible, and how much do they get back?",
+    "answer": "Yes. Order 29810 is paid and has not shipped, so it can be cancelled free of charge; the customer gets the full $19.98 back to the original payment method, within 5\u20137 business days after cancellation. [sql:1] [doc:policies/order-cancellation.md#1] [doc:policies/account-security.md#5]",
+    "latency_ms": 10840,
+    "usage": {
+     "calls": 4,
+     "prompt_tokens": 4640,
+     "completion_tokens": 914,
+     "cost_usd": 0.0010142,
+     "llm_ms": 10814
+    },
+    "citations": {
+     "citations": [
+      "[sql:1]",
+      "[doc:policies/order-cancellation.md#1]",
+      "[doc:policies/account-security.md#5]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": true
+    },
+    "steps": [
+     {
+      "node": "route",
+      "ms": 1349,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 92,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 6480,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1458,
+      "llm_calls": 1
+     },
+     {
+      "node": "answer",
+      "ms": 1549,
+      "llm_calls": 1
+     },
+     {
+      "query": {
+       "step": "route",
+       "doc_query": "order cancellation eligibility and refund amount by fulfillment or shipment status",
+       "sql_question": "For order 29810 belonging to customer 1929, fetch order status, item and order amounts, payment and refund amounts, shipment/fulfillment status and dates, product categories, customer segment and country."
+      }
+     },
+     {
+      "grade": {
+       "sufficient": true,
+       "missing": "",
+       "relevant": [
+        "[sql:1]",
+        "[doc:policies/order-cancellation.md#1]",
+        "[doc:policies/account-security.md#5]",
+        "[doc:handbook/refund-approval-limits.md#2]"
+       ]
+      }
+     }
+    ],
+    "evidence": [
+     "[doc:handbook/refund-approval-limits.md#2]",
+     "[doc:policies/order-cancellation.md#5]",
+     "[doc:policies/account-security.md#5]",
+     "[doc:policies/order-cancellation.md#1]",
+     "[sql:1]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": true,
+    "facts_ok": [
+     true,
+     true
+    ],
+    "reason": "Fact 1: The answer states the order is paid and not shipped, so it can be cancelled free of charge, matching the gold fact. Fact 2: The answer states the full $19.98 refund to the original payment method within 5\u20137 business days, matching the gold fact including the amount and timing.",
+    "judge_cost_usd": 0.000146
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "c02",
+   "template": "cancel_shipped",
+   "gold": [
+    "No, it has already shipped (on 2026-11-07)",
+    "The customer can return it after delivery (within 30 days of delivery)"
+   ],
+   "result": {
+    "variant": "graph",
+    "model": "openai/gpt-6-luna",
+    "question": "The customer changed their mind. Can order 29935 still be cancelled?",
+    "answer": "No. Order 29935 shipped on 2026-11-07 and is in transit, so it can\u2019t be cancelled; the customer should wait for delivery and request a return within 30 days of delivery. [sql:1] [doc:policies/order-cancellation.md#5]",
+    "latency_ms": 9337,
+    "usage": {
+     "calls": 4,
+     "prompt_tokens": 3651,
+     "completion_tokens": 617,
+     "cost_usd": 0.0007425,
+     "llm_ms": 9316
+    },
+    "citations": {
+     "citations": [
+      "[sql:1]",
+      "[doc:policies/order-cancellation.md#5]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": true
+    },
+    "steps": [
+     {
+      "node": "route",
+      "ms": 1331,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 91,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 4584,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1435,
+      "llm_calls": 1
+     },
+     {
+      "node": "answer",
+      "ms": 1981,
+      "llm_calls": 1
+     },
+     {
+      "query": {
+       "step": "route",
+       "doc_query": "order cancellation policy and cutoff after order placement or shipment",
+       "sql_question": "Order 29935: current status, order date and time, shipment/fulfillment status and dates, payment status and amount, product category, customer segment and country"
+      }
+     },
+     {
+      "grade": {
+       "sufficient": true,
+       "missing": "",
+       "relevant": [
+        "[doc:policies/order-cancellation.md#5]",
+        "[doc:policies/order-cancellation.md#2]",
+        "[sql:1]"
+       ]
+      }
+     }
+    ],
+    "evidence": [
+     "[doc:policies/shipping-policy.md#2]",
+     "[doc:policies/order-cancellation.md#5]",
+     "[doc:policies/order-cancellation.md#2]",
+     "[doc:policies/order-cancellation.md#6]",
+     "[sql:1]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": true,
+    "facts_ok": [
+     true,
+     true
+    ],
+    "reason": "Fact 1: The answer states the order shipped on 2026-11-07 and cannot be cancelled, so it is stated. Fact 2: The answer says the customer should request a return within 30 days of delivery, so it is stated.",
+    "judge_cost_usd": 0.0001319
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "c03",
+   "template": "pending_autocancel",
+   "gold": [
+    "The customer was not charged (no successful payment; 2 failed attempts)",
+    "It is cancelled automatically 48 hours after it was placed (around 2026-11-08 09:47 ET)"
+   ],
+   "result": {
+    "variant": "graph",
+    "model": "openai/gpt-6-luna",
+    "question": "Order 29920 is still pending. Was the customer charged, and what happens to the order if nothing changes?",
+    "answer": "No, the customer was not charged: both Stripe payment attempts for $81.99 failed, and neither succeeded. [sql:1] If no payment succeeds within 48 hours, the pending order is cancelled automatically; the order was placed 2026-11-06 at 09:47, so the 48-hour period ends 2026-11-08 at 09:47 (America/New_York). [sql:1] [doc:policies/payment-methods.md#4]",
+    "latency_ms": 8746,
+    "usage": {
+     "calls": 4,
+     "prompt_tokens": 3598,
+     "completion_tokens": 544,
+     "cost_usd": 0.00069912,
+     "llm_ms": 8720
+    },
+    "citations": {
+     "citations": [
+      "[sql:1]",
+      "[doc:policies/payment-methods.md#4]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": true
+    },
+    "steps": [
+     {
+      "node": "route",
+      "ms": 1821,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 95,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 3817,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1211,
+      "llm_calls": 1
+     },
+     {
+      "node": "answer",
+      "ms": 1892,
+      "llm_calls": 1
+     },
+     {
+      "query": {
+       "step": "route",
+       "doc_query": "What happens to pending orders if no payment or status change occurs, including expiration or automatic cancellation timing?",
+       "sql_question": "Order 29920: current order status, payment status and transactions (including whether the customer was charged), order creation date and time, amounts, and any payment or expiration deadlines."
+      }
+     },
+     {
+      "grade": {
+       "sufficient": true,
+       "missing": "",
+       "relevant": [
+        "[doc:policies/order-cancellation.md#3]",
+        "[doc:policies/payment-methods.md#4]",
+        "[sql:1]"
+       ]
+      }
+     }
+    ],
+    "evidence": [
+     "[doc:policies/order-cancellation.md#3]",
+     "[doc:policies/payment-methods.md#4]",
+     "[doc:policies/order-cancellation.md#1]",
+     "[doc:faq.md#1]",
+     "[sql:1]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": true,
+    "facts_ok": [
+     true,
+     true
+    ],
+    "reason": "Fact 1: answer clearly states the customer was not charged, with both Stripe attempts failed. Fact 2: answer states automatic cancellation after 48 hours ending 2026-11-08 09:47 ET, matching the gold timing.",
+    "judge_cost_usd": 0.0001438
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "w01",
+   "template": "warranty_electronics",
+   "gold": [
+    "The 30-day return window has closed",
+    "It is covered by the 1-year Electronics warranty (until 2027-05-28)",
+    "Under warranty ShopFlow replaces it, or refunds the item price if no replacement is available"
+   ],
+   "result": {
+    "variant": "graph",
+    "model": "openai/gpt-6-luna",
+    "question": "The Everyday USB-C Hub from order 1671 stopped charging. Customer 3417 wants their money back. Return or warranty?",
+    "answer": "Yes\u2014handle this as a warranty claim, not a 30-day return: the USB-C Hub is Electronics, and its one-year warranty runs from delivery on 2026-05-28 through 2027-05-28; as of 2026-11-07, 163 days have elapsed. [sql:1] [doc:policies/warranty-policy.md#1] The policy covers an electronic device that stops charging during normal use, and after 30 days offers replacement or, if replacement is unavailable, a refund of the item price; original shipping is not refunded. [doc:policies/warranty-policy.md#2] [doc:policies/warranty-policy.md#4] The order was delivered, $81.99 was paid, and no prior refund or warranty/return ticket appears in the evidence. [sql:1] The policy does not establish whether a replacement is available, and coverage depends on the problem arising during normal use. [doc:policies/warranty-policy.md#2] [doc:policies/warranty-policy.md#4]",
+    "latency_ms": 16426,
+    "usage": {
+     "calls": 6,
+     "prompt_tokens": 9127,
+     "completion_tokens": 1252,
+     "cost_usd": 0.00174375,
+     "llm_ms": 16337
+    },
+    "citations": {
+     "citations": [
+      "[sql:1]",
+      "[doc:policies/warranty-policy.md#1]",
+      "[doc:policies/warranty-policy.md#2]",
+      "[doc:policies/warranty-policy.md#4]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": true
+    },
+    "steps": [
+     {
+      "node": "route",
+      "ms": 2258,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 105,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 7231,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1414,
+      "llm_calls": 1
+     },
+     {
+      "node": "rewrite",
+      "ms": 1408,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 55,
+      "llm_calls": 0
+     },
+     {
+      "node": "grade",
+      "ms": 1245,
+      "llm_calls": 1
+     },
+     {
+      "node": "answer",
+      "ms": 2805,
+      "llm_calls": 1
+     },
+     {
+      "query": {
+       "step": "route",
+       "doc_query": "return and warranty policy for defective electronics, including eligibility windows and refund options",
+       "sql_question": "Order 1671: confirm customer 3417, Everyday USB-C Hub product category, order and delivery dates, status, amount paid, and any prior return, refund, or warranty claim; fetch the product warranty details if stored."
+      }
+     },
+     {
+      "query": {
+       "step": "rewrite1",
+       "doc_query": "Everyday USB-C Hub warranty duration, coverage, exclusions, and claim process for defects",
+       "sql_question": null
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Look up the Everyday USB-C Hub\u2019s warranty period and terms.",
+       "relevant": [
+        "[doc:policies/warranty-policy.md#4]",
+        "[sql:1]"
+       ]
+      }
+     },
+     {
+      "grade": {
+       "sufficient": true,
+       "missing": "",
+       "relevant": [
+        "[sql:1]",
+        "[doc:policies/warranty-policy.md#1]",
+        "[doc:policies/warranty-policy.md#2]",
+        "[doc:policies/warranty-policy.md#4]"
+       ]
+      }
+     }
+    ],
+    "evidence": [
+     "[doc:policies/returns-policy.md#1]",
+     "[doc:policies/warranty-policy.md#4]",
+     "[doc:policies/returns-policy.md#7]",
+     "[doc:care/wireless-earbuds.md#5]",
+     "[sql:1]",
+     "[doc:policies/warranty-policy.md#2]",
+     "[doc:policies/warranty-policy.md#1]",
+     "[doc:handbook/carrier-claims.md#4]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     true,
+     true,
+     false
+    ],
+    "reason": "Fact 1: answer says 'handle this as a warranty claim, not a 30-day return' and implies the return window is past, though it doesn't explicitly say 'closed'; it does clearly reject the return route, so treated as stated. Fact 2: answer states one-year warranty from 2026-05-28 through 2027-05-28 with Electronics coverage, matching gold. Fact 3: answer states replacement, or refund of item price if replacement unavailable, but explicitly says the policy does not establish whether replacement is available, which is a hedge on the conditional refund, so the outcome is not committed.",
+    "judge_cost_usd": 0.0002225
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "w02",
+   "template": "warranty_expired",
+   "gold": [
+    "No, it is no longer under warranty (Garden has a 90-day warranty, which ended 2026-09-04)"
+   ],
+   "result": {
+    "variant": "graph",
+    "model": "openai/gpt-6-luna",
+    "question": "The Lite Pruning Shears from order 3499 has a manufacturing defect. Is it still under warranty?",
+    "answer": "No. Garden items have a 90-day warranty from delivery; the shears were delivered 2026-06-06, so the period ended 2026-09-04 (2026-06-06 + 90 days), and 154 days had elapsed by 2026-11-07. [doc:policies/warranty-policy.md#1] [sql:1] A manufacturing defect is the kind of issue the warranty covers, but this defect was reported after the warranty period. [doc:policies/warranty-policy.md#2] [doc:policies/warranty-policy.md#1]",
+    "latency_ms": 7973,
+    "usage": {
+     "calls": 4,
+     "prompt_tokens": 3045,
+     "completion_tokens": 539,
+     "cost_usd": 0.0006037,
+     "llm_ms": 7959
+    },
+    "citations": {
+     "citations": [
+      "[doc:policies/warranty-policy.md#1]",
+      "[sql:1]",
+      "[doc:policies/warranty-policy.md#2]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": true
+    },
+    "steps": [
+     {
+      "node": "route",
+      "ms": 1210,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 67,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 3533,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1177,
+      "llm_calls": 1
+     },
+     {
+      "node": "answer",
+      "ms": 2049,
+      "llm_calls": 1
+     },
+     {
+      "query": {
+       "step": "route",
+       "doc_query": "manufacturing defect warranty coverage and warranty period by product category",
+       "sql_question": "Order 3499: confirm the Lite Pruning Shears line item and fetch its product category, order and delivery dates, order status, customer segment, and country"
+      }
+     },
+     {
+      "grade": {
+       "sufficient": true,
+       "missing": "",
+       "relevant": [
+        "[doc:policies/warranty-policy.md#1]",
+        "[doc:policies/warranty-policy.md#2]",
+        "[sql:1]"
+       ]
+      }
+     }
+    ],
+    "evidence": [
+     "[doc:policies/warranty-policy.md#2]",
+     "[doc:policies/warranty-policy.md#1]",
+     "[doc:care/wireless-earbuds.md#5]",
+     "[doc:policies/warranty-policy.md#3]",
+     "[sql:1]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": true,
+    "facts_ok": [
+     true
+    ],
+    "reason": "Fact 1: The answer clearly states the warranty is no longer in effect, explains the 90-day period from 2026-06-06 ended 2026-09-04, and notes 154 days elapsed, matching the gold fact.",
+    "judge_cost_usd": 0.0001403
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "w03",
+   "template": "warranty_90_open",
+   "gold": [
+    "The 30-day return window has closed",
+    "It is still covered by the 90-day warranty (until 2026-11-30)"
+   ],
+   "result": {
+    "variant": "graph",
+    "model": "openai/gpt-6-luna",
+    "question": "Customer 3175 reports a defect in the Mini Food Bowl from order 18307. Can we still do anything?",
+    "answer": "Yes\u2014if the customer contacts support within 30 days of delivery and provides a photo, they may choose a free replacement or a full refund including shipping. [doc:policies/returns-policy.md#7] The bowl was delivered 2026-09-01; 30 days later was 2026-10-01, and today is 2026-11-07, so the standard defect remedy window has passed. [sql:1] [doc:policies/returns-policy.md#7] The order shows no refund or related support ticket, but the policy says returns after 30 days are not eligible for a refund; the evidence does not say whether any other exception or remedy is available. [sql:1] [doc:policies/returns-policy.md#8]",
+    "latency_ms": 17406,
+    "usage": {
+     "calls": 5,
+     "prompt_tokens": 6057,
+     "completion_tokens": 1810,
+     "cost_usd": 0.00163898,
+     "llm_ms": 17383
+    },
+    "citations": {
+     "citations": [
+      "[doc:policies/returns-policy.md#7]",
+      "[sql:1]",
+      "[doc:policies/returns-policy.md#8]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": true
+    },
+    "steps": [
+     {
+      "node": "route",
+      "ms": 1571,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 68,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 12595,
+      "llm_calls": 2
+     },
+     {
+      "node": "grade",
+      "ms": 1145,
+      "llm_calls": 1
+     },
+     {
+      "node": "answer",
+      "ms": 2091,
+      "llm_calls": 1
+     },
+     {
+      "query": {
+       "step": "route",
+       "doc_query": "defective product remedies and time limits after delivery; Mini Food Bowl return or replacement policy",
+       "sql_question": "For order 18307 and customer 3175, fetch order and item status, purchase and delivery dates, item amount, product category, customer segment and country, plus any return, replacement, refund, or support-ticket history related to the Mini Food Bowl defect."
+      }
+     },
+     {
+      "grade": {
+       "sufficient": true,
+       "missing": "",
+       "relevant": [
+        "[doc:policies/returns-policy.md#7]",
+        "[doc:policies/returns-policy.md#8]",
+        "[sql:1]"
+       ]
+      }
+     }
+    ],
+    "evidence": [
+     "[doc:care/skincare-products.md#5]",
+     "[doc:policies/returns-policy.md#7]",
+     "[doc:policies/international-shipping.md#7]",
+     "[doc:policies/returns-policy.md#8]",
+     "[sql:1]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     true,
+     false
+    ],
+    "reason": "Fact 1: The answer states the 30-day window has passed (delivered 2026-09-01, 30 days later 2026-10-01, today 2026-11-07), so the return window closed. Fact 2: The answer never mentions the 90-day warranty or its end date 2026-11-30, so it is not stated.",
+    "judge_cost_usd": 0.0001599
+   },
+   "gold_doc_retrieved": false
+  },
+  {
+   "id": "a01",
+   "template": "approver_support_agent",
+   "gold": [
+    "The full refund is $39.28 (including shipping)",
+    "A support agent can approve it (up to $100.00)"
+   ],
+   "result": {
+    "variant": "graph",
+    "model": "openai/gpt-6-luna",
+    "question": "Order 26845 arrived damaged and customer 3719 prefers a full refund. Who has to approve it?",
+    "answer": "A support agent can approve the refund. Because the item arrived damaged and the customer prefers a refund, the policy allows a full refund including shipping; the order total is $39.28 ($36.99 item less $3.70 discount plus $5.99 shipping), which is within the support agent\u2019s $100.00 approval limit. [doc:policies/refund-policy.md#5] [sql:1] [doc:handbook/refund-approval-limits.md#1]",
+    "latency_ms": 11998,
+    "usage": {
+     "calls": 6,
+     "prompt_tokens": 6741,
+     "completion_tokens": 801,
+     "cost_usd": 0.0012203,
+     "llm_ms": 11890
+    },
+    "citations": {
+     "citations": [
+      "[doc:policies/refund-policy.md#5]",
+      "[sql:1]",
+      "[doc:handbook/refund-approval-limits.md#1]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": true
+    },
+    "steps": [
+     {
+      "node": "route",
+      "ms": 1411,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 78,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 4958,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1386,
+      "llm_calls": 1
+     },
+     {
+      "node": "rewrite",
+      "ms": 1216,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 89,
+      "llm_calls": 0
+     },
+     {
+      "node": "grade",
+      "ms": 1248,
+      "llm_calls": 1
+     },
+     {
+      "node": "answer",
+      "ms": 1686,
+      "llm_calls": 1
+     },
+     {
+      "query": {
+       "step": "route",
+       "doc_query": "approval policy for full refunds on damaged orders",
+       "sql_question": "Order 26845 and customer 3719: order and shipment status, delivery date, order and item amounts, product category, customer segment and country, and any refund already issued or pending."
+      }
+     },
+     {
+      "query": {
+       "step": "rewrite1",
+       "doc_query": "refund approval authority thresholds and approver limits for full refunds; damaged delivery, order total and requested refund amount",
+       "sql_question": null
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Look up the refund approval limits that identify who must approve a refund of this amount.",
+       "relevant": [
+        "[doc:handbook/refund-approval-limits.md#2]",
+        "[sql:1]"
+       ]
+      }
+     },
+     {
+      "grade": {
+       "sufficient": true,
+       "missing": "",
+       "relevant": [
+        "[doc:handbook/refund-approval-limits.md#1]",
+        "[doc:policies/refund-policy.md#5]",
+        "[sql:1]"
+       ]
+      }
+     }
+    ],
+    "evidence": [
+     "[doc:policies/refund-policy.md#5]",
+     "[doc:handbook/refund-approval-limits.md#5]",
+     "[doc:handbook/refund-approval-limits.md#2]",
+     "[doc:policies/returns-policy.md#7]",
+     "[sql:1]",
+     "[doc:handbook/refund-approval-limits.md#1]",
+     "[doc:handbook/refund-approval-limits.md#7]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": true,
+    "facts_ok": [
+     true,
+     true
+    ],
+    "reason": "Fact 1: the answer states the order total as $39.28 including shipping ($36.99 - $3.70 + $5.99 = $39.28), matching the full refund amount, so it is stated. Fact 2: the answer clearly says a support agent can approve the refund within the $100.00 limit, so it is stated.",
+    "judge_cost_usd": 0.0001523
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "a02",
+   "template": "approver_team_lead",
+   "gold": [
+    "The full refund is $345.58 (including shipping)",
+    "A team lead must approve it ($100.01 to $500.00)"
+   ],
+   "result": {
+    "variant": "graph",
+    "model": "openai/gpt-6-luna",
+    "question": "Order 28329 arrived damaged and customer 3024 prefers a full refund. Who has to approve it?",
+    "answer": "A team lead must approve the full refund. Order 28329\u2019s total is $345.58, and there is no existing refund; the full refund is therefore within the $100.01\u2013$500.00 team-lead approval tier. [sql:1] [doc:handbook/refund-approval-limits.md#1]",
+    "latency_ms": 13424,
+    "usage": {
+     "calls": 6,
+     "prompt_tokens": 6957,
+     "completion_tokens": 818,
+     "cost_usd": 0.00125575,
+     "llm_ms": 13274
+    },
+    "citations": {
+     "citations": [
+      "[sql:1]",
+      "[doc:handbook/refund-approval-limits.md#1]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": true
+    },
+    "steps": [
+     {
+      "node": "route",
+      "ms": 1348,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 76,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 5302,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1743,
+      "llm_calls": 1
+     },
+     {
+      "node": "rewrite",
+      "ms": 1263,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 113,
+      "llm_calls": 0
+     },
+     {
+      "node": "grade",
+      "ms": 2062,
+      "llm_calls": 1
+     },
+     {
+      "node": "answer",
+      "ms": 1584,
+      "llm_calls": 1
+     },
+     {
+      "query": {
+       "step": "route",
+       "doc_query": "approval rules for full refunds on damaged orders",
+       "sql_question": "Order 28329 and customer 3024: fetch order status, total and payment/refund amounts, delivery date, product category, customer segment and country; include damage-related support ticket details if available."
+      }
+     },
+     {
+      "query": {
+       "step": "rewrite1",
+       "doc_query": "Full refund approval thresholds and required approver role for a $345.58 refund",
+       "sql_question": null
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Look up the refund approval thresholds and which role must approve a full refund of $345.58; the provided policy excerpt explains eligibility but not who approves by amount.",
+       "relevant": [
+        "[doc:handbook/refund-approval-limits.md#5]",
+        "[doc:handbook/refund-approval-limits.md#2]",
+        "[sql:1]"
+       ]
+      }
+     },
+     {
+      "grade": {
+       "sufficient": true,
+       "missing": "",
+       "relevant": [
+        "[sql:1]",
+        "[doc:handbook/refund-approval-limits.md#1]"
+       ]
+      }
+     }
+    ],
+    "evidence": [
+     "[doc:handbook/refund-approval-limits.md#5]",
+     "[doc:handbook/support-escalation.md#8]",
+     "[doc:handbook/refund-approval-limits.md#2]",
+     "[doc:handbook/refund-approval-limits.md#4]",
+     "[sql:1]",
+     "[doc:handbook/refund-approval-limits.md#1]",
+     "[doc:handbook/support-tone-guide.md#6]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": true,
+    "facts_ok": [
+     true,
+     true
+    ],
+    "reason": "Fact 1: The answer states the order total is $345.58 and treats it as the full refund, so it is stated. Fact 2: The answer says a team lead must approve the refund within the $100.01\u2013$500.00 tier, so it is stated.",
+    "judge_cost_usd": 0.0001349
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "a03",
+   "template": "approver_finance",
+   "gold": [
+    "The full refund is $578.97 (including shipping)",
+    "Finance must approve it (above $500.00, via the finance-approvals channel)"
+   ],
+   "result": {
+    "variant": "graph",
+    "model": "openai/gpt-6-luna",
+    "question": "Order 28455 arrived damaged and customer 4775 prefers a full refund. Who has to approve it?",
+    "answer": "Finance must approve the refund via the `finance-approvals` channel: the order\u2019s payment was $578.97, which is above the $500.00 Finance threshold. [sql:1] [doc:handbook/refund-approval-limits.md#1] Because the order was delivered on 2026-11-02 and today is 2026-11-07, it was reported within 30 days; the policy allows a full refund including shipping for a damaged item if a photo was provided. [sql:1] [doc:handbook/refund-approval-limits.md#5] The evidence does not say whether a photo was provided, and Finance must confirm in the thread before the refund is issued. [doc:handbook/refund-approval-limits.md#5] [doc:handbook/refund-approval-limits.md#1]",
+    "latency_ms": 14181,
+    "usage": {
+     "calls": 6,
+     "prompt_tokens": 7700,
+     "completion_tokens": 1046,
+     "cost_usd": 0.00146275,
+     "llm_ms": 14032
+    },
+    "citations": {
+     "citations": [
+      "[sql:1]",
+      "[doc:handbook/refund-approval-limits.md#1]",
+      "[doc:handbook/refund-approval-limits.md#5]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": true
+    },
+    "steps": [
+     {
+      "node": "route",
+      "ms": 1372,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 79,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 5960,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1865,
+      "llm_calls": 1
+     },
+     {
+      "node": "rewrite",
+      "ms": 1139,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 110,
+      "llm_calls": 0
+     },
+     {
+      "node": "grade",
+      "ms": 1253,
+      "llm_calls": 1
+     },
+     {
+      "node": "answer",
+      "ms": 2474,
+      "llm_calls": 1
+     },
+     {
+      "query": {
+       "step": "route",
+       "doc_query": "damaged order full refund approval authority",
+       "sql_question": "Order 28455: order and delivery status and dates, amount paid, product category, customer 4775's segment and country, and any existing refund or support-ticket details"
+      }
+     },
+     {
+      "query": {
+       "step": "rewrite1",
+       "doc_query": "Full refund approval limits and approver roles by refund amount, including damaged-item orders and thresholds",
+       "sql_question": null
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Look up the refund approval limits and approver rules for full refunds (including any thresholds or role requirements).",
+       "relevant": [
+        "[doc:handbook/refund-approval-limits.md#5]",
+        "[doc:policies/refund-policy.md#5]",
+        "[sql:1]"
+       ]
+      }
+     },
+     {
+      "grade": {
+       "sufficient": true,
+       "missing": "",
+       "relevant": [
+        "[sql:1]",
+        "[doc:handbook/refund-approval-limits.md#1]",
+        "[doc:handbook/refund-approval-limits.md#5]",
+        "[doc:policies/refund-policy.md#5]"
+       ]
+      }
+     }
+    ],
+    "evidence": [
+     "[doc:handbook/refund-approval-limits.md#5]",
+     "[doc:policies/refund-policy.md#5]",
+     "[doc:handbook/refund-approval-limits.md#4]",
+     "[doc:handbook/support-escalation.md#8]",
+     "[sql:1]",
+     "[doc:handbook/refund-approval-limits.md#2]",
+     "[doc:handbook/refund-approval-limits.md#1]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": true,
+    "facts_ok": [
+     true,
+     true
+    ],
+    "reason": "Fact 1: The answer says the order's payment was $578.97 and that a full refund including shipping is allowed, so the $578.97 full refund amount is stated. Fact 2: The answer says Finance must approve via the finance-approvals channel because the amount is above $500.00, so this is stated.",
+    "judge_cost_usd": 0.0001605
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "m01",
+   "template": "missing_open",
+   "gold": [
+    "Yes: it is within 14 days of the delivery date (deadline 2026-11-14; the 24-hour wait has passed)"
+   ],
+   "result": {
+    "variant": "graph",
+    "model": "openai/gpt-6-luna",
+    "question": "Order 28150 shows delivered but customer 1827 says it never arrived. Can we open a carrier investigation?",
+    "answer": "Yes\u2014open a USPS carrier investigation: the order was marked delivered on 2026-10-31 at 13:57:54, and the customer\u2019s report is given as fact, so the 24-hour wait has passed and today, 2026-11-07, is within the 14-day contact window (2026-10-31 + 14 days = 2026-11-14). [sql:1] [sql:2] [doc:handbook/carrier-claims.md#1] [doc:policies/returns-policy.md#8] No related support ticket or customer-contact report timestamp was found in the queried records, so the precise contact time cannot be verified; the investigation is still warranted based on the report in the question. [sql:2] [sql:3] Per policy, resolve the customer\u2019s issue first with a replacement or refund, then file the carrier claim; if USPS cannot locate the package, arrange a replacement or refund. [doc:handbook/carrier-claims.md#1] [doc:policies/refund-policy.md#8]",
+    "latency_ms": 29494,
+    "usage": {
+     "calls": 10,
+     "prompt_tokens": 15904,
+     "completion_tokens": 2259,
+     "cost_usd": 0.00306285,
+     "llm_ms": 29428
+    },
+    "citations": {
+     "citations": [
+      "[sql:1]",
+      "[sql:2]",
+      "[doc:handbook/carrier-claims.md#1]",
+      "[doc:policies/returns-policy.md#8]",
+      "[sql:3]",
+      "[doc:policies/refund-policy.md#8]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": true
+    },
+    "steps": [
+     {
+      "node": "route",
+      "ms": 1449,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 83,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 5619,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1597,
+      "llm_calls": 1
+     },
+     {
+      "node": "rewrite",
+      "ms": 2001,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 137,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 5177,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1708,
+      "llm_calls": 1
+     },
+     {
+      "node": "rewrite",
+      "ms": 2814,
+      "llm_calls": 1
+     },
+     {
+      "node": "sql",
+      "ms": 4182,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 2367,
+      "llm_calls": 1
+     },
+     {
+      "node": "answer",
+      "ms": 2571,
+      "llm_calls": 1
+     },
+     {
+      "query": {
+       "step": "route",
+       "doc_query": "carrier investigation eligibility and process for orders marked delivered but reported not received",
+       "sql_question": "Order 28150: fetch its status, shipment and carrier details, delivery date and proof-of-delivery or tracking events, order amount, product category, customer 1827's segment and country, and any related support tickets or prior delivery investigations."
+      }
+     },
+     {
+      "query": {
+       "step": "rewrite1",
+       "doc_query": "USPS delivered-but-not-received carrier investigation deadline, including when the customer must contact support after delivery and how to open an investigation",
+       "sql_question": "For customer 1827 and order 28150, find any support contact or ticket related to the report that the package was not received, including its created timestamp and message/body. Also retrieve tracking events or proof of delivery for the shipment, including event timestamps and details, to determine the customer's contact timing relative to the 2026-10-31 delivery."
+      }
+     },
+     {
+      "query": {
+       "step": "rewrite2",
+       "doc_query": null,
+       "sql_question": "Search all customer-contact records for customer 1827 about order 28150 or its missing delivery, not just support_tickets. Return any chat, email, phone, contact-center, or case interaction timestamp and the message/report text, including records without an order_id if they mention order 28150. We need to establish when the customer first reported non-receipt relative to USPS delivery at 2026-10-31 13:57:54 America/New_York."
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Whether at least 24 hours have passed since delivery; the evidence shows delivery was 7 days ago, so this condition is satisfied, but does not establish when the customer contacted support or whether that contact is within 14 days of delivery.",
+       "relevant": [
+        "[doc:handbook/carrier-claims.md#1]",
+        "[doc:policies/returns-policy.md#8]",
+        "[sql:1]"
+       ]
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Look up when customer 1827 contacted support or reported that order 28150 had not arrived, to establish that they waited 24 hours after delivery before contacting support.",
+       "relevant": [
+        "[doc:handbook/carrier-claims.md#1]",
+        "[sql:1]"
+       ]
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Look up when the customer first reported non-receipt and whether at least 24 hours had passed after delivery before that report. The records provided show delivery was 7 days ago but no customer contact/report timestamp; the question's statement that the customer says it never arrived does not establish when they contacted support.",
+       "relevant": [
+        "[doc:handbook/carrier-claims.md#1]",
+        "[doc:policies/returns-policy.md#8]",
+        "[doc:policies/refund-policy.md#8]",
+        "[doc:policies/shipping-policy.md#7]",
+        "[sql:1]",
+        "[sql:2]",
+        "[sql:3]"
+       ]
+      }
+     }
+    ],
+    "evidence": [
+     "[doc:handbook/carrier-claims.md#1]",
+     "[doc:policies/returns-policy.md#8]",
+     "[doc:handbook/carrier-claims.md#0]",
+     "[doc:handbook/refund-approval-limits.md#7]",
+     "[sql:1]",
+     "[doc:policies/refund-policy.md#8]",
+     "[doc:policies/shipping-policy.md#7]",
+     "[doc:policies/international-shipping.md#6]",
+     "[sql:2]",
+     "[sql:3]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": true,
+    "facts_ok": [
+     true
+    ],
+    "reason": "Fact 1: The answer states yes, the 2026-10-31 delivery date plus 14 days gives a 2026-11-14 deadline, the 24-hour wait has passed, and today 2026-11-07 is within the window, so the fact is stated.",
+    "judge_cost_usd": 0.00016
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "m02",
+   "template": "missing_closed",
+   "gold": [
+    "No: missing-package claims must be made within 14 days of the delivery date (delivered 2026-10-14; the window ended 2026-10-28)"
+   ],
+   "result": {
+    "variant": "graph",
+    "model": "openai/gpt-6-luna",
+    "question": "Customer 1340 just told us order 25301 never arrived, even though tracking says delivered. Can we still open a carrier investigation?",
+    "answer": "Yes\u2014if the customer has waited at least 24 hours after the October 14, 2026 delivery and contacts us by October 28, 2026, we can open a carrier investigation. [doc:policies/refund-policy.md#8] [doc:handbook/carrier-claims.md#1] Order 25301 was marked delivered by USPS on October 14, 2026 at 9:47 a.m. local time. [sql:1] The search found no support contact reporting non-delivery, so we can\u2019t verify that the 24-hour wait or 14-day contact window has been met; the customer\u2019s statement now does not establish when they contacted us. [sql:2] [sql:3]",
+    "latency_ms": 25797,
+    "usage": {
+     "calls": 10,
+     "prompt_tokens": 10118,
+     "completion_tokens": 1590,
+     "cost_usd": 0.00198765,
+     "llm_ms": 25744
+    },
+    "citations": {
+     "citations": [
+      "[doc:policies/refund-policy.md#8]",
+      "[doc:handbook/carrier-claims.md#1]",
+      "[sql:1]",
+      "[sql:2]",
+      "[sql:3]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": true
+    },
+    "steps": [
+     {
+      "node": "route",
+      "ms": 1395,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 114,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 2534,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 3638,
+      "llm_calls": 1
+     },
+     {
+      "node": "rewrite",
+      "ms": 1999,
+      "llm_calls": 1
+     },
+     {
+      "node": "sql",
+      "ms": 2998,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1691,
+      "llm_calls": 1
+     },
+     {
+      "node": "rewrite",
+      "ms": 2874,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 116,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 4066,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 2092,
+      "llm_calls": 1
+     },
+     {
+      "node": "answer",
+      "ms": 2498,
+      "llm_calls": 1
+     },
+     {
+      "query": {
+       "step": "route",
+       "doc_query": "carrier investigation when tracking says delivered but customer reports non-delivery; eligibility rules and time limits",
+       "sql_question": "Order 25301 for customer 1340: fetch order status, shipment and tracking status, delivery date, carrier, product category, order amount, customer segment, and country to determine carrier-investigation eligibility."
+      }
+     },
+     {
+      "query": {
+       "step": "rewrite1",
+       "doc_query": null,
+       "sql_question": "For customer 1340 and order 25301, find the timestamp of their support contact reporting non-delivery (ticket/message created_at) and compare it with shipment delivered_at, using America/New_York time. Return elapsed time since delivery and whether the contact was within 14 days of delivery and at least 24 hours after delivery."
+      }
+     },
+     {
+      "query": {
+       "step": "rewrite2",
+       "doc_query": "USPS delivered tracking but customer says order never arrived: carrier investigation eligibility for Grocery orders, including delivery-to-report time limits and approval rules",
+       "sql_question": "For customer 1340's order 25301, search all support tickets and messages tied to the customer or order for the contact reporting non-delivery, including records with labels/categories other than non-delivery and matching message text. Return the relevant contact's created_at timestamp and any linked ticket/order IDs; compare its exact elapsed time against shipment delivered_at (2026-10-14 09:47:03.817334 America/New_York) to establish whether it was at least 24 hours later and no more than 14 days later."
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Look up when the customer contacted support relative to the delivery date (including whether 24 hours have elapsed and whether the contact is within 14 days).",
+       "relevant": [
+        "[doc:policies/refund-policy.md#8]",
+        "[doc:handbook/carrier-claims.md#1]",
+        "[doc:policies/shipping-policy.md#7]",
+        "[sql:1]"
+       ]
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Look up the timestamp of the customer's non-delivery contact and confirm it was within 14 days of delivery and at least 24 hours after delivery; the ticket query returned no matching result.",
+       "relevant": [
+        "[doc:policies/refund-policy.md#8]",
+        "[doc:handbook/carrier-claims.md#1]",
+        "[doc:policies/shipping-policy.md#7]",
+        "[sql:1]"
+       ]
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Look up the timestamp of the customer\u2019s reported non-delivery (or otherwise establish when they contacted support) to determine whether it was at least 24 hours and within 14 days after delivery; the ticket searches returned no matching record.",
+       "relevant": [
+        "[doc:policies/refund-policy.md#8]",
+        "[doc:handbook/carrier-claims.md#1]",
+        "[doc:policies/shipping-policy.md#7]",
+        "[sql:1]",
+        "[sql:2]",
+        "[sql:3]"
+       ]
+      }
+     }
+    ],
+    "evidence": [
+     "[doc:policies/refund-policy.md#8]",
+     "[doc:handbook/carrier-claims.md#1]",
+     "[doc:handbook/refund-approval-limits.md#7]",
+     "[doc:policies/shipping-policy.md#7]",
+     "[sql:1]",
+     "[sql:2]",
+     "[doc:handbook/carrier-claims.md#2]",
+     "[sql:3]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     false
+    ],
+    "reason": "Fact 1 requires stating that the claim window is 14 days from delivery (ending 2026-10-28) and that the answer says no; the answer instead says yes and asserts the 14-day contact window can be met by October 28, so it contradicts the gold fact.",
+    "judge_cost_usd": 0.0001504
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "f01",
+   "template": "refund_changed_mind",
+   "gold": [
+    "$62.98 (the $68.97 item price minus the $5.99 return label; the original shipping is not refunded)"
+   ],
+   "result": {
+    "variant": "graph",
+    "model": "openai/gpt-6-luna",
+    "question": "If customer 928 returns order 28000 because they changed their mind, how much will they get back?",
+    "answer": "$62.98. This is a standard return because the customer changed their mind: the $74.96 order total includes $5.99 original shipping, which is not refunded, and another $5.99 return-shipping fee is deducted: $74.96 \u2212 $5.99 \u2212 $5.99 = $62.98. [doc:policies/refund-policy.md#5] [sql:1]",
+    "latency_ms": 7770,
+    "usage": {
+     "calls": 4,
+     "prompt_tokens": 3055,
+     "completion_tokens": 489,
+     "cost_usd": 0.00058185,
+     "llm_ms": 7744
+    },
+    "citations": {
+     "citations": [
+      "[doc:policies/refund-policy.md#5]",
+      "[sql:1]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": true
+    },
+    "steps": [
+     {
+      "node": "route",
+      "ms": 1373,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 85,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 3600,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1236,
+      "llm_calls": 1
+     },
+     {
+      "node": "answer",
+      "ms": 1556,
+      "llm_calls": 1
+     },
+     {
+      "query": {
+       "step": "route",
+       "doc_query": "refund policy for change-of-mind returns, including eligibility and refund amount",
+       "sql_question": "For customer 928 and order 28000, fetch order status, item and order amounts, discounts, taxes, shipping fees, delivery date, product category, return status, customer segment, and country."
+      }
+     },
+     {
+      "grade": {
+       "sufficient": true,
+       "missing": "",
+       "relevant": [
+        "[sql:1]",
+        "[doc:policies/refund-policy.md#5]"
+       ]
+      }
+     }
+    ],
+    "evidence": [
+     "[doc:care/yoga-mats.md#7]",
+     "[doc:policies/refund-policy.md#5]",
+     "[doc:policies/returns-policy.md#4]",
+     "[doc:policies/refund-policy.md#1]",
+     "[sql:1]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": true,
+    "facts_ok": [
+     true
+    ],
+    "reason": "Fact 1: The answer states $62.98 as the refund, explains it as $74.96 total minus $5.99 original shipping not refunded minus $5.99 return fee, which matches the gold fact's parenthetical details (item price $68.97 minus $5.99 return label implied; the original shipping not refunded is stated). The main claim $62.98 is stated correctly and the reasoning does not contradict the details.",
+    "judge_cost_usd": 0.0001636
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "f02",
+   "template": "refund_defective",
+   "gold": [
+    "The full $40.98 (including the original shipping; no $5.99 return-label deduction)"
+   ],
+   "result": {
+    "variant": "graph",
+    "model": "openai/gpt-6-luna",
+    "question": "Customer 3810 says the item in order 26941 is defective and wants a refund, not a replacement. How much do we refund?",
+    "answer": "$40.98, the full order amount including $5.99 shipping, because defective items qualify for a full refund including shipping; the order has one item, a $34.99 subtotal, no discount, and a $40.98 successful payment. [sql:1] [doc:handbook/refund-approval-limits.md#5] The item was delivered 2026-10-22, and today is 2026-11-07: 16 days later, within the 30-day reporting window. [sql:1] [doc:handbook/refund-approval-limits.md#5] However, the evidence shows no defect report or ticket and cannot confirm a photo was provided; the policy requires both a report within 30 days and a photo, so verify those before issuing the refund. [sql:2] [sql:3] [doc:handbook/refund-approval-limits.md#5]",
+    "latency_ms": 27269,
+    "usage": {
+     "calls": 10,
+     "prompt_tokens": 15365,
+     "completion_tokens": 1908,
+     "cost_usd": 0.00282127,
+     "llm_ms": 27210
+    },
+    "citations": {
+     "citations": [
+      "[sql:1]",
+      "[doc:handbook/refund-approval-limits.md#5]",
+      "[sql:2]",
+      "[sql:3]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": true
+    },
+    "steps": [
+     {
+      "node": "route",
+      "ms": 1457,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 98,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 6171,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1696,
+      "llm_calls": 1
+     },
+     {
+      "node": "rewrite",
+      "ms": 2361,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 93,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 4201,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1791,
+      "llm_calls": 1
+     },
+     {
+      "node": "rewrite",
+      "ms": 2052,
+      "llm_calls": 1
+     },
+     {
+      "node": "sql",
+      "ms": 2681,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 2036,
+      "llm_calls": 1
+     },
+     {
+      "node": "answer",
+      "ms": 2814,
+      "llm_calls": 1
+     },
+     {
+      "query": {
+       "step": "route",
+       "doc_query": "Defective item refund eligibility and refund amount calculation when customer declines replacement",
+       "sql_question": "For order 26941 and customer 3810, fetch the order status, line items and quantities, amounts paid and discounts, delivery date, product category, customer segment and country, and any relevant return or refund already recorded."
+      }
+     },
+     {
+      "query": {
+       "step": "rewrite1",
+       "doc_query": "For defective products in Books, what is the 30-day reporting deadline and photo evidence requirement for a full refund including shipping when the customer declines replacement?",
+       "sql_question": "For order 26941, find the customer\u2019s defect report or support ticket: report date/time, whether a required photo was provided or attached, and any evidence-review status. Compare the report date with the shipment\u2019s delivered_at date."
+      }
+     },
+     {
+      "query": {
+       "step": "rewrite2",
+       "doc_query": null,
+       "sql_question": "For customer 3810, search all support-ticket and customer-contact records related to order 26941 or product 200, including records not linked through support_tickets.order_id. Return the defect report date/time, any photo or image attachment indicator or attachment metadata, and any evidence-review outcome. If no such records exist, confirm that."
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Confirm the defective item was reported within 30 days of delivery and that the required photo was provided; these are required for the full refund including shipping.",
+       "relevant": [
+        "[doc:handbook/refund-approval-limits.md#5]",
+        "[doc:handbook/support-escalation.md#8]",
+        "[doc:policies/refund-policy.md#5]",
+        "[sql:1]"
+       ]
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Look up the customer\u2019s defect report date and confirm a photo was provided, since the ticket query returned no report and the order facts alone do not establish eligibility for the defective-item full refund.",
+       "relevant": [
+        "[doc:handbook/refund-approval-limits.md#5]",
+        "[doc:policies/refund-policy.md#5]",
+        "[sql:1]",
+        "[sql:2]"
+       ]
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Look up the defect report date and confirm a photo was provided, since policy requires both within 30 days of delivery. The order total is $40.98 (including $5.99 shipping), with no prior refund recorded, but the evidence does not establish eligibility for the defective-item refund.",
+       "relevant": [
+        "[doc:handbook/refund-approval-limits.md#5]",
+        "[doc:handbook/support-escalation.md#8]",
+        "[doc:policies/refund-policy.md#5]",
+        "[sql:1]",
+        "[sql:2]",
+        "[sql:3]"
+       ]
+      }
+     }
+    ],
+    "evidence": [
+     "[doc:handbook/refund-approval-limits.md#5]",
+     "[doc:handbook/support-escalation.md#8]",
+     "[doc:policies/refund-policy.md#5]",
+     "[doc:handbook/support-escalation.md#4]",
+     "[sql:1]",
+     "[doc:policies/warranty-policy.md#4]",
+     "[doc:policies/international-shipping.md#7]",
+     "[sql:2]",
+     "[sql:3]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": true,
+    "facts_ok": [
+     true
+    ],
+    "reason": "Fact 1: The answer states the full $40.98 refund including the $5.99 shipping, with no return-label deduction mentioned, so the fact is stated correctly.",
+    "judge_cost_usd": 0.000139
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "p01",
+   "template": "price_adjust_open",
+   "gold": [
+    "Yes, a one-time price adjustment is allowed (within 7 days of the successful payment on 2026-11-03)",
+    "They must ask by 2026-11-10"
+   ],
+   "result": {
+    "variant": "graph",
+    "model": "openai/gpt-6-luna",
+    "question": "Customer 1283 saw the price of an item from order 29371 drop today. Can they get the difference back, and by when must they ask?",
+    "answer": "No, not based on the available price records: order 29371 is shipped, and the T-shirt was bought for $54.99 each on November 3, 2026, but the available result shows its current price is still $54.99 and does not establish a lower price today. [sql:1] [sql:2] A price adjustment is allowed only if the ShopFlow price dropped within 7 days of payment and the customer asks within that same 7-day window; the exact payment-success time is missing, so the precise deadline cannot be confirmed. [doc:policies/price-adjustment-policy.md#2] The query for authoritative price history and prior adjustments returned no price-history or adjustment data, so whether a drop occurred today or an adjustment was already issued is unknown. [sql:3]",
+    "latency_ms": 24201,
+    "usage": {
+     "calls": 11,
+     "prompt_tokens": 11241,
+     "completion_tokens": 1624,
+     "cost_usd": 0.0020945,
+     "llm_ms": 24143
+    },
+    "citations": {
+     "citations": [
+      "[sql:1]",
+      "[sql:2]",
+      "[doc:policies/price-adjustment-policy.md#2]",
+      "[sql:3]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": true
+    },
+    "steps": [
+     {
+      "node": "route",
+      "ms": 1500,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 93,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 2904,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1524,
+      "llm_calls": 1
+     },
+     {
+      "node": "rewrite",
+      "ms": 4228,
+      "llm_calls": 2
+     },
+     {
+      "node": "sql",
+      "ms": 2479,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1717,
+      "llm_calls": 1
+     },
+     {
+      "node": "rewrite",
+      "ms": 2318,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 98,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 3564,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1777,
+      "llm_calls": 1
+     },
+     {
+      "node": "answer",
+      "ms": 2181,
+      "llm_calls": 1
+     },
+     {
+      "query": {
+       "step": "route",
+       "doc_query": "Price adjustment policy after purchase: eligibility, qualifying price drops, time limit to request, and exclusions",
+       "sql_question": "For customer 1283 and order 29371, fetch the order status and purchase date, item and category, original price paid and current/lower price with the date the drop occurred, customer segment, and country."
+      }
+     },
+     {
+      "query": {
+       "step": "rewrite1",
+       "doc_query": null,
+       "sql_question": "For product Premium Merino T-Shirt (the product in order 29371 for customer 1283), retrieve its price history or price-change records for 2026-11-07, including the amount and effective date/time of any decrease. Determine whether its price was lower at any point today than the $54.99 paid."
+      }
+     },
+     {
+      "query": {
+       "step": "rewrite2",
+       "doc_query": "Price adjustment policy after purchase: eligibility, request deadline, and exclusions for shipped orders and apparel in Australia",
+       "sql_question": "For order 29371, customer 1283, and product 135 (Premium Merino T-Shirt), query the authoritative product price-history or price-audit records for changes effective on 2026-11-07 in America/New_York. Return every price and its effective timestamp, especially any decrease below the $54.99 paid, and calculate the difference. Also check order-level price-adjustment/refund records for this order item and report whether a price adjustment has already been issued, including amount and timestamp."
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Look up whether this item\u2019s price actually dropped today and, if so, the lower price and drop date; the order data shows its current price is not lower than the price paid.",
+       "relevant": [
+        "[doc:policies/price-adjustment-policy.md#2]",
+        "[doc:policies/price-adjustment-policy.md#1]",
+        "[sql:1]"
+       ]
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Look up reliable price-history records for the item to confirm whether its price actually dropped today and, if so, the drop amount and effective time. Also look up whether this item already received a price adjustment on this order.",
+       "relevant": [
+        "[doc:policies/price-adjustment-policy.md#2]",
+        "[doc:policies/price-adjustment-policy.md#1]",
+        "[sql:1]",
+        "[sql:2]"
+       ]
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Look up an authoritative price-history record confirming the item's price drop today and its amount, and whether a price adjustment has already been issued for this order item.",
+       "relevant": [
+        "[doc:policies/price-adjustment-policy.md#2]",
+        "[doc:policies/price-adjustment-policy.md#1]",
+        "[sql:1]",
+        "[sql:2]",
+        "[sql:3]"
+       ]
+      }
+     }
+    ],
+    "evidence": [
+     "[doc:policies/price-adjustment-policy.md#2]",
+     "[doc:policies/price-adjustment-policy.md#1]",
+     "[doc:policies/price-adjustment-policy.md#0]",
+     "[doc:policies/price-adjustment-policy.md#5]",
+     "[sql:1]",
+     "[sql:2]",
+     "[doc:policies/price-adjustment-policy.md#6]",
+     "[sql:3]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     false,
+     false
+    ],
+    "reason": "Fact 1: The answer says 'No' and that a price adjustment is only allowed under conditions it cannot confirm, contradicting the gold 'Yes, one-time adjustment allowed'. Fact 2: The answer never states the 2026-11-10 deadline, saying the precise deadline cannot be confirmed.",
+    "judge_cost_usd": 0.0001663
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "p02",
+   "template": "price_adjust_closed",
+   "gold": [
+    "No, the 7-day price adjustment window has passed (payment succeeded 2026-10-22; the window ended 2026-10-29)"
+   ],
+   "result": {
+    "variant": "graph",
+    "model": "openai/gpt-6-luna",
+    "question": "The price of an item in order 27468 just dropped. Can customer 727 get a price adjustment?",
+    "answer": "No\u2014not on the information available: although order 27468 belongs to customer 727, is delivered, and was paid on 2026-10-22, the order is now 16 days past its purchase date, beyond the policy\u2019s 7-day window; the window starts when payment succeeds. [sql:1] [sql:3] The policy also requires the price drop and the customer\u2019s request to occur within 7 days of payment, and no related support ticket was found. [doc:policies/price-adjustment-policy.md#2] [sql:3] No prior adjustment or refund is recorded, but the available data cannot verify when the price dropped or whether an adjustment request was made through another channel. [sql:2] [sql:3]",
+    "latency_ms": 38891,
+    "usage": {
+     "calls": 12,
+     "prompt_tokens": 14289,
+     "completion_tokens": 3219,
+     "cost_usd": 0.0033173,
+     "llm_ms": 38841
+    },
+    "citations": {
+     "citations": [
+      "[sql:1]",
+      "[sql:3]",
+      "[doc:policies/price-adjustment-policy.md#2]",
+      "[sql:2]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": true
+    },
+    "steps": [
+     {
+      "node": "route",
+      "ms": 1791,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 67,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 4013,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1244,
+      "llm_calls": 1
+     },
+     {
+      "node": "rewrite",
+      "ms": 1897,
+      "llm_calls": 1
+     },
+     {
+      "node": "sql",
+      "ms": 1871,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1813,
+      "llm_calls": 1
+     },
+     {
+      "node": "rewrite",
+      "ms": 2683,
+      "llm_calls": 1
+     },
+     {
+      "node": "sql",
+      "ms": 19178,
+      "llm_calls": 3
+     },
+     {
+      "node": "grade",
+      "ms": 1930,
+      "llm_calls": 1
+     },
+     {
+      "node": "answer",
+      "ms": 2464,
+      "llm_calls": 1
+     },
+     {
+      "query": {
+       "step": "route",
+       "doc_query": "price adjustment policy after purchase, eligibility window and exclusions",
+       "sql_question": "For order 27468 and customer 727, fetch order status, purchase date, item and current price, amount paid, product category, delivery date, customer segment, and country; verify the order belongs to customer 727."
+      }
+     },
+     {
+      "query": {
+       "step": "rewrite1",
+       "doc_query": null,
+       "sql_question": "For order 27468, check whether any price adjustment or price-match refund has already been issued or is pending for its order item(s). Return adjustment/refund record IDs, product and order-item IDs, amounts, statuses, and timestamps; include records linked to order 27468 or customer 727 and product 129."
+      }
+     },
+     {
+      "query": {
+       "step": "rewrite2",
+       "doc_query": null,
+       "sql_question": "For product 129 in order 27468, retrieve its price history and any dated price-change records covering the 7 days after the order was placed on 2026-10-22. Include effective/recorded timestamps and prices so we can verify whether the price actually decreased during that window. Also search customer 727\u2019s support tickets, messages, and price-adjustment requests for a request tied to order 27468 or product 129; return the request timestamp, channel, and status, especially whether it was made within 7 days after the order was placed and paid."
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Look up whether this item has already received a price adjustment on order 27468.",
+       "relevant": [
+        "[doc:policies/price-adjustment-policy.md#2]",
+        "[sql:1]"
+       ]
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Look up whether the item\u2019s price actually dropped within 7 days after the order was placed and paid, and whether the customer requested the adjustment within that 7-day window.",
+       "relevant": [
+        "[doc:policies/price-adjustment-policy.md#2]",
+        "[sql:1]",
+        "[sql:2]"
+       ]
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Look up price history to confirm the item\u2019s price dropped within 7 days of payment, and whether the customer requested the adjustment within that 7-day window.",
+       "relevant": [
+        "[doc:policies/price-adjustment-policy.md#2]",
+        "[sql:1]",
+        "[sql:2]",
+        "[sql:3]"
+       ]
+      }
+     }
+    ],
+    "evidence": [
+     "[doc:policies/price-adjustment-policy.md#2]",
+     "[doc:policies/price-adjustment-policy.md#0]",
+     "[doc:policies/price-adjustment-policy.md#7]",
+     "[doc:policies/price-adjustment-policy.md#1]",
+     "[sql:1]",
+     "[sql:2]",
+     "[sql:3]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": true,
+    "facts_ok": [
+     true
+    ],
+    "reason": "Fact 1 requires stating that the 7-day window has passed (payment 2026-10-22, window ended 2026-10-29); the answer says No, the window has passed, payment on 2026-10-22, and 16 days past purchase, beyond the 7-day window, though it doesn't state the 2026-10-29 end date explicitly and hedges somewhat about verification, but the main claim and payment date are stated, so it is stated.",
+    "judge_cost_usd": 0.0001771
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "v01",
+   "template": "vip_shipping",
+   "gold": [
+    "No: the customer is VIP, and VIPs get free standard shipping (on every order)"
+   ],
+   "result": {
+    "variant": "graph",
+    "model": "openai/gpt-6-luna",
+    "question": "Does customer 553 pay for standard shipping?",
+    "answer": "No; customer 553 is a VIP, and VIP members receive free standard shipping regardless of order total. [sql:1] [doc:policies/vip-program.md#1] Their listed orders show a $0.00 shipping charge, though the evidence does not identify which shipping service was selected. [sql:1]",
+    "latency_ms": 9034,
+    "usage": {
+     "calls": 4,
+     "prompt_tokens": 5311,
+     "completion_tokens": 383,
+     "cost_usd": 0.00083338,
+     "llm_ms": 9019
+    },
+    "citations": {
+     "citations": [
+      "[sql:1]",
+      "[doc:policies/vip-program.md#1]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": true
+    },
+    "steps": [
+     {
+      "node": "route",
+      "ms": 1947,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 77,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 2739,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1998,
+      "llm_calls": 1
+     },
+     {
+      "node": "answer",
+      "ms": 2345,
+      "llm_calls": 1
+     },
+     {
+      "query": {
+       "step": "route",
+       "doc_query": "standard shipping charges and eligibility",
+       "sql_question": "Customer 553: fetch customer segment and country, and their orders with shipping method and shipping charge or amount paid for shipping."
+      }
+     },
+     {
+      "grade": {
+       "sufficient": true,
+       "missing": "",
+       "relevant": [
+        "[doc:policies/gift-cards-and-promotions.md#4]",
+        "[doc:policies/shipping-policy.md#1]",
+        "[doc:policies/vip-program.md#1]",
+        "[sql:1]"
+       ]
+      }
+     }
+    ],
+    "evidence": [
+     "[doc:policies/gift-cards-and-promotions.md#4]",
+     "[doc:policies/shipping-policy.md#1]",
+     "[doc:policies/vip-program.md#1]",
+     "[doc:policies/payment-methods.md#3]",
+     "[sql:1]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": true,
+    "facts_ok": [
+     true
+    ],
+    "reason": "Fact 1: The answer states the customer is a VIP, that VIPs get free standard shipping regardless of order total, and answers No, so the fact is stated correctly.",
+    "judge_cost_usd": 0.0001205
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "v02",
+   "template": "vip_gap",
+   "gold": [
+    "$104.86 more (completed purchases this calendar year total $895.14 of the $1,000.00 threshold; cancelled and refunded orders don't count)"
+   ],
+   "result": {
+    "variant": "graph",
+    "model": "openai/gpt-6-luna",
+    "question": "How much more does customer 892 need to spend this year to become VIP?",
+    "answer": "Customer 892 needs to spend **$104.86 more** this calendar year to reach VIP: the $1,000.00 threshold minus $895.14 in qualifying 2026 spend equals $104.86. [doc:policies/vip-program.md#2] [sql:1]",
+    "latency_ms": 10921,
+    "usage": {
+     "calls": 4,
+     "prompt_tokens": 3799,
+     "completion_tokens": 651,
+     "cost_usd": 0.0007781,
+     "llm_ms": 10900
+    },
+    "citations": {
+     "citations": [
+      "[doc:policies/vip-program.md#2]",
+      "[sql:1]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": true
+    },
+    "steps": [
+     {
+      "node": "route",
+      "ms": 2950,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 77,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 5232,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1249,
+      "llm_calls": 1
+     },
+     {
+      "node": "answer",
+      "ms": 1487,
+      "llm_calls": 1
+     },
+     {
+      "query": {
+       "step": "route",
+       "doc_query": "VIP tier qualification spending threshold and qualifying spend period",
+       "sql_question": "Customer 892: qualifying spend year to date for 2026, customer country and segment, and any exclusions or adjustments relevant to VIP qualification"
+      }
+     },
+     {
+      "grade": {
+       "sufficient": true,
+       "missing": "",
+       "relevant": [
+        "[doc:policies/vip-program.md#2]",
+        "[doc:policies/vip-program.md#3]",
+        "[sql:1]"
+       ]
+      }
+     }
+    ],
+    "evidence": [
+     "[doc:policies/vip-program.md#2]",
+     "[doc:policies/vip-program.md#3]",
+     "[doc:faq.md#4]",
+     "[doc:policies/privacy-policy.md#2]",
+     "[sql:1]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": true,
+    "facts_ok": [
+     true
+    ],
+    "reason": "Fact 1: The answer states $104.86 more needed, with $1,000.00 threshold and $895.14 qualifying 2026 spend, matching the gold fact; it does not contradict the parenthetical details (cancelled/refunded exclusion is not contradicted).",
+    "judge_cost_usd": 0.0001394
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "s01",
+   "template": "shipping_undercharged",
+   "gold": [
+    "No: after the $8.20 discount the order was $73.79, below the $75.00 free-shipping threshold (which applies after discounts; the customer isn't VIP)",
+    "$5.99 standard shipping should have been charged (it was charged $0.00)"
+   ],
+   "result": {
+    "variant": "graph",
+    "model": "openai/gpt-6-luna",
+    "question": "Was customer 3570 charged the right shipping on order 7829?",
+    "answer": "No\u2014the $0 shipping charge appears inconsistent with the standard-shipping rule. The order was delivered to Canada, had an $81.99 subtotal and $8.20 discount, so the after-discount amount was $81.99 \u2212 $8.20 = $73.79, below the $75 free-shipping threshold; non-VIP standard shipping should therefore be $5.99. [sql:1] [doc:policies/shipping-policy.md#1] The customer was listed as a consumer, and the evidence does not confirm VIP status or reveal the actual shipping method or any free-shipping promotion; VIP status or a different shipping option could change the assessment. [sql:1] [sql:2] [sql:3] [doc:policies/shipping-policy.md#1]",
+    "latency_ms": 39427,
+    "usage": {
+     "calls": 12,
+     "prompt_tokens": 21219,
+     "completion_tokens": 3643,
+     "cost_usd": 0.00429823,
+     "llm_ms": 39364
+    },
+    "citations": {
+     "citations": [
+      "[sql:1]",
+      "[doc:policies/shipping-policy.md#1]",
+      "[sql:2]",
+      "[sql:3]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": true
+    },
+    "steps": [
+     {
+      "node": "route",
+      "ms": 1681,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 85,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 3910,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1470,
+      "llm_calls": 1
+     },
+     {
+      "node": "rewrite",
+      "ms": 2304,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 100,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 4807,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1833,
+      "llm_calls": 1
+     },
+     {
+      "node": "rewrite",
+      "ms": 2261,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 103,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 16562,
+      "llm_calls": 3
+     },
+     {
+      "node": "grade",
+      "ms": 2381,
+      "llm_calls": 1
+     },
+     {
+      "node": "answer",
+      "ms": 2206,
+      "llm_calls": 1
+     },
+     {
+      "query": {
+       "step": "route",
+       "doc_query": "shipping charges by order value, product category, customer segment, and destination country",
+       "sql_question": "For order 7829 and customer 3570, fetch the shipping amount charged and the order details needed to verify it: order status, item subtotal, shipping amount, discounts, products and categories, shipping method, destination country, customer segment, and any applicable shipping charge breakdown."
+      }
+     },
+     {
+      "query": {
+       "step": "rewrite1",
+       "doc_query": "Canada destination shipping fee and free-shipping eligibility rules, including order-value thresholds and VIP/customer segment exemptions",
+       "sql_question": "For customer 3570, look up whether they had VIP or other shipping-benefit status when order 7829 was placed, including membership/segment history and any free-shipping entitlement or promotion applied to that order."
+      }
+     },
+     {
+      "query": {
+       "step": "rewrite2",
+       "doc_query": "ShopFlow shipping charges for Canadian destinations on orders containing Electronics, including standard vs express rates, free-shipping thresholds and promotions applicable on June 27, 2026",
+       "sql_question": "For order 7829 (customer 3570, placed 2026-06-27, destination Canada, Electronics item, shipping charged $0), retrieve the order's actual shipping method from checkout/order shipping fields rather than channel, plus any applied free-shipping promotion, coupon, entitlement, or shipping-rate record and its value/reason. Include relevant order-linked promotion/discount and shipping records."
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Look up the applicable shipping charge rule for orders shipped to Canada and whether this customer qualified for free shipping (for example, VIP status).",
+       "relevant": [
+        "[doc:policies/gift-cards-and-promotions.md#4]",
+        "[doc:policies/payment-methods.md#3]",
+        "[sql:1]"
+       ]
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Look up the shipping method actually selected (standard or express) and any free-shipping entitlement or promotion applied to order 7829. The order's channel is listed as \"ios,\" which does not identify its shipping method; also, the destination is Canada, while the provided standard-shipping rules do not establish which shipping rates apply there.",
+       "relevant": [
+        "[doc:policies/gift-cards-and-promotions.md#4]",
+        "[doc:policies/payment-methods.md#3]",
+        "[sql:1]"
+       ]
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Look up the shipping method selected at checkout and the applicable Canada/international shipping rate or rule, plus any shipping promotion or entitlement applied. The order data does not expose those details, and the domestic standard/express rates do not establish the correct charge for this Canadian order.",
+       "relevant": [
+        "[doc:policies/gift-cards-and-promotions.md#4]",
+        "[doc:policies/payment-methods.md#3]",
+        "[doc:policies/shipping-policy.md#0]",
+        "[doc:policies/shipping-policy.md#1]",
+        "[doc:policies/vip-program.md#1]",
+        "[doc:policies/vip-program.md#3]",
+        "[doc:faq.md#2]",
+        "[sql:1]",
+        "[sql:2]",
+        "[sql:3]"
+       ]
+      }
+     }
+    ],
+    "evidence": [
+     "[doc:policies/international-shipping.md#4]",
+     "[doc:policies/gift-cards-and-promotions.md#4]",
+     "[doc:policies/payment-methods.md#3]",
+     "[doc:policies/shipping-policy.md#0]",
+     "[sql:1]",
+     "[doc:policies/shipping-policy.md#1]",
+     "[doc:policies/vip-program.md#1]",
+     "[doc:policies/vip-program.md#3]",
+     "[sql:2]",
+     "[doc:faq.md#2]",
+     "[sql:3]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": true,
+    "facts_ok": [
+     true,
+     true
+    ],
+    "reason": "Fact 1: The answer says No, computes $73.79 after the $8.20 discount, notes it is below the $75 threshold and that non-VIP applies, so it is stated. Fact 2: The answer says $5.99 standard shipping should be charged, so it is stated. However, the answer hedges that VIP status or a different shipping option could change the assessment, but the main claim is still committed, so both facts are stated.",
+    "judge_cost_usd": 0.0001817
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "s02",
+   "template": "shipping_correct",
+   "gold": [
+    "Yes: after the $8.50 discount the order was $76.49, at or above the $75.00 free standard shipping threshold"
+   ],
+   "result": {
+    "variant": "graph",
+    "model": "openai/gpt-6-luna",
+    "question": "Customer 2474 asks why they paid no shipping on order 26680. Was that correct?",
+    "answer": "Yes\u2014$0.00 shipping was correct because order 26680\u2019s merchandise total after discounts was $76.49 ($84.99 subtotal \u2212 $8.50 discount), above the $75.00 free-standard-shipping threshold; the customer was not VIP, but VIP status was not needed. [sql:1] [sql:2] [doc:policies/gift-cards-and-promotions.md#4] [doc:policies/shipping-policy.md#1]",
+    "latency_ms": 14358,
+    "usage": {
+     "calls": 7,
+     "prompt_tokens": 6256,
+     "completion_tokens": 778,
+     "cost_usd": 0.00111525,
+     "llm_ms": 14326
+    },
+    "citations": {
+     "citations": [
+      "[sql:1]",
+      "[sql:2]",
+      "[doc:policies/gift-cards-and-promotions.md#4]",
+      "[doc:policies/shipping-policy.md#1]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": true
+    },
+    "steps": [
+     {
+      "node": "route",
+      "ms": 2113,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 96,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 2975,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1484,
+      "llm_calls": 1
+     },
+     {
+      "node": "rewrite",
+      "ms": 2619,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 123,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 1734,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1264,
+      "llm_calls": 1
+     },
+     {
+      "node": "answer",
+      "ms": 2162,
+      "llm_calls": 1
+     },
+     {
+      "query": {
+       "step": "route",
+       "doc_query": "shipping fee rules, free-shipping eligibility and exceptions",
+       "sql_question": "For order 26680 and customer 2474, fetch the shipping amount charged, order subtotal and total, order status and date, destination country, customer segment, and any shipping promotion or free-shipping discount applied."
+      }
+     },
+     {
+      "query": {
+       "step": "rewrite1",
+       "doc_query": "US free shipping eligibility threshold: whether threshold is based on pre-discount subtotal or discounted merchandise total, and VIP member free-shipping benefit",
+       "sql_question": "For customer 2474, retrieve whether they are currently a VIP member and any VIP membership status or effective dates. For order 26680, fetch the merchandise amount after discounts (subtotal minus discount), and identify any applied promotion or shipping discount code."
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Look up whether customer 2474 is a VIP member. The evidence shows the order's subtotal and discount, but does not establish whether the after-discount amount qualifies for free shipping or whether VIP status applies.",
+       "relevant": [
+        "[doc:policies/gift-cards-and-promotions.md#4]",
+        "[doc:policies/shipping-policy.md#1]",
+        "[doc:policies/vip-program.md#1]",
+        "[sql:1]"
+       ]
+      }
+     },
+     {
+      "grade": {
+       "sufficient": true,
+       "missing": "",
+       "relevant": [
+        "[doc:policies/gift-cards-and-promotions.md#4]",
+        "[doc:policies/shipping-policy.md#1]",
+        "[doc:policies/vip-program.md#1]",
+        "[sql:1]",
+        "[sql:2]"
+       ]
+      }
+     }
+    ],
+    "evidence": [
+     "[doc:policies/gift-cards-and-promotions.md#4]",
+     "[doc:policies/shipping-policy.md#1]",
+     "[doc:policies/vip-program.md#1]",
+     "[doc:policies/warranty-policy.md#6]",
+     "[sql:1]",
+     "[doc:policies/vip-program.md#3]",
+     "[sql:2]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": true,
+    "facts_ok": [
+     true
+    ],
+    "reason": "Fact 1: The answer states the post-discount merchandise total was $76.49 ($84.99 \u2212 $8.50), above the $75.00 free-standard-shipping threshold, and confirms $0 shipping was correct, so the fact is fully stated.",
+    "judge_cost_usd": 0.0001414
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "t01",
+   "template": "ticket_safety",
+   "gold": [
+    "It is a safety issue: priority urgent",
+    "First response within 1 hour",
+    "Tell the customer to stop using the product immediately"
+   ],
+   "result": {
+    "variant": "graph",
+    "model": "openai/gpt-6-luna",
+    "question": "How should we handle support ticket 1534, and how fast must we respond?",
+    "answer": "Immediately tell the customer to stop using the power bank; the report of swelling and a burning smell is a safety issue and must be treated as urgent. [doc:handbook/holiday-peak-playbook.md#5] Escalate it for urgent/on-call safety handling, since urgent tier handles safety issues. [doc:handbook/support-escalation.md#1] Ticket 1534 is marked urgent and concerns a swollen power bank that smells like burning plastic; it was created May 31, 2026 at 3:10 AM ET. [sql:1] The first-response SLA is 1 hour, so respond within one hour of the ticket\u2019s creation; the evidence does not show whether a response has already been sent. [doc:handbook/holiday-peak-playbook.md#5] [sql:1]",
+    "latency_ms": 8304,
+    "usage": {
+     "calls": 4,
+     "prompt_tokens": 3369,
+     "completion_tokens": 419,
+     "cost_usd": 0.00060828,
+     "llm_ms": 8282
+    },
+    "citations": {
+     "citations": [
+      "[doc:handbook/holiday-peak-playbook.md#5]",
+      "[doc:handbook/support-escalation.md#1]",
+      "[sql:1]"
+     ],
+     "invalid": [],
+     "cites_doc": true,
+     "cites_sql": true
+    },
+    "steps": [
+     {
+      "node": "route",
+      "ms": 1655,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 91,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 2677,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1293,
+      "llm_calls": 1
+     },
+     {
+      "node": "answer",
+      "ms": 2673,
+      "llm_calls": 1
+     },
+     {
+      "query": {
+       "step": "route",
+       "doc_query": "support ticket handling workflow and response time SLA",
+       "sql_question": "Ticket 1534: issue details, status, created and last-updated timestamps, priority, linked order/customer IDs, and any existing replies or actions"
+      }
+     },
+     {
+      "grade": {
+       "sufficient": true,
+       "missing": "",
+       "relevant": [
+        "[sql:1]",
+        "[doc:handbook/holiday-peak-playbook.md#5]",
+        "[doc:handbook/support-escalation.md#3]",
+        "[doc:handbook/support-escalation.md#1]"
+       ]
+      }
+     }
+    ],
+    "evidence": [
+     "[doc:handbook/support-escalation.md#3]",
+     "[doc:handbook/support-escalation.md#0]",
+     "[doc:handbook/holiday-peak-playbook.md#5]",
+     "[doc:handbook/support-escalation.md#1]",
+     "[sql:1]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": true,
+    "facts_ok": [
+     true,
+     true,
+     true
+    ],
+    "reason": "Fact 1: answer says safety issue and must be treated as urgent, so stated. Fact 2: answer states first-response SLA is 1 hour, so stated. Fact 3: answer says immediately tell the customer to stop using the power bank, so stated.",
+    "judge_cost_usd": 0.0001546
+   },
+   "gold_doc_retrieved": true
+  },
+  {
+   "id": "i01",
+   "template": "intl_eta",
+   "gold": [
+    "Delivery to ID takes 7-14 business days (customs can add time)",
+    "It shipped on 2026-11-05"
+   ],
+   "result": {
+    "variant": "graph",
+    "model": "openai/gpt-6-luna",
+    "question": "Customer 794 asks when order 29537 will arrive. What do we tell them?",
+    "answer": "We can\u2019t provide an arrival date: order 29537 is in transit with DHL, but no tracking number, tracking events, or estimated delivery date are available. [sql:1] [sql:3]",
+    "latency_ms": 25942,
+    "usage": {
+     "calls": 11,
+     "prompt_tokens": 7953,
+     "completion_tokens": 1029,
+     "cost_usd": 0.00134998,
+     "llm_ms": 25883
+    },
+    "citations": {
+     "citations": [
+      "[sql:1]",
+      "[sql:3]"
+     ],
+     "invalid": [],
+     "cites_doc": false,
+     "cites_sql": true
+    },
+    "steps": [
+     {
+      "node": "route",
+      "ms": 1605,
+      "llm_calls": 1
+     },
+     {
+      "node": "sql",
+      "ms": 1801,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 2991,
+      "llm_calls": 1
+     },
+     {
+      "node": "rewrite",
+      "ms": 2455,
+      "llm_calls": 1
+     },
+     {
+      "node": "sql",
+      "ms": 2875,
+      "llm_calls": 1
+     },
+     {
+      "node": "grade",
+      "ms": 1653,
+      "llm_calls": 1
+     },
+     {
+      "node": "rewrite",
+      "ms": 1564,
+      "llm_calls": 1
+     },
+     {
+      "node": "retrieve",
+      "ms": 94,
+      "llm_calls": 0
+     },
+     {
+      "node": "sql",
+      "ms": 5093,
+      "llm_calls": 2
+     },
+     {
+      "node": "grade",
+      "ms": 4328,
+      "llm_calls": 1
+     },
+     {
+      "node": "answer",
+      "ms": 1568,
+      "llm_calls": 1
+     },
+     {
+      "query": {
+       "step": "route",
+       "doc_query": null,
+       "sql_question": "For customer 794, fetch order 29537\u2019s current status and shipment tracking details, including carrier, tracking events, latest location/status, and estimated delivery date."
+      }
+     },
+     {
+      "query": {
+       "step": "rewrite1",
+       "doc_query": null,
+       "sql_question": "For shipment on order 29537 (customer 794), retrieve its tracking-event history and current tracking details: latest scan location and status, event timestamps, and carrier-provided estimated delivery date."
+      }
+     },
+     {
+      "query": {
+       "step": "rewrite2",
+       "doc_query": "What should support tell a customer when a DHL shipment is in transit but has no carrier-provided delivery estimate?",
+       "sql_question": "For shipment on order 29537, customer 794, retrieve the DHL tracking number and carrier tracking data not included in the shipment record query, especially the latest tracking event\u2019s timestamp, location and status, and any estimated delivery date."
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Look up the shipment\u2019s tracking events, latest location/status, and estimated delivery date.",
+       "relevant": [
+        "[sql:1]"
+       ]
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Look up the carrier\u2019s latest tracking event/location and estimated delivery date, along with the policy for what to tell customers when an in-transit shipment has no available delivery estimate.",
+       "relevant": [
+        "[sql:1]",
+        "[sql:2]"
+       ]
+      }
+     },
+     {
+      "grade": {
+       "sufficient": false,
+       "missing": "Look up DHL's tracking information or a carrier-provided estimated delivery date for order 29537; the shipment is in transit, but no tracking number, tracking events, or estimated delivery date are available.",
+       "relevant": [
+        "[sql:1]",
+        "[sql:3]"
+       ]
+      }
+     }
+    ],
+    "evidence": [
+     "[sql:1]",
+     "[sql:2]",
+     "[doc:handbook/carrier-claims.md#0]",
+     "[doc:handbook/warehouse-operations.md#2]",
+     "[doc:handbook/carrier-claims.md#1]",
+     "[doc:handbook/carrier-claims.md#2]",
+     "[sql:3]"
+    ],
+    "sql_errors": 0,
+    "error": null
+   },
+   "judge": {
+    "pass": false,
+    "facts_ok": [
+     false,
+     false
+    ],
+    "reason": "Fact 1: The answer does not mention the 7-14 business day delivery window, so it is not stated. Fact 2: The answer does not mention the shipping date 2026-11-05, so it is not stated.",
+    "judge_cost_usd": 0.0001259
+   },
+   "gold_doc_retrieved": false
+  }
+ ]
+}

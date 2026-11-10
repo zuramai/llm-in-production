@@ -1,0 +1,548 @@
+{
+  "built_at": "2026-11-09T08:32:08-05:00",
+  "questions": [
+    {
+      "id": "r01",
+      "template": "return_open",
+      "question": "Customer 3256 changed their mind about order 28150. Can they still return it, and what is the last day they can?",
+      "gold": [
+        "Yes, it can still be returned (within 30 days of delivery)",
+        "The last day to return it is 2026-11-27"
+      ],
+      "docs": [
+        "policies/returns-policy.md",
+        "policies/refund-policy.md"
+      ],
+      "data": {
+        "id": 28150,
+        "customer_id": 3256,
+        "subtotal_cents": 33998,
+        "discount_cents": 0,
+        "shipping_cents": 0,
+        "total_cents": 33998,
+        "delivered_at": "2026-10-28T02:29:41.403007-04:00",
+        "product": "Lite Sandal",
+        "category": "Footwear",
+        "days": 12
+      }
+    },
+    {
+      "id": "r02",
+      "template": "return_closed",
+      "question": "Can customer 4627 still return order 22504?",
+      "gold": [
+        "No, the 30-day return window has closed (delivered 2026-09-27, 43 days ago)"
+      ],
+      "docs": [
+        "policies/returns-policy.md",
+        "policies/refund-policy.md"
+      ],
+      "data": {
+        "id": 22504,
+        "customer_id": 4627,
+        "subtotal_cents": 6799,
+        "discount_cents": 0,
+        "shipping_cents": 599,
+        "total_cents": 7398,
+        "delivered_at": "2026-09-27T00:23:10.842608-04:00",
+        "product": "Pro Resistance Bands",
+        "category": "Sports & Outdoors",
+        "days": 43
+      }
+    },
+    {
+      "id": "r03",
+      "template": "return_opened_beauty",
+      "question": "Customer 3546 opened the Everyday Face Serum from order 28862 and doesn't like it. Can they return it for a refund?",
+      "gold": [
+        "No: opened Beauty items can't be returned unless they arrived damaged or defective (even though it is within 30 days of delivery)"
+      ],
+      "docs": [
+        "policies/returns-policy.md",
+        "policies/refund-policy.md"
+      ],
+      "data": {
+        "id": 28862,
+        "customer_id": 3546,
+        "subtotal_cents": 9398,
+        "discount_cents": 0,
+        "shipping_cents": 0,
+        "total_cents": 9398,
+        "delivered_at": "2026-11-04T00:01:19.658250-05:00",
+        "product": "Everyday Face Serum",
+        "category": "Beauty",
+        "days": 5
+      }
+    },
+    {
+      "id": "r04",
+      "template": "damaged_opened_grocery",
+      "question": "The Lite Matcha Powder in order 28866 arrived damaged and customer 3885 has already opened it. What can we offer?",
+      "gold": [
+        "It is still eligible: damaged grocery items qualify even if opened (reported within 30 days of delivery)",
+        "A free replacement or a full refund including shipping (the order total is $33.29)"
+      ],
+      "docs": [
+        "policies/damaged-or-defective-items.md",
+        "policies/returns-policy.md"
+      ],
+      "data": {
+        "id": 28866,
+        "customer_id": 3885,
+        "subtotal_cents": 3699,
+        "discount_cents": 370,
+        "shipping_cents": 0,
+        "total_cents": 3329,
+        "delivered_at": "2026-11-03T20:47:56.191866-05:00",
+        "product": "Lite Matcha Powder",
+        "category": "Grocery",
+        "days": 6
+      }
+    },
+    {
+      "id": "c01",
+      "template": "cancel_paid",
+      "question": "Customer 609 wants to cancel order 30238. Is that possible, and how much do they get back?",
+      "gold": [
+        "Yes, it can be cancelled free of charge because it hasn't shipped (status paid)",
+        "A full refund of $79.78 (including shipping, to the original payment method within 5-7 business days)"
+      ],
+      "docs": [
+        "policies/order-cancellation.md"
+      ],
+      "data": {
+        "id": 30238,
+        "customer_id": 609,
+        "total_cents": 7978,
+        "shipping_cents": 599,
+        "placed_at": "2026-11-08T17:30:13.092952-05:00"
+      }
+    },
+    {
+      "id": "c02",
+      "template": "cancel_shipped",
+      "question": "The customer changed their mind. Can order 29810 still be cancelled?",
+      "gold": [
+        "No, it has already shipped (on 2026-11-08)",
+        "The customer can return it after delivery (within 30 days of delivery)"
+      ],
+      "docs": [
+        "policies/order-cancellation.md"
+      ],
+      "data": {
+        "id": 29810,
+        "customer_id": 4650,
+        "shipped_at": "2026-11-08T10:03:24.727223-05:00"
+      }
+    },
+    {
+      "id": "c03",
+      "template": "pending_autocancel",
+      "question": "Order 30335 is still pending. Was the customer charged, and what happens to the order if nothing changes?",
+      "gold": [
+        "The customer was not charged (no successful payment; 2 failed attempts)",
+        "It is cancelled automatically 48 hours after it was placed (around 2026-11-11 00:00 ET)"
+      ],
+      "docs": [
+        "policies/order-cancellation.md"
+      ],
+      "data": {
+        "id": 30335,
+        "customer_id": 687,
+        "placed_at": "2026-11-09T00:00:11.914874-05:00",
+        "failed_attempts": 2
+      }
+    },
+    {
+      "id": "w01",
+      "template": "warranty_electronics",
+      "question": "The Everyday USB-C Hub from order 5098 stopped charging. Customer 242 wants their money back. Return or warranty?",
+      "gold": [
+        "The 30-day return window has closed",
+        "It is covered by the 1-year Electronics warranty (until 2027-06-18)",
+        "Under warranty ShopFlow replaces it, or refunds the item price if no replacement is available"
+      ],
+      "docs": [
+        "policies/warranty-policy.md"
+      ],
+      "data": {
+        "id": 5098,
+        "customer_id": 242,
+        "subtotal_cents": 8199,
+        "discount_cents": 0,
+        "shipping_cents": 0,
+        "total_cents": 8199,
+        "delivered_at": "2026-06-18T04:41:27.345346-04:00",
+        "product": "Everyday USB-C Hub",
+        "category": "Electronics",
+        "days": 144
+      }
+    },
+    {
+      "id": "w02",
+      "template": "warranty_expired",
+      "question": "The Eco Gel Pen Pack from order 3744 has a manufacturing defect. Is it still under warranty?",
+      "gold": [
+        "No, it is no longer under warranty (Office has a 90-day warranty, which ended 2026-09-05)"
+      ],
+      "docs": [
+        "policies/warranty-policy.md"
+      ],
+      "data": {
+        "id": 3744,
+        "customer_id": 304,
+        "subtotal_cents": 1999,
+        "discount_cents": 0,
+        "shipping_cents": 599,
+        "total_cents": 2598,
+        "delivered_at": "2026-06-07T10:28:28.043609-04:00",
+        "product": "Eco Gel Pen Pack",
+        "category": "Office",
+        "days": 155
+      }
+    },
+    {
+      "id": "w03",
+      "template": "warranty_90_open",
+      "question": "Customer 4346 reports a defect in the Lite Chef Knife from order 18746. Can we still do anything?",
+      "gold": [
+        "The 30-day return window has closed",
+        "It is still covered by the 90-day warranty (until 2026-12-05)"
+      ],
+      "docs": [
+        "policies/warranty-policy.md"
+      ],
+      "data": {
+        "id": 18746,
+        "customer_id": 4346,
+        "subtotal_cents": 1299,
+        "discount_cents": 0,
+        "shipping_cents": 599,
+        "total_cents": 1898,
+        "delivered_at": "2026-09-06T07:48:37.398905-04:00",
+        "product": "Lite Chef Knife",
+        "category": "Home & Kitchen",
+        "days": 64
+      }
+    },
+    {
+      "id": "a01",
+      "template": "approver_support_agent",
+      "question": "Order 26845 arrived damaged and customer 4650 prefers a full refund. Who has to approve it?",
+      "gold": [
+        "The full refund is $54.98 (including shipping)",
+        "A support agent can approve it (up to $100.00)"
+      ],
+      "docs": [
+        "handbook/refund-approval-limits.md",
+        "policies/damaged-or-defective-items.md"
+      ],
+      "data": {
+        "id": 26845,
+        "customer_id": 4650,
+        "subtotal_cents": 4899,
+        "discount_cents": 0,
+        "shipping_cents": 599,
+        "total_cents": 5498,
+        "delivered_at": "2026-10-22T02:29:30.412605-04:00",
+        "product": "Classic Sunscreen SPF 50",
+        "category": "Beauty",
+        "days": 18
+      }
+    },
+    {
+      "id": "a02",
+      "template": "approver_team_lead",
+      "question": "Order 26302 arrived damaged and customer 2076 prefers a full refund. Who has to approve it?",
+      "gold": [
+        "The full refund is $213.98 (including shipping)",
+        "A team lead must approve it ($100.01 to $500.00)"
+      ],
+      "docs": [
+        "handbook/refund-approval-limits.md",
+        "policies/damaged-or-defective-items.md"
+      ],
+      "data": {
+        "id": 26302,
+        "customer_id": 2076,
+        "subtotal_cents": 21398,
+        "discount_cents": 0,
+        "shipping_cents": 0,
+        "total_cents": 21398,
+        "delivered_at": "2026-10-20T15:51:36.941624-04:00",
+        "product": "Pro Merino T-Shirt v159",
+        "category": "Apparel",
+        "days": 20
+      }
+    },
+    {
+      "id": "a03",
+      "template": "approver_finance",
+      "question": "Order 28460 arrived damaged and customer 4775 prefers a full refund. Who has to approve it?",
+      "gold": [
+        "The full refund is $578.97 (including shipping)",
+        "Finance must approve it (above $500.00, via the finance-approvals channel)"
+      ],
+      "docs": [
+        "handbook/refund-approval-limits.md",
+        "policies/damaged-or-defective-items.md"
+      ],
+      "data": {
+        "id": 28460,
+        "customer_id": 4775,
+        "subtotal_cents": 57897,
+        "discount_cents": 0,
+        "shipping_cents": 0,
+        "total_cents": 57897,
+        "delivered_at": "2026-11-02T12:29:59.186422-05:00",
+        "product": "Max USB-C Hub",
+        "category": "Electronics",
+        "days": 7
+      }
+    },
+    {
+      "id": "m01",
+      "template": "missing_open",
+      "question": "Order 28570 shows delivered but customer 4112 says it never arrived. Can we open a carrier investigation?",
+      "gold": [
+        "Yes: it is within 14 days of the delivery date (deadline 2026-11-16; the 24-hour wait has passed)"
+      ],
+      "docs": [
+        "policies/shipping-policy.md",
+        "handbook/carrier-claims.md"
+      ],
+      "data": {
+        "id": 28570,
+        "customer_id": 4112,
+        "subtotal_cents": 10398,
+        "discount_cents": 0,
+        "shipping_cents": 0,
+        "total_cents": 10398,
+        "delivered_at": "2026-11-02T08:38:50.117446-05:00",
+        "product": "Eco Desk Lamp",
+        "category": "Office",
+        "days": 7
+      }
+    },
+    {
+      "id": "m02",
+      "template": "missing_closed",
+      "question": "Customer 1123 just told us order 25895 never arrived, even though tracking says delivered. Can we still open a carrier investigation?",
+      "gold": [
+        "No: missing-package claims must be made within 14 days of the delivery date (delivered 2026-10-16; the window ended 2026-10-30)"
+      ],
+      "docs": [
+        "policies/shipping-policy.md",
+        "handbook/carrier-claims.md"
+      ],
+      "data": {
+        "id": 25895,
+        "customer_id": 1123,
+        "subtotal_cents": 19199,
+        "discount_cents": 0,
+        "shipping_cents": 0,
+        "total_cents": 19199,
+        "delivered_at": "2026-10-16T14:24:56.059764-04:00",
+        "product": "Lite USB-C Hub",
+        "category": "Electronics",
+        "days": 24
+      }
+    },
+    {
+      "id": "f01",
+      "template": "refund_changed_mind",
+      "question": "If customer 363 returns order 26887 because they changed their mind, how much will they get back?",
+      "gold": [
+        "$43.00 (the $48.99 item price minus the $5.99 return label; the original shipping is not refunded)"
+      ],
+      "docs": [
+        "policies/refund-policy.md"
+      ],
+      "data": {
+        "id": 26887,
+        "customer_id": 363,
+        "subtotal_cents": 4899,
+        "discount_cents": 0,
+        "shipping_cents": 599,
+        "total_cents": 5498,
+        "delivered_at": "2026-10-25T15:59:54.630104-04:00",
+        "product": "Mini Desk Lamp",
+        "category": "Office",
+        "days": 15
+      }
+    },
+    {
+      "id": "f02",
+      "template": "refund_defective",
+      "question": "Customer 1005 says the item in order 26148 is defective and wants a refund, not a replacement. How much do we refund?",
+      "gold": [
+        "The full $13.18 (including the original shipping; no $5.99 return-label deduction)"
+      ],
+      "docs": [
+        "policies/refund-policy.md",
+        "policies/damaged-or-defective-items.md"
+      ],
+      "data": {
+        "id": 26148,
+        "customer_id": 1005,
+        "subtotal_cents": 799,
+        "discount_cents": 80,
+        "shipping_cents": 599,
+        "total_cents": 1318,
+        "delivered_at": "2026-10-21T15:19:43.676258-04:00",
+        "product": "Pro Olive Oil",
+        "category": "Grocery",
+        "days": 19
+      }
+    },
+    {
+      "id": "p01",
+      "template": "price_adjust_open",
+      "question": "Customer 1127 saw the price of an item from order 29935 drop today. Can they get the difference back, and by when must they ask?",
+      "gold": [
+        "Yes, a one-time price adjustment is allowed (within 7 days of the successful payment on 2026-11-06)",
+        "They must ask by 2026-11-13"
+      ],
+      "docs": [
+        "policies/price-adjustment-policy.md"
+      ],
+      "data": {
+        "id": 29935,
+        "customer_id": 1127,
+        "status": "shipped",
+        "paid_at": "2026-11-06T09:17:26.787647-05:00",
+        "days": 3
+      }
+    },
+    {
+      "id": "p02",
+      "template": "price_adjust_closed",
+      "question": "The price of an item in order 27468 just dropped. Can customer 1419 get a price adjustment?",
+      "gold": [
+        "No, the 7-day price adjustment window has passed (payment succeeded 2026-10-22; the window ended 2026-10-29)"
+      ],
+      "docs": [
+        "policies/price-adjustment-policy.md"
+      ],
+      "data": {
+        "id": 27468,
+        "customer_id": 1419,
+        "status": "delivered",
+        "paid_at": "2026-10-22T09:40:10.187772-04:00",
+        "days": 18
+      }
+    },
+    {
+      "id": "v01",
+      "template": "vip_shipping",
+      "question": "Does customer 553 pay for standard shipping?",
+      "gold": [
+        "No: the customer is VIP, and VIPs get free standard shipping (on every order)"
+      ],
+      "docs": [
+        "policies/vip-program.md"
+      ],
+      "data": {
+        "id": 553,
+        "segment": "vip",
+        "spent_cents": 131795,
+        "not_counted_cents": 10998
+      }
+    },
+    {
+      "id": "v02",
+      "template": "vip_gap",
+      "question": "How much more does customer 2359 need to spend this year to become VIP?",
+      "gold": [
+        "$218.07 more (completed purchases this calendar year total $781.93 of the $1,000.00 threshold; cancelled and refunded orders don't count)"
+      ],
+      "docs": [
+        "policies/vip-program.md"
+      ],
+      "data": {
+        "id": 2359,
+        "segment": "consumer",
+        "spent_cents": 78193,
+        "not_counted_cents": 48194
+      }
+    },
+    {
+      "id": "s01",
+      "template": "shipping_after_discount",
+      "question": "Customer 1993 says their cart was over $75 but they still paid shipping on order 17960. Were they charged correctly?",
+      "gold": [
+        "Yes: after the $7.60 discount the order was $68.39, below the $75.00 free-shipping threshold (which applies after discounts; the customer isn't VIP)",
+        "$5.99 standard shipping was correctly charged"
+      ],
+      "docs": [
+        "policies/shipping-policy.md"
+      ],
+      "data": {
+        "id": 17960,
+        "customer_id": 1993,
+        "subtotal_cents": 7599,
+        "discount_cents": 760,
+        "shipping_cents": 599,
+        "segment": "consumer"
+      }
+    },
+    {
+      "id": "s02",
+      "template": "shipping_correct",
+      "question": "Customer 3122 asks why they paid no shipping on order 29783. Was that correct?",
+      "gold": [
+        "Yes: after the $9.40 discount the order was $84.59, at or above the $75.00 free standard shipping threshold"
+      ],
+      "docs": [
+        "policies/shipping-policy.md"
+      ],
+      "data": {
+        "id": 29783,
+        "customer_id": 3122,
+        "subtotal_cents": 9399,
+        "discount_cents": 940,
+        "shipping_cents": 0,
+        "segment": "consumer"
+      }
+    },
+    {
+      "id": "t01",
+      "template": "ticket_safety",
+      "question": "How should we handle support ticket 1534, and how fast must we respond?",
+      "gold": [
+        "It is a safety issue: priority urgent",
+        "First response within 1 hour",
+        "Tell the customer to stop using the product immediately"
+      ],
+      "docs": [
+        "handbook/support-escalation.md",
+        "policies/damaged-or-defective-items.md"
+      ],
+      "data": {
+        "id": 1534,
+        "order_id": 5738,
+        "subject": "Smoke!!",
+        "body": "The power bank from order #5738 swelled up and smells like burning plastic. My kid was playing near it. What do I do?"
+      }
+    },
+    {
+      "id": "i01",
+      "template": "intl_eta",
+      "question": "Customer 2756 asks when order 29267 will arrive. What do we tell them?",
+      "gold": [
+        "Delivery to AU takes 7-14 business days (customs can add time)",
+        "It shipped on 2026-11-04"
+      ],
+      "docs": [
+        "policies/international-shipping.md",
+        "faq.md"
+      ],
+      "data": {
+        "id": 29267,
+        "customer_id": 2756,
+        "country": "AU",
+        "shipped_at": "2026-11-04T06:05:08.973934-05:00"
+      }
+    }
+  ]
+}
