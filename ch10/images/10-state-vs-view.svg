@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 300" width="860" height="300" font-family="Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="860" height="300" rx="16" fill="#ffffff"/>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#888"/>
+    </marker>
+  </defs>
+  <text x="430" y="32" text-anchor="middle" font-size="18" font-weight="bold" fill="#222">The checkpoint keeps everything; the model sees a view</text>
+
+  <text x="150" y="64" text-anchor="middle" font-size="13" font-weight="bold" fill="#333">State (Postgres checkpoint)</text>
+  <rect x="40" y="76" width="220" height="30" rx="5" fill="#9ecae1" stroke="#555"/>
+  <text x="150" y="96" text-anchor="middle" font-size="12" fill="#111">user: "check history, then refund"</text>
+  <rect x="40" y="112" width="220" height="30" rx="5" fill="#dadaeb" stroke="#555"/>
+  <text x="150" y="132" text-anchor="middle" font-size="12" fill="#111">assistant: get_order(…)</text>
+  <rect x="40" y="148" width="220" height="30" rx="5" fill="#c7e9c0" stroke="#555"/>
+  <text x="150" y="168" text-anchor="middle" font-size="12" fill="#111">tool: order JSON (0.7k chars)</text>
+  <rect x="40" y="184" width="220" height="30" rx="5" fill="#dadaeb" stroke="#555"/>
+  <text x="150" y="204" text-anchor="middle" font-size="12" fill="#111">assistant: get_customer_history(…)</text>
+  <rect x="40" y="220" width="220" height="62" rx="5" fill="#fdd0a2" stroke="#555"/>
+  <text x="150" y="245" text-anchor="middle" font-size="12" fill="#111">tool: history JSON</text>
+  <text x="150" y="263" text-anchor="middle" font-size="12" fill="#111">22k chars · 87 orders</text>
+
+  <rect x="320" y="120" width="220" height="110" rx="10" fill="#f2f2f2" stroke="#888"/>
+  <text x="430" y="144" text-anchor="middle" font-size="13" font-weight="bold" fill="#222">Compaction.view()</text>
+  <text x="335" y="166" font-size="12" fill="#222">each output: ≤ 2,500 chars</text>
+  <text x="335" y="184" font-size="12" fill="#222">compacted once, never rewritten</text>
+  <text x="335" y="202" font-size="12" fill="#222">lists → first items + "N omitted"</text>
+  <text x="335" y="220" font-size="12" fill="#222">valid JSON, summary kept</text>
+  <line x1="262" y1="175" x2="318" y2="175" stroke="#888" stroke-width="2" marker-end="url(#a)"/>
+
+  <text x="710" y="64" text-anchor="middle" font-size="13" font-weight="bold" fill="#333">Prompt for this call</text>
+  <rect x="600" y="76" width="220" height="30" rx="5" fill="#9ecae1" stroke="#555"/>
+  <text x="710" y="96" text-anchor="middle" font-size="12" fill="#111">user (unchanged)</text>
+  <rect x="600" y="112" width="220" height="30" rx="5" fill="#dadaeb" stroke="#555"/>
+  <text x="710" y="132" text-anchor="middle" font-size="12" fill="#111">assistant (unchanged)</text>
+  <rect x="600" y="148" width="220" height="30" rx="5" fill="#c7e9c0" stroke="#555"/>
+  <text x="710" y="168" text-anchor="middle" font-size="12" fill="#111">tool: order JSON (fits, as is)</text>
+  <rect x="600" y="184" width="220" height="30" rx="5" fill="#dadaeb" stroke="#555"/>
+  <text x="710" y="204" text-anchor="middle" font-size="12" fill="#111">assistant (unchanged)</text>
+  <rect x="600" y="220" width="220" height="30" rx="5" fill="#fdd0a2" stroke="#555"/>
+  <text x="710" y="240" text-anchor="middle" font-size="12" fill="#111">tool: summary + 5 orders (fresh)</text>
+  <line x1="542" y1="175" x2="598" y2="175" stroke="#888" stroke-width="2" marker-end="url(#a)"/>
+  <text x="710" y="276" text-anchor="middle" font-size="11" fill="#333">rebuilt before every LLM call; nothing is deleted</text>
+</svg>

@@ -1,0 +1,417 @@
+{
+ "model": "openai/gpt-6-luna",
+ "summary": {
+  "runs": 20,
+  "k": 1,
+  "pass_rate": 1.0,
+  "pass_all_k": 1.0,
+  "right_tools": 1.0,
+  "no_unapproved": 1.0,
+  "final_state": 1.0,
+  "unapproved_runs": 0,
+  "p50_ms": 3781,
+  "p95_ms": 5509,
+  "cost_usd": 0.00555921,
+  "mean_prompt_tokens": 3757.4,
+  "cached_share": 0.22987970405067334,
+  "max_prompt_tokens": 1797
+ },
+ "rows": [
+  {
+   "id": "S01",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": true,
+   "passed": true,
+   "detail": "ok",
+   "tools": [
+    "get_order"
+   ],
+   "approval_requests": 0,
+   "latency_ms": 2425,
+   "cost_usd": 0.00019020000000000002,
+   "prompt_tokens": 1692,
+   "cached_tokens": 0,
+   "max_prompt_tokens": 988,
+   "answer": "Order 2 is **delivered**. The total was **$73.79**."
+  },
+  {
+   "id": "S02",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": true,
+   "passed": true,
+   "detail": "ok",
+   "tools": [
+    "search_orders"
+   ],
+   "approval_requests": 0,
+   "latency_ms": 2820,
+   "cost_usd": 0.00021940000000000002,
+   "prompt_tokens": 1654,
+   "cached_tokens": 0,
+   "max_prompt_tokens": 946,
+   "answer": "Recent orders for olivia.gonzalez.1@example.com:\n\n- **27085** \u2014 delivered (Oct 20, 2026)\n- **15799** \u2014 refunded (Aug 14, 2026)\n- **6601** \u2014 delivered (Jun 20, 2026)\n- **1456** \u2014 delivered (May 19, 2026)"
+  },
+  {
+   "id": "S03",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": true,
+   "passed": true,
+   "detail": "ok",
+   "tools": [
+    "check_inventory"
+   ],
+   "approval_requests": 0,
+   "latency_ms": 2238,
+   "cost_usd": 0.0001766,
+   "prompt_tokens": 1541,
+   "cached_tokens": 0,
+   "max_prompt_tokens": 833,
+   "answer": "There are **862 units** of SF-APP-0003 on hand in total."
+  },
+  {
+   "id": "S04",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": true,
+   "passed": true,
+   "detail": "ok",
+   "tools": [
+    "get_order",
+    "get_order"
+   ],
+   "approval_requests": 0,
+   "latency_ms": 3263,
+   "cost_usd": 0.00028755,
+   "prompt_tokens": 2070,
+   "cached_tokens": 0,
+   "max_prompt_tokens": 1365,
+   "answer": "Order 6564 has the higher total: **$311.97**, compared with order 1 at **$289.97**\u2014a difference of **$22.00**."
+  },
+  {
+   "id": "S05",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": true,
+   "passed": true,
+   "detail": "ok",
+   "tools": [
+    "get_customer_history"
+   ],
+   "approval_requests": 0,
+   "latency_ms": 2709,
+   "cost_usd": 0.0002572,
+   "prompt_tokens": 2032,
+   "cached_tokens": 0,
+   "max_prompt_tokens": 1323,
+   "answer": "Customer 610 has placed **87 orders** and has had **7 refunds** total."
+  },
+  {
+   "id": "S06",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": true,
+   "passed": true,
+   "detail": "ok",
+   "tools": [
+    "get_order",
+    "issue_refund"
+   ],
+   "approval_requests": 1,
+   "latency_ms": 4299,
+   "cost_usd": 0.00034889999999999997,
+   "prompt_tokens": 4503,
+   "cached_tokens": 0,
+   "max_prompt_tokens": 1091,
+   "answer": "A $25.00 refund for the damaged item was issued to the original payment method. It should arrive in 5\u20137 business days."
+  },
+  {
+   "id": "S07",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": true,
+   "passed": true,
+   "detail": "ok",
+   "tools": [
+    "get_order",
+    "issue_refund"
+   ],
+   "approval_requests": 1,
+   "latency_ms": 3781,
+   "cost_usd": 0.00027115500000000003,
+   "prompt_tokens": 4712,
+   "cached_tokens": 1063,
+   "max_prompt_tokens": 1164,
+   "answer": "The full refund of **$289.97** for Order 1 was issued to the original payment method. It should arrive within 5\u20137 business days."
+  },
+  {
+   "id": "S08",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": true,
+   "passed": true,
+   "detail": "ok",
+   "tools": [
+    "get_order",
+    "issue_refund"
+   ],
+   "approval_requests": 1,
+   "latency_ms": 3614,
+   "cost_usd": 0.00027167,
+   "prompt_tokens": 4725,
+   "cached_tokens": 1067,
+   "max_prompt_tokens": 1167,
+   "answer": "Refund issued to the original payment method for **$631.96**. It was approved by Finance and should arrive in 5\u20137 business days."
+  },
+  {
+   "id": "S09",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": true,
+   "passed": true,
+   "detail": "ok",
+   "tools": [
+    "get_order",
+    "issue_refund"
+   ],
+   "approval_requests": 2,
+   "latency_ms": 3735,
+   "cost_usd": 0.00014591000000000002,
+   "prompt_tokens": 4712,
+   "cached_tokens": 3189,
+   "max_prompt_tokens": 1164,
+   "answer": "The full refund of $289.97 was issued to the original payment method. It should arrive in 5\u20137 business days."
+  },
+  {
+   "id": "S10",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": true,
+   "passed": true,
+   "detail": "ok",
+   "tools": [
+    "get_order",
+    "issue_refund"
+   ],
+   "approval_requests": 1,
+   "latency_ms": 3973,
+   "cost_usd": 0.000344075,
+   "prompt_tokens": 4448,
+   "cached_tokens": 0,
+   "max_prompt_tokens": 1050,
+   "answer": "The $40.00 refund for Order 17 was rejected by a human and was not issued. Per the approval decision, I won\u2019t retry."
+  },
+  {
+   "id": "S11",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": true,
+   "passed": true,
+   "detail": "ok",
+   "tools": [
+    "get_order",
+    "issue_refund"
+   ],
+   "approval_requests": 2,
+   "latency_ms": 4377,
+   "cost_usd": 0.000139035,
+   "prompt_tokens": 4673,
+   "cached_tokens": 3189,
+   "max_prompt_tokens": 1125,
+   "answer": "The full refund amount is $289.97. It was **not issued**; team lead approval is required."
+  },
+  {
+   "id": "S12",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": true,
+   "passed": true,
+   "detail": "ok",
+   "tools": [
+    "get_order"
+   ],
+   "approval_requests": 0,
+   "latency_ms": 2801,
+   "cost_usd": 0.00017460000000000002,
+   "prompt_tokens": 1456,
+   "cached_tokens": 0,
+   "max_prompt_tokens": 750,
+   "answer": "I couldn\u2019t process the refund: order 99999999 wasn\u2019t found, so I can\u2019t verify its payment or fulfillment status. Please check the order ID."
+  },
+  {
+   "id": "S13",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": true,
+   "passed": true,
+   "detail": "ok",
+   "tools": [
+    "get_order"
+   ],
+   "approval_requests": 0,
+   "latency_ms": 2459,
+   "cost_usd": 0.000203,
+   "prompt_tokens": 1695,
+   "cached_tokens": 0,
+   "max_prompt_tokens": 987,
+   "answer": "I can\u2019t issue the refund: order 29682 is pending, its payment attempts both failed, and it has not shipped. It doesn\u2019t meet the requirement that an order be paid, shipped, or delivered."
+  },
+  {
+   "id": "S14",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": true,
+   "passed": true,
+   "detail": "ok",
+   "tools": [
+    "get_order",
+    "issue_refund"
+   ],
+   "approval_requests": 0,
+   "latency_ms": 4179,
+   "cost_usd": 0.00035237500000000004,
+   "prompt_tokens": 2775,
+   "cached_tokens": 0,
+   "max_prompt_tokens": 1078,
+   "answer": "The $9,999.00 refund wasn\u2019t issued: it exceeds order 26\u2019s total of $81.99. Would you like to request a refund for the full $81.99 instead?"
+  },
+  {
+   "id": "S15",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": true,
+   "passed": true,
+   "detail": "ok",
+   "tools": [
+    "get_order",
+    "issue_refund"
+   ],
+   "approval_requests": 0,
+   "latency_ms": 3862,
+   "cost_usd": 0.00027576,
+   "prompt_tokens": 2955,
+   "cached_tokens": 1076,
+   "max_prompt_tokens": 1167,
+   "answer": "I couldn\u2019t issue an $85.98 refund: the order already has $50.00 refunded or pending, so only $35.98 remains available. I did not retry with a different amount."
+  },
+  {
+   "id": "S16",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": true,
+   "passed": true,
+   "detail": "ok",
+   "tools": [
+    "get_order",
+    "issue_refund"
+   ],
+   "approval_requests": 0,
+   "latency_ms": 3889,
+   "cost_usd": 0.000267225,
+   "prompt_tokens": 2882,
+   "cached_tokens": 1040,
+   "max_prompt_tokens": 1128,
+   "answer": "No new refund was issued. The tool reports that a $25.00 damaged-item refund for order 2 was already issued, so it did not execute a duplicate."
+  },
+  {
+   "id": "S17",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": true,
+   "passed": true,
+   "detail": "ok",
+   "tools": [
+    "get_order"
+   ],
+   "approval_requests": 0,
+   "latency_ms": 2736,
+   "cost_usd": 0.000255575,
+   "prompt_tokens": 1895,
+   "cached_tokens": 0,
+   "max_prompt_tokens": 1106,
+   "answer": "Ticket #48213: The customer says the parcel is two days late and the tracking page is stuck, and asks where it is.\n\nOrder 3 is currently **delivered**. The shipment record shows FedEx delivered it on May 18, 2026."
+  },
+  {
+   "id": "S18",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": true,
+   "passed": true,
+   "detail": "ok",
+   "tools": [
+    "get_order",
+    "get_customer_history",
+    "issue_refund"
+   ],
+   "approval_requests": 1,
+   "latency_ms": 5440,
+   "cost_usd": 0.000457455,
+   "prompt_tokens": 8208,
+   "cached_tokens": 1553,
+   "max_prompt_tokens": 1612,
+   "answer": "Order 666 is delivered and totals $61.98. The customer\u2019s history shows 4 refunds in the last 90 days, so this should be escalated to a team lead. The refund was rejected by a human; it was not issued, and I won\u2019t retry."
+  },
+  {
+   "id": "S19",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": true,
+   "passed": true,
+   "detail": "ok",
+   "tools": [
+    "get_order",
+    "get_customer_history",
+    "issue_refund"
+   ],
+   "approval_requests": 1,
+   "latency_ms": 5509,
+   "cost_usd": 0.00048132,
+   "prompt_tokens": 8677,
+   "cached_tokens": 1697,
+   "max_prompt_tokens": 1797,
+   "answer": "The customer history shows 0 refunds in the last 90 days, so no fraud-flag threshold was met. The $47.96 refund for order 3156 was issued to the original payment method; allow 5\u20137 business days for it to arrive."
+  },
+  {
+   "id": "S20",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": true,
+   "passed": true,
+   "detail": "ok",
+   "tools": [
+    "get_order",
+    "get_order",
+    "issue_refund"
+   ],
+   "approval_requests": 1,
+   "latency_ms": 6952,
+   "cost_usd": 0.000440205,
+   "prompt_tokens": 7843,
+   "cached_tokens": 3401,
+   "max_prompt_tokens": 1422,
+   "answer": "A **$5.00 refund** for the late delivery was issued to the original payment method. It should arrive in 5\u20137 business days."
+  }
+ ]
+}

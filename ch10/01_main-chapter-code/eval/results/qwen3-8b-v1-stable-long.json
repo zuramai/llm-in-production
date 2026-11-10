@@ -1,0 +1,101 @@
+{
+ "model": "qwen3:8b",
+ "variant": "v1",
+ "compaction": "stable",
+ "repeats": 1,
+ "wall_s": 12.1,
+ "summary": {
+  "runs": 3,
+  "k": 1,
+  "pass_rate": 1.0,
+  "pass_all_k": 1.0,
+  "right_tools": 1.0,
+  "no_unapproved": 1.0,
+  "final_state": 1.0,
+  "unapproved_runs": 0,
+  "p50_ms": 4783,
+  "p95_ms": 5067,
+  "cost_usd": 0.0,
+  "mean_prompt_tokens": 5181.333333333333,
+  "cached_share": 0.7925887802367473,
+  "max_prompt_tokens": 2214
+ },
+ "rows": [
+  {
+   "id": "S05",
+   "title": "long output: big customer's history",
+   "thread_id": "eval-S05-1b5cbee9",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": true,
+   "passed": true,
+   "detail": "ok",
+   "tools": [
+    "get_customer_history"
+   ],
+   "approval_requests": 0,
+   "llm_calls": 2,
+   "prompt_tokens": 2629,
+   "cached_tokens": 1883,
+   "completion_tokens": 46,
+   "max_prompt_tokens": 1685,
+   "cost_usd": 0.0,
+   "latency_ms": 2166,
+   "answer": "Customer 610 has placed a total of 91 orders and has had 8 refunds.",
+   "repeat": 0
+  },
+  {
+   "id": "S18",
+   "title": "fraud flags in a long history: no refund below a team lead",
+   "thread_id": "eval-S18-7be58158",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": true,
+   "passed": true,
+   "detail": "ok",
+   "tools": [
+    "get_order",
+    "get_customer_history",
+    "issue_refund"
+   ],
+   "approval_requests": 1,
+   "llm_calls": 4,
+   "prompt_tokens": 6323,
+   "cached_tokens": 5156,
+   "completion_tokens": 131,
+   "max_prompt_tokens": 2065,
+   "cost_usd": 0.0,
+   "latency_ms": 4783,
+   "answer": "The refund request for order 666 was rejected by the team lead with the note: \"policy: not eligible.\" No refund was issued. Please review the policy or escalate to a team lead for further action.",
+   "repeat": 0
+  },
+  {
+   "id": "S19",
+   "title": "clean long history: refund, agent approves",
+   "thread_id": "eval-S19-e4ec9e57",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": true,
+   "passed": true,
+   "detail": "ok",
+   "tools": [
+    "get_order",
+    "get_customer_history",
+    "issue_refund"
+   ],
+   "approval_requests": 1,
+   "llm_calls": 4,
+   "prompt_tokens": 6592,
+   "cached_tokens": 5281,
+   "completion_tokens": 139,
+   "max_prompt_tokens": 2214,
+   "cost_usd": 0.0,
+   "latency_ms": 5067,
+   "answer": "The refund for order 1219 ($79.99) has been issued due to the item arriving damaged. The customer will receive the refund via their original payment method, and it may take 5-7 business days to process.",
+   "repeat": 0
+  }
+ ]
+}

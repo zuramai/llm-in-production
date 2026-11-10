@@ -1,0 +1,100 @@
+{
+ "model": "qwen3:8b",
+ "variant": "v1",
+ "compaction": "raw",
+ "repeats": 1,
+ "wall_s": 98.8,
+ "summary": {
+  "runs": 3,
+  "k": 1,
+  "pass_rate": 0.3333333333333333,
+  "pass_all_k": 0.3333333333333333,
+  "right_tools": 1.0,
+  "no_unapproved": 1.0,
+  "final_state": 1.0,
+  "unapproved_runs": 0,
+  "p50_ms": 43957,
+  "p95_ms": 46600,
+  "cost_usd": 0.0,
+  "mean_prompt_tokens": 8356.333333333334,
+  "cached_share": 0.4623239857991942,
+  "max_prompt_tokens": 5743
+ },
+ "rows": [
+  {
+   "id": "S05",
+   "title": "long output: big customer's history",
+   "thread_id": "eval-S05-467ab414",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": false,
+   "passed": false,
+   "detail": "answer check failed",
+   "tools": [
+    "get_customer_history"
+   ],
+   "approval_requests": 0,
+   "llm_calls": 2,
+   "prompt_tokens": 5042,
+   "cached_tokens": 910,
+   "completion_tokens": 1048,
+   "max_prompt_tokens": 4098,
+   "cost_usd": 0.0,
+   "latency_ms": 43957,
+   "answer": "Here's a **structured summary** of the provided data, which appears to be a list of **orders** and a **ticket** from an e-commerce platform. I've organized the data for clarity and understanding.\n\n---\n\n## \ud83d\udd0d **Summary of Orders**\n\n### \ud83d\udce6 **Order 9668** (2026-07-08) - Delivered\n- **Total**: $149.97\n- **Items**:\n  - Max Plush Fox v55 (SKU: SF-TOY-0055)\n  - Mini Matcha Powder v156 (SKU: SF-GRO-0156)\n  - Premium French Press (SKU: SF-HOM-0098)\n\n### \ud83d\udce6 **Order 9628** (2026-07-08) - Delivered\n- **Total**: $176.97\n- **Items**:\n  - Classic Building Blocks Set (SKU: SF-TOY-0079)\n  - Lite Matcha Powder (SKU: SF-GRO-0084)\n  - Classic Camping Lantern (SKU: SF-SPO-0054)\n\n### \ud83d\udce6 **Order 9490** (2026-07-07) - Delivered\n- **Total**: $18.98\n- **Items**:\n  - Eco Chef Knife (SKU: SF-HOM-0134)\n\n### \ud83d\udce6 **Order 8807** (2026-07-03) - Delivered\n- **Total**: $49.98\n- **Items**:\n  - Pro Face Serum (SKU: SF-BEA-0029)\n\n### \ud83d\udce6 **Order 7981** (2026-06-28) - Delivered\n- **Total**: $61.98\n- **Items**:\n  - Eco Canvas Sneaker (SKU: SF-FOO-0052)\n\n### \ud83d\udce6 **Order 8103** (2026-06-28) - Delivered\n- **Total**: $46.98\n- **Items**:\n  - Max Plush Fox v55 (SKU: SF-TOY-0055)\n\n### \ud83d\udce6 **Order 7757** (2026-06-27) - Delivered\n- **Total**: $92.98\n- **Items**:\n  - Eco Leather Boot (SKU: SF-FOO-0136)\n  - Premium Notebook A5 (SKU: SF-BOO-0152)\n\n### \ud83d\udce6 **Order 7674** (2026-06-26) - Delivered\n- **Total**: $35.68\n- **Items**:\n  - Eco Webcam (SKU: SF-ELE-0025)\n\n### \ud83d\udce6 **Order 7649** (2026-06-26) - Delivered\n- **Total**: $53.98\n- **Items**:\n  - Mini Camping Lantern (SKU: SF-SPO-0078)\n\n### \ud83d\udce6 **Order 7470** (2026-06-25) - Delivered\n- **Total**: $56.38\n- **Items**:\n  - Eco Canvas Sneaker (SKU: SF-FOO-0052)\n\n### \ud83d\udce6 **Order 7444** (2026-06-25) - Delivered\n- **Total**: $205.98\n- **Items**:\n  - Premium Gel Pen Pack (SKU: SF-OFF-0009)\n  - Premium French Press v110 (SKU: SF-HOM-0110)\n\n### \ud83d\udce6 **Order 7225** (2026-06-23) - Delivered\n- **Total**: $258.95\n- **Items**:\n  - Everyday Power Bank (SKU: SF-ELE-0049)\n  - Pro Merino T-Shirt v159 (SKU: SF-APP-0159)\n  - Eco Dark Chocolate Bar (SKU: SF-GRO-0132) x3\n\n### \ud83d\udce6 **Order 6800** (2026-06-21) - Delivered\n- **Total**: $48.98\n- **Items**:\n  - Classic Food Bowl v94 (SKU: SF-PET-00",
+   "repeat": 0
+  },
+  {
+   "id": "S18",
+   "title": "fraud flags in a long history: no refund below a team lead",
+   "thread_id": "eval-S18-62ff9190",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": false,
+   "passed": false,
+   "detail": "answer check failed",
+   "tools": [
+    "get_order",
+    "get_customer_history"
+   ],
+   "approval_requests": 0,
+   "llm_calls": 3,
+   "prompt_tokens": 6377,
+   "cached_tokens": 1870,
+   "completion_tokens": 1071,
+   "max_prompt_tokens": 4098,
+   "cost_usd": 0.0,
+   "latency_ms": 46600,
+   "answer": "It looks like you've provided a list of orders (or order records) with various details such as order ID, status, total amount, placement time, items, and refunds. If you're looking for a specific analysis or summary of this data, here are a few options you might consider:\n\n---\n\n### \u2705 **1. Summary of Total Sales**\nLet's calculate the **total revenue** from delivered orders (excluding refunded orders):\n\n#### **Delivered Orders:**\n- Total cents: 3118 + 8098 + 20198 + 37797 + 4798 + 20897 + 2998 + 16398 + 10699 + 22496 + 27398 + 10699 + 7598 + 12799 + 10496 + 4298 + 17799 + 12599 + 38796 + 8398 + 7497 + 30596 + 10698 + 2998 + 57597 + 10166 + 5098 + 2598 + 12599 + 2497 + 6198 + 1498 = **415,014 cents**  \n- Total in USD: **$4,150.14**\n\n#### **Refunded Orders:**\n- Only one refunded order: `id=664` with total of **35,598 cents** (or **$355.98**)\n\n---\n\n### \u2705 **2. Most Popular Products (by quantity sold)**\nLet's count how many times each product was sold:\n\n| SKU         | Product Name                      | Qty Sold |\n|-------------|-----------------------------------|----------|\n| SF-HOM-0110 | Premium French Press v110        | 6        |\n| SF-APP-0159 | Pro Merino T-Shirt v159          | 5        |\n| SF-PET-0142 | Mini Cat Tree v142               | 3        |\n| SF-ELE-0073 | Everyday USB-C Hub               | 2        |\n| SF-APP-0195 | Max Hoodie                       | 1        |\n| SF-GRO-0072 | Pro Olive Oil v72                | 1        |\n| SF-TOY-0103 | Classic Building Blocks Set v103 | 1        |\n| SF-BOO-0128 | Mini Planner 2027                | 1        |\n| SF-FOO-0196 | Pro Slip-On Loafer v196          | 1        |\n| SF-BEA-0185 | Classic Shampoo Bar v185         | 1        |\n| SF-TOY-0043 | Eco Plush Fox                    | 1        |\n| SF-TOY-0187 | Everyday Puzzle 1000pc           | 1        |\n| SF-ELE-0001 | Lite USB-C Hub                   | 1        |\n| SF-GRO-0060 | Premium Olive Oil                | 1        |\n| SF-TOY-0031 | Mini Card Game                   | 1        |\n| SF-BOO-0104 | Lite Sketchbook                  | 1        |\n| SF-GAR-0107 | Classic Planter Pot v107         | 1        |\n| SF-GRO-0108 | Mini Matcha Powder               | 1        |\n| SF-OFF-0045 | Max Desk Lamp                    | 1        |\n| SF-GRO-0108 | Mini Matcha Powder               | 1        |\n| SF-ELE-0109 | Classic Webcam                   | 1        |\n| SF-HOM-0074 | Everyday Pour-Over Kettle        | 1        |\n| SF-TOY-0187 | Everyday Puzzle 1000pc           | 1        |\n| SF-PET-0154 | Eco Cat Tree v154                | 1        |\n| SF-OFF-0009 | Premium Gel Pen Pack             | 1        |\n| SF-HOM-0086 | Lite Spice Rack                  | 1        |\n| SF-BEA-0149 | Premium Face Serum v149          | 1        |\n| SF-ELE-0181 |",
+   "repeat": 0
+  },
+  {
+   "id": "S19",
+   "title": "clean long history: refund, agent approves",
+   "thread_id": "eval-S19-6277cf7f",
+   "right_tools": true,
+   "no_unapproved": true,
+   "final_state": true,
+   "answer_ok": true,
+   "passed": true,
+   "detail": "ok",
+   "tools": [
+    "get_order",
+    "get_customer_history",
+    "issue_refund"
+   ],
+   "approval_requests": 1,
+   "llm_calls": 4,
+   "prompt_tokens": 13650,
+   "cached_tokens": 8810,
+   "completion_tokens": 139,
+   "max_prompt_tokens": 5743,
+   "cost_usd": 0.0,
+   "latency_ms": 8128,
+   "answer": "The refund for order 1219 ($79.99) has been issued due to the item arriving damaged. The customer will receive the refund to their original payment method, and it may take 5-7 business days to process.",
+   "repeat": 0
+  }
+ ]
+}
