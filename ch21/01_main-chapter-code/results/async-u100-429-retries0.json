@@ -1,0 +1,36 @@
+{
+  "tag": "async-u100-429-retries0",
+  "mode": "async",
+  "users": 100,
+  "workers": 1,
+  "duration_s": 30,
+  "app_env": {
+    "CH21_MAX_RETRIES": "0"
+  },
+  "mock": {
+    "ttft_ms": 1333,
+    "tokens_per_s": 86,
+    "output_tokens": 29,
+    "rate_429": 0.1,
+    "retry_after_s": 1
+  },
+  "window_s": 26.5,
+  "chats_ok": 903,
+  "chats_failed": 176,
+  "error_rate": 0.1631,
+  "throughput_rps": 34.1,
+  "ttft_p50_ms": 1338,
+  "ttft_p95_ms": 1342,
+  "chat_p50_ms": 1680,
+  "chat_p95_ms": 1685,
+  "healthz_p50_ms": 1,
+  "healthz_p95_ms": 5,
+  "healthz_max_ms": 8,
+  "healthz_failed": 0,
+  "errors": {
+    "SSE error: all providers failed: {'p0:http://127.0.0.1:8121/v1': 'circu": 76,
+    "SSE error: all providers failed: {'p0:http://127.0.0.1:8121/v1': 'RateL": 100
+  },
+  "mock_requests": 1051,
+  "mock_max_in_flight": 73
+}

@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 540" width="920" height="540" font-family="Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="920" height="540" rx="16" fill="#ffffff"/>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#888"/>
+    </marker>
+  </defs>
+  <text x="460" y="34" text-anchor="middle" font-size="20" font-weight="bold" fill="#222">ShopFlow chat at a million monthly users</text>
+
+  <!-- users -->
+  <rect x="30" y="200" width="120" height="70" rx="10" fill="#cfe3f5" stroke="#4C78A8"/>
+  <text x="90" y="230" text-anchor="middle" font-size="14" fill="#222" font-weight="bold">Customers</text>
+  <text x="90" y="250" text-anchor="middle" font-size="12" fill="#333">browser · SSE</text>
+
+  <!-- load balancer -->
+  <rect x="185" y="200" width="110" height="70" rx="10" fill="#e0e0e0" stroke="#888"/>
+  <text x="240" y="230" text-anchor="middle" font-size="14" fill="#222" font-weight="bold">Load</text>
+  <text x="240" y="248" text-anchor="middle" font-size="14" fill="#222" font-weight="bold">balancer</text>
+  <line x1="150" y1="235" x2="183" y2="235" stroke="#888" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- API replicas -->
+  <rect x="330" y="95" width="210" height="280" rx="12" fill="#f3f3f3" stroke="#888" stroke-dasharray="5,4"/>
+  <text x="435" y="118" text-anchor="middle" font-size="13" fill="#333">N stateless API replicas</text>
+  <rect x="350" y="130" width="170" height="64" rx="8" fill="#cde8d4" stroke="#54A24B"/>
+  <text x="435" y="156" text-anchor="middle" font-size="13" fill="#222" font-weight="bold">FastAPI · async def</text>
+  <text x="435" y="176" text-anchor="middle" font-size="12" fill="#333">AsyncOpenAI, pooled</text>
+  <rect x="350" y="206" width="170" height="64" rx="8" fill="#cde8d4" stroke="#54A24B"/>
+  <text x="435" y="232" text-anchor="middle" font-size="13" fill="#222" font-weight="bold">FastAPI · async def</text>
+  <text x="435" y="252" text-anchor="middle" font-size="12" fill="#333">AsyncOpenAI, pooled</text>
+  <rect x="350" y="282" width="170" height="64" rx="8" fill="#cde8d4" stroke="#54A24B"/>
+  <text x="435" y="308" text-anchor="middle" font-size="13" fill="#222" font-weight="bold">…</text>
+  <text x="435" y="328" text-anchor="middle" font-size="12" fill="#333">same code, more copies</text>
+  <line x1="295" y1="225" x2="348" y2="165" stroke="#888" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="295" y1="235" x2="348" y2="238" stroke="#888" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="295" y1="245" x2="348" y2="312" stroke="#888" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- redis -->
+  <rect x="330" y="410" width="210" height="80" rx="10" fill="#f9d5c5" stroke="#E45756"/>
+  <text x="435" y="438" text-anchor="middle" font-size="14" fill="#222" font-weight="bold">Redis token buckets</text>
+  <text x="435" y="458" text-anchor="middle" font-size="12" fill="#333">per user (abuse) · per provider</text>
+  <text x="435" y="476" text-anchor="middle" font-size="12" fill="#333">(stay under the RPM/TPM tier)</text>
+  <line x1="435" y1="377" x2="435" y2="408" stroke="#888" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- failover router -->
+  <rect x="590" y="95" width="300" height="200" rx="12" fill="#f3f3f3" stroke="#888" stroke-dasharray="5,4"/>
+  <text x="740" y="118" text-anchor="middle" font-size="13" fill="#333">failover in order · circuit breaker each · jittered retries</text>
+  <rect x="610" y="132" width="260" height="42" rx="8" fill="#fde7b8" stroke="#F58518"/>
+  <text x="740" y="158" text-anchor="middle" font-size="13" fill="#222">1. primary provider (gpt-6-luna)</text>
+  <rect x="610" y="184" width="260" height="42" rx="8" fill="#fde7b8" stroke="#F58518"/>
+  <text x="740" y="210" text-anchor="middle" font-size="13" fill="#222">2. second provider / region</text>
+  <rect x="610" y="236" width="260" height="42" rx="8" fill="#fde7b8" stroke="#F58518"/>
+  <text x="740" y="262" text-anchor="middle" font-size="13" fill="#222">3. self-hosted model (degraded)</text>
+  <line x1="542" y1="200" x2="588" y2="200" stroke="#888" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- postgres -->
+  <rect x="610" y="330" width="260" height="80" rx="10" fill="#d9d2ee" stroke="#7a5fb0"/>
+  <text x="740" y="358" text-anchor="middle" font-size="14" fill="#222" font-weight="bold">Postgres</text>
+  <text x="740" y="378" text-anchor="middle" font-size="12" fill="#333">sessions (ch20) · ch21.jobs queue</text>
+  <text x="740" y="396" text-anchor="middle" font-size="12" fill="#333">FOR UPDATE SKIP LOCKED + lease</text>
+  <line x1="542" y1="330" x2="608" y2="360" stroke="#888" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- workers -->
+  <rect x="610" y="440" width="260" height="60" rx="10" fill="#cde8d4" stroke="#54A24B"/>
+  <text x="740" y="466" text-anchor="middle" font-size="14" fill="#222" font-weight="bold">Job workers</text>
+  <text x="740" y="486" text-anchor="middle" font-size="12" fill="#333">summaries, emails, evals (async work)</text>
+  <line x1="740" y1="438" x2="740" y2="412" stroke="#888" stroke-width="2" marker-end="url(#a)"/>
+  <path d="M872,470 C905,470 905,200 872,200" fill="none" stroke="#888" stroke-width="2" marker-end="url(#a)"/>
+  <text x="30" y="520" font-size="12" fill="#555">Interactive chats stream through the API replicas; anything that can wait goes through the queue.</text>
+</svg>

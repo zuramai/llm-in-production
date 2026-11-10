@@ -1,0 +1,31 @@
+{
+  "tag": "async-u100-pool20",
+  "mode": "async",
+  "users": 100,
+  "workers": 1,
+  "duration_s": 30,
+  "app_env": {
+    "CH21_MAX_CONNECTIONS": "20"
+  },
+  "mock": {
+    "ttft_ms": 1333,
+    "tokens_per_s": 86,
+    "output_tokens": 29
+  },
+  "window_s": 29.5,
+  "chats_ok": 360,
+  "chats_failed": 0,
+  "error_rate": 0.0,
+  "throughput_rps": 12.21,
+  "ttft_p50_ms": 6951,
+  "ttft_p95_ms": 7458,
+  "chat_p50_ms": 7256,
+  "chat_p95_ms": 7795,
+  "healthz_p50_ms": 1,
+  "healthz_p95_ms": 2,
+  "healthz_max_ms": 6,
+  "healthz_failed": 0,
+  "errors": {},
+  "mock_requests": 420,
+  "mock_max_in_flight": 20
+}

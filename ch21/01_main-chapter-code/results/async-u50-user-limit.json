@@ -1,0 +1,34 @@
+{
+  "tag": "async-u50-user-limit",
+  "mode": "async",
+  "users": 50,
+  "workers": 1,
+  "duration_s": 30,
+  "app_env": {
+    "CH21_USER_RPS": "0.2",
+    "CH21_USER_BURST": "3"
+  },
+  "mock": {
+    "ttft_ms": 1333,
+    "tokens_per_s": 86,
+    "output_tokens": 29
+  },
+  "window_s": 25.9,
+  "chats_ok": 341,
+  "chats_failed": 3229,
+  "error_rate": 0.9045,
+  "throughput_rps": 13.15,
+  "ttft_p50_ms": 1338,
+  "ttft_p95_ms": 1341,
+  "chat_p50_ms": 1685,
+  "chat_p95_ms": 1694,
+  "healthz_p50_ms": 1,
+  "healthz_p95_ms": 2,
+  "healthz_max_ms": 33,
+  "healthz_failed": 0,
+  "errors": {
+    "HTTP 429": 3229
+  },
+  "mock_requests": 399,
+  "mock_max_in_flight": 50
+}
