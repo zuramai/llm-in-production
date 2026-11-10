@@ -1,0 +1,1895 @@
+{
+ "A1": {
+  "id": "A1",
+  "title": "finish_reason == \"length\" truncates JSON",
+  "layer": "API & tokens",
+  "kind": "hosted",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "max_tokens=30: finish_reason=length, content ends 'harged twice for order #4'; fix: 2 calls, budget 120",
+  "data": {
+   "naive_tail": "\"Customer was charged twice for order #4",
+   "fixed": {
+    "category": "billing",
+    "priority": "urgent",
+    "summary": "Customer was charged twice for order #4512, the package has not arrived after 9 days, and they are requesting a refund today."
+   }
+  },
+  "cost_usd": 0.000171,
+  "seconds": 3.95,
+  "status": "PASS"
+ },
+ "A2": {
+  "id": "A2",
+  "title": "Reasoning eats max_tokens: empty but billed",
+  "layer": "API & tokens",
+  "kind": "hosted",
+  "reproduced": false,
+  "fixed": true,
+  "evidence": "qwen3.8-flash effort=default: stop, 91 chars, 34/59 reasoning; qwen3.8-flash effort=none: stop, 113 chars, 0/24 reasoning; gpt-6-luna effort=default: stop, 82 chars, 17/41 reasoning; gpt-6-luna effort=none: stop, 84 chars, 0/22 reasoning",
+  "data": {
+   "rows": [
+    {
+     "model": "qwen/qwen3.8-flash",
+     "reasoning_effort": "default",
+     "finish_reason": "stop",
+     "content_chars": 91,
+     "reasoning_tokens": 34,
+     "completion_tokens": 59,
+     "cost_usd": 4.243e-05
+    },
+    {
+     "model": "qwen/qwen3.8-flash",
+     "reasoning_effort": "none",
+     "finish_reason": "stop",
+     "content_chars": 113,
+     "reasoning_tokens": 0,
+     "completion_tokens": 24,
+     "cost_usd": 2.058e-05
+    },
+    {
+     "model": "openai/gpt-6-luna",
+     "reasoning_effort": "default",
+     "finish_reason": "stop",
+     "content_chars": 82,
+     "reasoning_tokens": 17,
+     "completion_tokens": 41,
+     "cost_usd": 2.46e-05
+    },
+    {
+     "model": "openai/gpt-6-luna",
+     "reasoning_effort": "none",
+     "finish_reason": "stop",
+     "content_chars": 84,
+     "reasoning_tokens": 0,
+     "completion_tokens": 22,
+     "cost_usd": 1.51e-05
+    }
+   ]
+  },
+  "cost_usd": 0.000103,
+  "seconds": 5.57,
+  "status": "PASS (not reproduced)"
+ },
+ "A3": {
+  "id": "A3",
+  "title": "message.content is None",
+  "layer": "API & tokens",
+  "kind": "hosted",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "finish_reason=tool_calls, content=None; naive: 'NoneType' object has no attribute 'strip'; fixed: '[tool call: get_order_status]'",
+  "data": {},
+  "cost_usd": 1.6e-05,
+  "seconds": 2.18,
+  "status": "PASS"
+ },
+ "A4": {
+  "id": "A4",
+  "title": "Reasoning models reject temperature",
+  "layer": "API & tokens",
+  "kind": "hosted",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "luna temperature=0.2: 200 'OK.'; luna temperature=0.2 + require_parameters: 404 Error code: 404 - No endpoints found that can handle the requested par; sonnet reasoning_effort=none: 400 Error code: 400 - Reasoning is mandatory for this endpoint and cannot  | fit_params: gpt-6-luna ['dropped temperature'] -> 200 'OK.'; claude-sonnet-5.5 ['dropped temperature', \"reasoning_effort 'none'->'low'\"] -> 200 'OK.'",
+  "data": {
+   "naive": {
+    "luna temperature=0.2": "200 'OK.'",
+    "luna temperature=0.2 + require_parameters": "404 Error code: 404 - No endpoints found that can handle the requested par",
+    "sonnet reasoning_effort=none": "400 Error code: 400 - Reasoning is mandatory for this endpoint and cannot "
+   },
+   "fixed": {
+    "openai/gpt-6-luna": [
+     [
+      "dropped temperature"
+     ],
+     "200 'OK.'"
+    ],
+    "anthropic/claude-sonnet-5.5": [
+     [
+      "dropped temperature",
+      "reasoning_effort 'none'->'low'"
+     ],
+     "200 'OK.'"
+    ]
+   }
+  },
+  "cost_usd": 8.9e-05,
+  "seconds": 3.47,
+  "status": "PASS"
+ },
+ "A5": {
+  "id": "A5",
+  "title": "Unicode and tokenization surprises",
+  "layer": "API & tokens",
+  "kind": "hosted",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "naive equality all False (3 checks); same refund-policy.md billed 851 prompt tokens on luna vs 1305 on haiku (1.53x); o200k tokens/char: English 0.22, Indonesian 0.28, Japanese 0.69, Emoji-heavy 0.30",
+  "data": {
+   "per_lang": {
+    "English": {
+     "chars": 79,
+     "tokens": 17
+    },
+    "Indonesian": {
+     "chars": 82,
+     "tokens": 23
+    },
+    "Japanese": {
+     "chars": 42,
+     "tokens": 29
+    },
+    "Emoji-heavy": {
+     "chars": 79,
+     "tokens": 24
+    }
+   },
+   "naive_checks": {
+    "curly apostrophe: \"wasn't found\" in reply": false,
+    "NFD vs NFC: 'Caf\u00e9 D\u00fcr\u00fcm' == nfd": false,
+    "extra space: same sha256": false
+   },
+   "billed_prompt_tokens": {
+    "openai/gpt-6-luna": 851,
+    "anthropic/claude-haiku-5.5": 1305
+   }
+  },
+  "cost_usd": 0.00022,
+  "seconds": 2.08,
+  "status": "PASS"
+ },
+ "A6": {
+  "id": "A6",
+  "title": "Context overflow is silent",
+  "layer": "API & tokens",
+  "kind": "hosted",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "card says 8192 ctx, provider serves 4096; sent 42,694 chars, billed 2700 prompt tokens, no error, answer '2869'; preflight refused=True; filtered prompt est 35 tok -> '7291'; Ollama (RUN_LOCAL): {'model': 'qwen3:8b', 'num_ctx': 2048, 'sent_chars': 18294, 'prompt_eval_count': 1026, 'answer': '42'}",
+  "data": {
+   "card_ctx": 8192,
+   "provider_ctx": 4096,
+   "sent_chars": 42694,
+   "billed_prompt_tokens": 2700,
+   "ollama": {
+    "model": "qwen3:8b",
+    "num_ctx": 2048,
+    "sent_chars": 18294,
+    "prompt_eval_count": 1026,
+    "answer": "42"
+   }
+  },
+  "cost_usd": 0.000954,
+  "seconds": 4.09,
+  "status": "PASS"
+ },
+ "B1": {
+  "id": "B1",
+  "title": "json_object returns fenced/prose JSON",
+  "layer": "Structured output",
+  "kind": "hosted",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "json.loads failed 3/3; extract_json parsed 3/3; reply starts '```json\\n{\\n  '",
+  "data": {
+   "sample": "```json\n{\n  \"category\": \"Billing\",\n  \"priority\": \"High\"\n}\n```"
+  },
+  "cost_usd": 9.6e-05,
+  "seconds": 3.26,
+  "status": "PASS"
+ },
+ "B2": {
+  "id": "B2",
+  "title": "Nondeterminism at temperature 0",
+  "layer": "Structured output",
+  "kind": "hosted",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "gpt-6-luna: judged {'urgent': 10} | {'medium': 10} | {'urgent': 9, 'high': 1} ; facts+rule {'urgent': 10} | {'high': 8, 'low': 2} | {'urgent': 10} ; 5/10 distinct summaries; qwen3.8-flash: judged {'urgent': 10} | {'high': 10} | {'urgent': 10} ; facts+rule {'urgent': 10} | {'high': 10} | {'urgent': 10} ; 6/10 distinct summaries (n=10 per ticket); {'stability_judged': 0.9, 'cross_model_judged': 2, 'stability_facts_rule': 0.8, 'cross_model_facts_rule': 3, 'store_distinct': 1, 'store_model_calls': 1}",
+  "data": {
+   "openai/gpt-6-luna": {
+    "tickets": [
+     {
+      "judged": {
+       "urgent": 10
+      },
+      "facts_rule": {
+       "urgent": 10
+      }
+     },
+     {
+      "judged": {
+       "medium": 10
+      },
+      "facts_rule": {
+       "high": 8,
+       "low": 2
+      }
+     },
+     {
+      "judged": {
+       "urgent": 9,
+       "high": 1
+      },
+      "facts_rule": {
+       "urgent": 10
+      }
+     }
+    ],
+    "distinct_summaries": 5
+   },
+   "qwen/qwen3.8-flash": {
+    "tickets": [
+     {
+      "judged": {
+       "urgent": 10
+      },
+      "facts_rule": {
+       "urgent": 10
+      }
+     },
+     {
+      "judged": {
+       "high": 10
+      },
+      "facts_rule": {
+       "high": 10
+      }
+     },
+     {
+      "judged": {
+       "urgent": 10
+      },
+      "facts_rule": {
+       "urgent": 10
+      }
+     }
+    ],
+    "distinct_summaries": 6
+   },
+   "stability_judged": 0.9,
+   "cross_model_judged": 2,
+   "stability_facts_rule": 0.8,
+   "cross_model_facts_rule": 3,
+   "store_distinct": 1,
+   "store_model_calls": 1
+  },
+  "cost_usd": 0.003836,
+  "seconds": 32.62,
+  "status": "PASS"
+ },
+ "B3": {
+  "id": "B3",
+  "title": "Safety filter: empty reply, finish_reason content_filter",
+  "layer": "Structured output",
+  "kind": "hosted",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "haiku json_schema on Base64 ticket: naive retry loop 3 calls, last finish_reason=content_filter; fixed: 1 call, finish_reason=content_filter -> human_review",
+  "data": {},
+  "cost_usd": 0.000146,
+  "seconds": 5.79,
+  "status": "PASS"
+ },
+ "C1": {
+  "id": "C1",
+  "title": "Filtered HNSW query returns fewer rows than LIMIT",
+  "layer": "Retrieval",
+  "kind": "db",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "20,000 rows, filter keeps 2%, ef_search=40: asked 30, got 1 (iterative_scan=off), 30 (iterative_scan=relaxed_order), 30 (iterative_scan=strict_order)",
+  "data": {
+   "off": 1,
+   "relaxed_order": 30,
+   "strict_order": 30
+  },
+  "cost_usd": 0.0,
+  "seconds": 0.03,
+  "status": "PASS"
+ },
+ "C2": {
+  "id": "C2",
+  "title": "websearch_to_tsquery ANDs every word: zero hits",
+  "layer": "Retrieval",
+  "kind": "db",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "555 chunks from 36 docs, 8 questions: websearch_to_tsquery zero hits 7/8, right doc in top 3 1; OR of lexemes zero hits 0, right doc in top 3 4",
+  "data": {
+   "naive": {
+    "Can I send back a cast iron skillet I already cooked with?": [],
+    "How long do refunds take to show up on my credit card?": [],
+    "Do you ship to Canada and who pays the customs duties?": [],
+    "My earbuds stopped charging after two months, is that covered?": [],
+    "How do I turn on two factor authentication for my account?": [],
+    "What should on-call do when checkout errors spike after a deploy?": [],
+    "Can I cancel an order that already shipped?": [
+     "policies/order-cancellation.md",
+     "policies/shipping-policy.md",
+     "policies/account-security.md"
+    ],
+    "Who can approve a refund above 500 dollars?": []
+   },
+   "fixed": {
+    "Can I send back a cast iron skillet I already cooked with?": [
+     "care/cast-iron-skillet.md",
+     "care/cast-iron-skillet.md",
+     "care/cast-iron-skillet.md"
+    ],
+    "How long do refunds take to show up on my credit card?": [
+     "policies/returns-policy.md",
+     "handbook/support-tone-guide.md",
+     "handbook/carrier-claims.md"
+    ],
+    "Do you ship to Canada and who pays the customs duties?": [
+     "handbook/carrier-claims.md",
+     "handbook/fraud-review.md",
+     "policies/shipping-policy.md"
+    ],
+    "My earbuds stopped charging after two months, is that covered?": [
+     "care/wireless-earbuds.md",
+     "care/wireless-earbuds.md",
+     "policies/warranty-policy.md"
+    ],
+    "How do I turn on two factor authentication for my account?": [
+     "handbook/support-escalation.md",
+     "policies/account-security.md",
+     "handbook/fraud-review.md"
+    ],
+    "What should on-call do when checkout errors spike after a deploy?": [
+     "runbooks/payment-provider-timeout.md",
+     "runbooks/checkout-bad-deploy.md",
+     "runbooks/checkout-db-pool-exhaustion.md"
+    ],
+    "Can I cancel an order that already shipped?": [
+     "policies/shipping-policy.md",
+     "policies/account-security.md",
+     "handbook/fraud-review.md"
+    ],
+    "Who can approve a refund above 500 dollars?": [
+     "handbook/support-tone-guide.md",
+     "handbook/fraud-review.md",
+     "handbook/data-access-policy.md"
+    ]
+   }
+  },
+  "cost_usd": 0.0,
+  "seconds": 0.2,
+  "status": "PASS"
+ },
+ "D1": {
+  "id": "D1",
+  "title": "Tool-argument hallucination",
+  "layer": "Agents & tools",
+  "kind": "hosted",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "luna (reasoning_effort=none), 15 episodes with no order id given: invented id in 15, e.g. {\"order_id\": 0}, {\"order_id\": 1}, {\"order_id\": 7999}, {\"order_id\": 79}; guard executed 0 of them, model then asked the customer in 15",
+  "data": {
+   "episodes": [
+    {
+     "called": true,
+     "invented": true,
+     "args": {
+      "order_id": 0
+     },
+     "executed": false,
+     "asked": true
+    },
+    {
+     "called": true,
+     "invented": true,
+     "args": {
+      "order_id": 0
+     },
+     "executed": false,
+     "asked": true
+    },
+    {
+     "called": true,
+     "invented": true,
+     "args": {
+      "order_id": 0
+     },
+     "executed": false,
+     "asked": true
+    },
+    {
+     "called": true,
+     "invented": true,
+     "args": {
+      "order_id": 0
+     },
+     "executed": false,
+     "asked": true
+    },
+    {
+     "called": true,
+     "invented": true,
+     "args": {
+      "order_id": 0
+     },
+     "executed": false,
+     "asked": true
+    },
+    {
+     "called": true,
+     "invented": true,
+     "args": {
+      "order_id": 0
+     },
+     "executed": false,
+     "asked": true
+    },
+    {
+     "called": true,
+     "invented": true,
+     "args": {
+      "order_id": 1
+     },
+     "executed": false,
+     "asked": true
+    },
+    {
+     "called": true,
+     "invented": true,
+     "args": {
+      "order_id": 0
+     },
+     "executed": false,
+     "asked": true
+    },
+    {
+     "called": true,
+     "invented": true,
+     "args": {
+      "order_id": 0
+     },
+     "executed": false,
+     "asked": true
+    },
+    {
+     "called": true,
+     "invented": true,
+     "args": {
+      "order_id": 0
+     },
+     "executed": false,
+     "asked": true
+    },
+    {
+     "called": true,
+     "invented": true,
+     "args": {
+      "order_id": 0
+     },
+     "executed": false,
+     "asked": true
+    },
+    {
+     "called": true,
+     "invented": true,
+     "args": {
+      "order_id": 79
+     },
+     "executed": false,
+     "asked": true
+    },
+    {
+     "called": true,
+     "invented": true,
+     "args": {
+      "order_id": 7999
+     },
+     "executed": false,
+     "asked": true
+    },
+    {
+     "called": true,
+     "invented": true,
+     "args": {
+      "order_id": 0
+     },
+     "executed": false,
+     "asked": true
+    },
+    {
+     "called": true,
+     "invented": true,
+     "args": {
+      "order_id": 0
+     },
+     "executed": false,
+     "asked": true
+    }
+   ]
+  },
+  "cost_usd": 0.000735,
+  "seconds": 5.65,
+  "status": "PASS"
+ },
+ "D2": {
+  "id": "D2",
+  "title": "Retry -> duplicate side effects",
+  "layer": "Agents & tools",
+  "kind": "db",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "server commits then answers after 1.5s, client timeout 0.5s, 3 attempts: no key -> 3 refund rows ($137.97); Idempotency-Key -> 1 row ($45.99)",
+  "data": {
+   "naive_rows": 3,
+   "keyed_rows": 1
+  },
+  "cost_usd": 0.0,
+  "seconds": 5.04,
+  "status": "PASS"
+ },
+ "D3": {
+  "id": "D3",
+  "title": "Agent cost runaway loop",
+  "layer": "Agents & tools",
+  "kind": "hosted",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "search never finds it, always has next_page: luna no guard -> 20 calls (hard cap 20), prompt tokens/call 98->1864, 19,611 tok total; haiku -> 10 calls (answered); luna + guard -> 6 calls (guard: search_orders called 5x), 1,938 tok, answer 'I couldn\u2019t find a cast iron skillet in the order r'",
+  "data": {
+   "luna": {
+    "steps": 20,
+    "stop": "hard cap 20",
+    "trace": [
+     {
+      "prompt_tokens": 98,
+      "cost": 2.33e-05
+     },
+     {
+      "prompt_tokens": 190,
+      "cost": 3.3e-05
+     },
+     {
+      "prompt_tokens": 283,
+      "cost": 4.23e-05
+     },
+     {
+      "prompt_tokens": 376,
+      "cost": 5.16e-05
+     },
+     {
+      "prompt_tokens": 469,
+      "cost": 6.09e-05
+     },
+     {
+      "prompt_tokens": 562,
+      "cost": 7.02e-05
+     },
+     {
+      "prompt_tokens": 655,
+      "cost": 7.95e-05
+     },
+     {
+      "prompt_tokens": 748,
+      "cost": 8.88e-05
+     },
+     {
+      "prompt_tokens": 841,
+      "cost": 9.81e-05
+     },
+     {
+      "prompt_tokens": 934,
+      "cost": 0.0001074
+     },
+     {
+      "prompt_tokens": 1027,
+      "cost": 2.454e-05
+     },
+     {
+      "prompt_tokens": 1120,
+      "cost": 2.547e-05
+     },
+     {
+      "prompt_tokens": 1213,
+      "cost": 2.64e-05
+     },
+     {
+      "prompt_tokens": 1306,
+      "cost": 2.733e-05
+     },
+     {
+      "prompt_tokens": 1399,
+      "cost": 2.826e-05
+     },
+     {
+      "prompt_tokens": 1492,
+      "cost": 2.919e-05
+     },
+     {
+      "prompt_tokens": 1585,
+      "cost": 3.012e-05
+     },
+     {
+      "prompt_tokens": 1678,
+      "cost": 3.105e-05
+     },
+     {
+      "prompt_tokens": 1771,
+      "cost": 3.198e-05
+     },
+     {
+      "prompt_tokens": 1864,
+      "cost": 3.291e-05
+     }
+    ],
+    "answer": "",
+    "prompt_tokens": 19611,
+    "cost": 0.00094235
+   },
+   "haiku": {
+    "steps": 10,
+    "stop": "answered",
+    "trace": [
+     {
+      "prompt_tokens": 465,
+      "cost": 8.5e-05
+     },
+     {
+      "prompt_tokens": 626,
+      "cost": 0.0001376
+     },
+     {
+      "prompt_tokens": 845,
+      "cost": 0.0001235
+     },
+     {
+      "prompt_tokens": 1007,
+      "cost": 0.0001397
+     },
+     {
+      "prompt_tokens": 1169,
+      "cost": 0.0001809
+     },
+     {
+      "prompt_tokens": 1381,
+      "cost": 0.0001771
+     },
+     {
+      "prompt_tokens": 1543,
+      "cost": 0.0001933
+     },
+     {
+      "prompt_tokens": 1705,
+      "cost": 0.0002345
+     },
+     {
+      "prompt_tokens": 1917,
+      "cost": 0.0002307
+     },
+     {
+      "prompt_tokens": 2079,
+      "cost": 0.0002829
+     }
+    ],
+    "answer": "I couldn't find a cast iron skillet order under jane.roe@example.com. I checked 10 pages of results, covering 30 orders ",
+    "prompt_tokens": 12737,
+    "cost": 0.0017852
+   },
+   "guarded": {
+    "steps": 6,
+    "stop": "guard: search_orders called 5x",
+    "trace": [
+     {
+      "prompt_tokens": 98,
+      "cost": 2.33e-05
+     },
+     {
+      "prompt_tokens": 190,
+      "cost": 3.3e-05
+     },
+     {
+      "prompt_tokens": 283,
+      "cost": 4.23e-05
+     },
+     {
+      "prompt_tokens": 376,
+      "cost": 5.16e-05
+     },
+     {
+      "prompt_tokens": 469,
+      "cost": 6.09e-05
+     },
+     {
+      "prompt_tokens": 522,
+      "cost": 7.42e-05
+     }
+    ],
+    "answer": "I couldn\u2019t find a cast iron skillet in the order records I was able to check. The orders I found were all for yoga mats,",
+    "prompt_tokens": 1938,
+    "cost": 0.0002853
+   }
+  },
+  "cost_usd": 0.003013,
+  "seconds": 45.86,
+  "status": "PASS"
+ },
+ "D4": {
+  "id": "D4",
+  "title": "interrupt() re-runs the node on resume",
+  "layer": "Agents & tools",
+  "kind": "local",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "one approval: side effect above interrupt() ran 2x (approved=True); side effect in its own node after approval ran 1x",
+  "data": {},
+  "cost_usd": 0.0,
+  "seconds": 0.01,
+  "status": "PASS"
+ },
+ "E1": {
+  "id": "E1",
+  "title": "LLM judge position bias",
+  "layer": "Evals",
+  "kind": "hosted",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "12 equal-quality pairs, forced A/B, luna: slot A chosen 62% of 24 calls; single order says x wins 7/12; with swap: 9 flipped -> tie, x 1, y 2",
+  "data": {
+   "slot_a_rate": 0.625,
+   "flips": 9,
+   "verdicts": [
+    "tie",
+    "y",
+    "tie",
+    "tie",
+    "tie",
+    "tie",
+    "y",
+    "tie",
+    "tie",
+    "tie",
+    "tie",
+    "x"
+   ],
+   "raw": [
+    [
+     "A",
+     "A"
+    ],
+    [
+     "B",
+     "A"
+    ],
+    [
+     "B",
+     "B"
+    ],
+    [
+     "A",
+     "A"
+    ],
+    [
+     "A",
+     "A"
+    ],
+    [
+     "B",
+     "B"
+    ],
+    [
+     "B",
+     "A"
+    ],
+    [
+     "A",
+     "A"
+    ],
+    [
+     "B",
+     "B"
+    ],
+    [
+     "A",
+     "A"
+    ],
+    [
+     "A",
+     "A"
+    ],
+    [
+     "A",
+     "B"
+    ]
+   ]
+  },
+  "cost_usd": 0.000462,
+  "seconds": 4.96,
+  "status": "PASS"
+ },
+ "E2": {
+  "id": "E2",
+  "title": "Self-reported confidence is uncalibrated",
+  "layer": "Evals",
+  "kind": "hosted",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "luna, 20 checkable questions: 14 right, 6 wrong; mean confidence right 1.00 vs wrong 0.68 (4/6 wrong at >=0.9); 3-sample agreement right 1.00 vs wrong 0.44",
+  "data": {
+   "rows": [
+    {
+     "q": "What day of the week was August 05, 2002? Answer with the day name.",
+     "gold": "Monday",
+     "answer": "Monday",
+     "confidence": 1.0,
+     "ok": true,
+     "agreement": 1.0
+    },
+    {
+     "q": "What is 4975 * 1386? Answer with digits only.",
+     "gold": "6895350",
+     "answer": "6895350",
+     "confidence": 1.0,
+     "ok": true,
+     "agreement": 1.0
+    },
+    {
+     "q": "What day of the week was February 11, 2030? Answer with the day name.",
+     "gold": "Monday",
+     "answer": "Monday",
+     "confidence": 0.99,
+     "ok": true,
+     "agreement": 1.0
+    },
+    {
+     "q": "What is 4018 * 2975? Answer with digits only.",
+     "gold": "11953550",
+     "answer": "11953550",
+     "confidence": 1.0,
+     "ok": true,
+     "agreement": 1.0
+    },
+    {
+     "q": "What day of the week was January 04, 2021? Answer with the day name.",
+     "gold": "Monday",
+     "answer": "Monday",
+     "confidence": 1.0,
+     "ok": true,
+     "agreement": 1.0
+    },
+    {
+     "q": "What is 2305 * 4796? Answer with digits only.",
+     "gold": "11054780",
+     "answer": "11055380",
+     "confidence": 1.0,
+     "ok": false,
+     "agreement": 0.6666666666666666
+    },
+    {
+     "q": "What day of the week was February 27, 2014? Answer with the day name.",
+     "gold": "Thursday",
+     "answer": "Thursday",
+     "confidence": 1.0,
+     "ok": true,
+     "agreement": 1.0
+    },
+    {
+     "q": "What is 1813 * 6233? Answer with digits only.",
+     "gold": "11300429",
+     "answer": "113104?",
+     "confidence": 0.0,
+     "ok": false,
+     "agreement": 0.3333333333333333
+    },
+    {
+     "q": "What day of the week was January 26, 2006? Answer with the day name.",
+     "gold": "Thursday",
+     "answer": "Thursday",
+     "confidence": 1.0,
+     "ok": true,
+     "agreement": 1.0
+    },
+    {
+     "q": "What is 8045 * 1793? Answer with digits only.",
+     "gold": "14424685",
+     "answer": "14424685",
+     "confidence": 1.0,
+     "ok": true,
+     "agreement": 1.0
+    },
+    {
+     "q": "What day of the week was November 30, 1991? Answer with the day name.",
+     "gold": "Saturday",
+     "answer": "Saturday",
+     "confidence": 1.0,
+     "ok": true,
+     "agreement": 1.0
+    },
+    {
+     "q": "What is 5324 * 6090? Answer with digits only.",
+     "gold": "32423160",
+     "answer": "32423160",
+     "confidence": 1.0,
+     "ok": true,
+     "agreement": 1.0
+    },
+    {
+     "q": "What day of the week was October 26, 2027? Answer with the day name.",
+     "gold": "Tuesday",
+     "answer": "Tuesday",
+     "confidence": 0.99,
+     "ok": true,
+     "agreement": 1.0
+    },
+    {
+     "q": "What is 4115 * 3957? Answer with digits only.",
+     "gold": "16283055",
+     "answer": "16283255",
+     "confidence": 1.0,
+     "ok": false,
+     "agreement": 0.6666666666666666
+    },
+    {
+     "q": "What day of the week was January 04, 2000? Answer with the day name.",
+     "gold": "Tuesday",
+     "answer": "Tuesday",
+     "confidence": 1.0,
+     "ok": true,
+     "agreement": 1.0
+    },
+    {
+     "q": "What is 9697 * 2002? Answer with digits only.",
+     "gold": "19413394",
+     "answer": "19413694",
+     "confidence": 1.0,
+     "ok": false,
+     "agreement": 0.3333333333333333
+    },
+    {
+     "q": "What day of the week was April 15, 2019? Answer with the day name.",
+     "gold": "Monday",
+     "answer": "Monday",
+     "confidence": 1.0,
+     "ok": true,
+     "agreement": 1.0
+    },
+    {
+     "q": "What is 6485 * 5233? Answer with digits only.",
+     "gold": "33936005",
+     "answer": "33945905",
+     "confidence": 1.0,
+     "ok": false,
+     "agreement": 0.3333333333333333
+    },
+    {
+     "q": "What day of the week was July 20, 2006? Answer with the day name.",
+     "gold": "Thursday",
+     "answer": "Thursday",
+     "confidence": 1.0,
+     "ok": true,
+     "agreement": 1.0
+    },
+    {
+     "q": "What is 7441 * 6119? Answer with digits only.",
+     "gold": "45531479",
+     "answer": "455144?",
+     "confidence": 0.1,
+     "ok": false,
+     "agreement": 0.3333333333333333
+    }
+   ]
+  },
+  "cost_usd": 0.000925,
+  "seconds": 10.61,
+  "status": "PASS"
+ },
+ "E3": {
+  "id": "E3",
+  "title": "Small eval gates are noisy",
+  "layer": "Evals",
+  "kind": "local",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "10,000 simulated gate runs, 19 items: blocks an unchanged PR 90% bar, 1 pass 43.3%, 95% bar, 1 pass 100.0%, flip rule, 3 repeats 1.3%; catches a broken item 90% bar, 1 pass 100.0%, 95% bar, 1 pass 100.0%, flip rule, 3 repeats 97.3%",
+  "data": {
+   "unchanged PR": {
+    "90% bar, 1 pass": 0.4328,
+    "95% bar, 1 pass": 1.0,
+    "flip rule, 3 repeats": 0.013
+   },
+   "PR breaks q0": {
+    "90% bar, 1 pass": 1.0,
+    "95% bar, 1 pass": 1.0,
+    "flip rule, 3 repeats": 0.9728
+   }
+  },
+  "cost_usd": 0.0,
+  "seconds": 0.44,
+  "status": "PASS"
+ },
+ "F1": {
+  "id": "F1",
+  "title": "429 storms: synchronized retries",
+  "layer": "Infra & serving",
+  "kind": "local",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "100 requests at once, provider allows 20/s, Retry-After: 1. sdk: 268 upstream calls, 168 429s, peak 94/100 ms, done in 4.31 s; client bucket: 100 upstream calls, 0 429s, peak 19/100 ms, done in 4.56 s",
+  "data": {
+   "sdk": {
+    "elapsed_s": 4.31,
+    "upstream_calls": 268,
+    "rejected_429": 168,
+    "peak_per_100ms": 94,
+    "arrivals": [
+     0.104,
+     0.105,
+     0.105,
+     0.105,
+     0.105,
+     0.105,
+     0.105,
+     0.106,
+     0.106,
+     0.106,
+     0.106,
+     0.106,
+     0.106,
+     0.106,
+     0.107,
+     0.107,
+     0.107,
+     0.107,
+     0.107,
+     0.107,
+     0.107,
+     0.108,
+     0.108,
+     0.108,
+     0.108,
+     0.108,
+     0.108,
+     0.108,
+     0.108,
+     0.108,
+     0.109,
+     0.109,
+     0.109,
+     0.109,
+     0.109,
+     0.109,
+     0.109,
+     0.109,
+     0.11,
+     0.11,
+     0.11,
+     0.11,
+     0.11,
+     0.11,
+     0.11,
+     0.11,
+     0.11,
+     0.11,
+     0.111,
+     0.111,
+     0.111,
+     0.111,
+     0.111,
+     0.111,
+     0.111,
+     0.111,
+     0.111,
+     0.111,
+     0.112,
+     0.112,
+     0.112,
+     0.112,
+     0.112,
+     0.112,
+     0.112,
+     0.112,
+     0.112,
+     0.112,
+     0.113,
+     0.113,
+     0.113,
+     0.113,
+     0.113,
+     0.113,
+     0.113,
+     0.113,
+     0.113,
+     0.113,
+     0.114,
+     0.114,
+     0.114,
+     0.118,
+     0.12,
+     0.121,
+     0.121,
+     0.121,
+     0.121,
+     0.121,
+     0.121,
+     0.121,
+     0.121,
+     0.121,
+     0.121,
+     0.121,
+     1.1,
+     1.1,
+     1.102,
+     1.102,
+     1.102,
+     1.103,
+     1.172,
+     1.172,
+     1.173,
+     1.177,
+     1.177,
+     1.177,
+     1.177,
+     1.177,
+     1.177,
+     1.177,
+     1.177,
+     1.177,
+     1.178,
+     1.178,
+     1.178,
+     1.178,
+     1.178,
+     1.181,
+     1.181,
+     1.181,
+     1.182,
+     1.182,
+     1.182,
+     1.182,
+     1.182,
+     1.182,
+     1.182,
+     1.183,
+     1.188,
+     1.189,
+     1.189,
+     1.189,
+     1.189,
+     1.189,
+     1.189,
+     1.189,
+     1.189,
+     1.189,
+     1.189,
+     1.189,
+     1.19,
+     1.19,
+     1.19,
+     1.19,
+     1.19,
+     1.19,
+     1.19,
+     1.191,
+     1.191,
+     1.191,
+     1.191,
+     1.191,
+     1.191,
+     2.19,
+     2.19,
+     2.191,
+     2.195,
+     2.195,
+     2.195,
+     2.195,
+     2.195,
+     2.195,
+     2.196,
+     2.196,
+     2.196,
+     2.196,
+     2.196,
+     2.197,
+     2.197,
+     2.197,
+     2.197,
+     2.197,
+     2.197,
+     2.226,
+     2.226,
+     2.229,
+     2.23,
+     2.23,
+     2.23,
+     2.23,
+     2.23,
+     2.23,
+     2.23,
+     2.23,
+     2.23,
+     2.23,
+     2.236,
+     2.236,
+     2.236,
+     2.236,
+     2.236,
+     2.236,
+     2.236,
+     2.236,
+     2.237,
+     2.237,
+     2.237,
+     2.237,
+     2.237,
+     2.237,
+     2.237,
+     2.237,
+     2.237,
+     2.238,
+     2.238,
+     2.238,
+     2.238,
+     2.238,
+     2.238,
+     2.238,
+     2.238,
+     3.102,
+     3.257,
+     3.257,
+     3.26,
+     3.262,
+     3.262,
+     3.262,
+     3.263,
+     3.264,
+     3.264,
+     3.265,
+     3.265,
+     3.265,
+     3.266,
+     3.268,
+     3.268,
+     3.268,
+     3.268,
+     3.268,
+     3.268,
+     3.273,
+     3.273,
+     3.273,
+     3.273,
+     3.273,
+     3.274,
+     3.274,
+     3.274,
+     3.274,
+     3.274,
+     3.274,
+     3.274,
+     3.274,
+     3.274,
+     3.274,
+     3.275,
+     3.275,
+     3.275,
+     3.275,
+     4.303,
+     4.303,
+     4.303,
+     4.303,
+     4.303,
+     4.304,
+     4.304,
+     4.304,
+     4.305,
+     4.305,
+     4.305,
+     4.305,
+     4.305,
+     4.305,
+     4.305,
+     4.305,
+     4.306,
+     4.306
+    ]
+   },
+   "client bucket": {
+    "elapsed_s": 4.56,
+    "upstream_calls": 100,
+    "rejected_429": 0,
+    "peak_per_100ms": 19,
+    "arrivals": [
+     0.018,
+     0.018,
+     0.018,
+     0.018,
+     0.018,
+     0.018,
+     0.018,
+     0.018,
+     0.018,
+     0.018,
+     0.019,
+     0.019,
+     0.019,
+     0.019,
+     0.019,
+     0.019,
+     0.019,
+     0.019,
+     0.059,
+     0.116,
+     0.172,
+     0.226,
+     0.282,
+     0.338,
+     0.393,
+     0.449,
+     0.506,
+     0.562,
+     0.615,
+     0.671,
+     0.726,
+     0.783,
+     0.837,
+     0.893,
+     0.948,
+     1.004,
+     1.06,
+     1.115,
+     1.171,
+     1.227,
+     1.283,
+     1.337,
+     1.393,
+     1.449,
+     1.504,
+     1.563,
+     1.615,
+     1.673,
+     1.725,
+     1.781,
+     1.837,
+     1.892,
+     1.948,
+     2.003,
+     2.059,
+     2.114,
+     2.17,
+     2.227,
+     2.284,
+     2.338,
+     2.394,
+     2.449,
+     2.505,
+     2.565,
+     2.616,
+     2.671,
+     2.728,
+     2.781,
+     2.837,
+     2.893,
+     2.948,
+     3.004,
+     3.059,
+     3.114,
+     3.17,
+     3.225,
+     3.281,
+     3.337,
+     3.393,
+     3.45,
+     3.504,
+     3.56,
+     3.615,
+     3.67,
+     3.726,
+     3.782,
+     3.84,
+     3.898,
+     3.95,
+     4.005,
+     4.06,
+     4.115,
+     4.171,
+     4.227,
+     4.281,
+     4.336,
+     4.392,
+     4.447,
+     4.503,
+     4.559
+    ]
+   }
+  },
+  "cost_usd": 0.0,
+  "seconds": 9.86,
+  "status": "PASS"
+ },
+ "F2": {
+  "id": "F2",
+  "title": "Streaming disconnects behind proxies",
+  "layer": "Infra & serving",
+  "kind": "local",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "proxy idle timeout 1.0s, model silent 2.5s: no heartbeat -> got 'Checking your order', [DONE]=False, error=None; ': ping' every 0.4s -> 'Checking your order ... it shipped today.', [DONE]=True",
+  "data": {
+   "naive": {
+    "text": "Checking your order",
+    "done": false,
+    "error": null
+   },
+   "fixed": {
+    "text": "Checking your order ... it shipped today.",
+    "done": true,
+    "error": null
+   }
+  },
+  "cost_usd": 0.0,
+  "seconds": 4.52,
+  "status": "PASS"
+ },
+ "F3": {
+  "id": "F3",
+  "title": "Sync health check starves under load",
+  "layer": "Infra & serving",
+  "kind": "local",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "60 in-flight sync /chat requests (2 s each, 40-thread pool): def healthz -> timed out (> 1 s); async def healthz -> 4 ms",
+  "data": {
+   "sync": null,
+   "async": 0.0038597378879785538
+  },
+  "cost_usd": 0.0,
+  "seconds": 4.22,
+  "status": "PASS"
+ },
+ "F4": {
+  "id": "F4",
+  "title": "tiktoken downloads at runtime: offline crash",
+  "layer": "Infra & serving",
+  "kind": "local",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "no egress, empty TIKTOKEN_CACHE_DIR -> exit 1: requests.exceptions.ProxyError: HTTPSConnectionPool(host='openaipublic.blob.core.windows.n; cache baked at build time (1 file) -> exit 0, 'hello world' = 2 tokens",
+  "data": {},
+  "cost_usd": 0.0,
+  "seconds": 0.38,
+  "status": "PASS"
+ },
+ "F5": {
+  "id": "F5",
+  "title": "Compose env precedence and ${VAR:?} on down",
+  "layer": "Infra & serving",
+  "kind": "docker",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "shell has DATABASE_URL, --env-file has the service's: ${DATABASE_URL} -> postgresql://shopflow@localhost:5433/shopflow; ${LANGFUSE_DATABASE_URL} -> postgresql://langfuse@db:5432/langfuse. `down` without LLM_API_KEY -> exit 1 (error while interpolating services.web.environment.LLM_API_K); `docker compose -p ch22-f5 down` -> exit 0",
+  "data": {},
+  "cost_usd": 0.0,
+  "seconds": 0.2,
+  "status": "PASS"
+ },
+ "G1": {
+  "id": "G1",
+  "title": "Timezone \"today\"",
+  "layer": "Data & time",
+  "kind": "db",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "orders on 2026-11-07 (last order 18:16 EST): `placed_at::date = day` gives 156 in a Etc/UTC session, 100 in America/New_York; explicit [00:00 -0500, next day) bounds give 100 in both",
+  "data": {
+   "utc": 156,
+   "business": 100,
+   "fixed": 100
+  },
+  "cost_usd": 0.0,
+  "seconds": 0.02,
+  "status": "PASS"
+ },
+ "G2": {
+  "id": "G2",
+  "title": "Cents vs dollars",
+  "layer": "Data & time",
+  "kind": "hosted",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "revenue on 2026-11-07 = 1126220 cents = $11,262.20. Row {'revenue': 1126220} -> luna reported $1,126,220 in 10/10; row {'revenue_usd': '$11,262.20'} -> right in 10/10. Floats: 0.10 + 0.10 + 0.10 = 0.30000000000000004",
+  "data": {
+   "cents": 1126220,
+   "naive": [
+    "Revenue today was 1126220.",
+    "Revenue today was $1126220.",
+    "Revenue today was 1126220.",
+    "Revenue today was 1126220.",
+    "Revenue today was $1126220.",
+    "Revenue today was 1126220.",
+    "Revenue today was $1126220.",
+    "Revenue today was 1126220.",
+    "Revenue today was 1126220.",
+    "Revenue today was 1126220."
+   ],
+   "fixed": [
+    "Revenue today was $11262.20.",
+    "Revenue today was $11262.20.",
+    "Revenue today was $11262.20.",
+    "Revenue today was $11262.20.",
+    "Revenue today was $11262.20.",
+    "Revenue today was $11262.20.",
+    "Revenue today was $11262.20.",
+    "Revenue today was $11262.20.",
+    "Revenue today was $11262.20.",
+    "Revenue today was $11262.20."
+   ]
+  },
+  "cost_usd": 0.000242,
+  "seconds": 5.88,
+  "status": "PASS"
+ },
+ "G3": {
+  "id": "G3",
+  "title": "strftime('%p') empty under a non-English locale",
+  "layer": "Data & time",
+  "kind": "local",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "LC_TIME=C.UTF-8: strftime -> 'as of 5:19 PM', as_of() -> 'as of 5:19 PM'; LC_TIME=id_ID.UTF-8: strftime -> 'as of 5:19 ', as_of() -> 'as of 5:19 PM'",
+  "data": {
+   "C.UTF-8": [
+    "'as of 5:19 PM'",
+    "'as of 5:19 PM'"
+   ],
+   "id_ID.UTF-8": [
+    "'as of 5:19 '",
+    "'as of 5:19 PM'"
+   ]
+  },
+  "cost_usd": 0.0,
+  "seconds": 0.87,
+  "status": "PASS"
+ },
+ "G4": {
+  "id": "G4",
+  "title": "Aware datetime arithmetic ignores DST",
+  "layer": "Data & time",
+  "kind": "local",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "2026-10-29 -> 2026-11-05 ET: end - start = 7 days, 0:00:00 (168 h), real 169 h; 48 h SLA from 10-31 09:00 EDT: naive 11-02 09:00 EST, real 11-02 08:00 EST",
+  "data": {},
+  "cost_usd": 0.0,
+  "seconds": 0.0,
+  "status": "PASS"
+ },
+ "G5": {
+  "id": "G5",
+  "title": "Silent no-op filter: 'canceled' vs 'cancelled'",
+  "layer": "Data & time",
+  "kind": "db",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "30,093 orders; `status <> 'canceled'` -> 30,093 (no error, filters nothing); 'cancelled' -> 29,144. Literal check: status compared with 'canceled', a value it never has; known values: ['cancelled', 'delivered', 'paid', 'pending', 'refunded', 'shipped']",
+  "data": {},
+  "cost_usd": 0.0,
+  "seconds": 0.02,
+  "status": "PASS"
+ },
+ "H1": {
+  "id": "H1",
+  "title": "PII in logs",
+  "layer": "Security",
+  "kind": "local",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "openai 3.46.0 + httpx at DEBUG: 4 lines, PII none; app's own log line: PII ['jane.roe.1987@gmail.com', '4242 4242 4242 4242', '555-0143']; with RedactingFilter: none -> 'chat turn: user=\"Hi, I\\'m Jane Roe, [EMAIL], card [CARD], phone [PHONE]. Where is order 4512?\" reply=\"Thanks Jane! I\\'ll send updates on order 4512 to ['",
+  "data": {
+   "naive": {
+    "sdk": [
+     "Building HTTP request: method=POST retries_taken=0",
+     "Sending HTTP Request: POST",
+     "HTTP Response: POST 200",
+     "request_id: None"
+    ],
+    "app": [
+     "chat turn: user=\"Hi, I'm Jane Roe, jane.roe.1987@gmail.com, card 4242 4242 4242 4242, phone +1 (917) 555-0143. Where is order 4512?\" reply=\"Thanks Jane! I'll send updates on order 4512 to jane.roe.1987@gmail.com.\""
+    ]
+   },
+   "fixed": {
+    "sdk": [
+     "Building HTTP request: method=POST retries_taken=0",
+     "Sending HTTP Request: POST",
+     "HTTP Response: POST 200",
+     "request_id: None"
+    ],
+    "app": [
+     "chat turn: user=\"Hi, I'm Jane Roe, [EMAIL], card [CARD], phone [PHONE]. Where is order 4512?\" reply=\"Thanks Jane! I'll send updates on order 4512 to [EMAIL]\""
+    ]
+   }
+  },
+  "cost_usd": 0.0,
+  "seconds": 0.51,
+  "status": "PASS"
+ },
+ "H2": {
+  "id": "H2",
+  "title": "Prompt injection via retrieved content",
+  "layer": "Security",
+  "kind": "hosted",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "attacker link in answers (of 5), plain context / <untrusted> spotlighting: gpt-6-luna overt 0/0; gpt-6-luna subtle 0/0; claude-haiku-5.5 overt 0/0; claude-haiku-5.5 subtle 3/0; qwen3.8-flash overt 2/0; qwen3.8-flash subtle 4/1. After the output link allowlist: 0/60",
+  "data": {
+   "gpt-6-luna overt": {
+    "naive": 0,
+    "spotlight": 0
+   },
+   "gpt-6-luna subtle": {
+    "naive": 0,
+    "spotlight": 0
+   },
+   "claude-haiku-5.5 overt": {
+    "naive": 0,
+    "spotlight": 0
+   },
+   "claude-haiku-5.5 subtle": {
+    "naive": 3,
+    "spotlight": 0
+   },
+   "qwen3.8-flash overt": {
+    "naive": 2,
+    "spotlight": 0
+   },
+   "qwen3.8-flash subtle": {
+    "naive": 4,
+    "spotlight": 1
+   }
+  },
+  "cost_usd": 0.004426,
+  "seconds": 22.0,
+  "status": "PASS"
+ },
+ "I1": {
+  "id": "I1",
+  "title": "Prompt-cache invalidation",
+  "layer": "Cost",
+  "kind": "hosted",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "luna, request id at top: 4609 prompt tok, cached on calls 2-3 0, cost of calls 2-3 $0.00120; luna, stable prefix (id moved to the end): 4595 prompt tok, cached on calls 2-3 9120, cost of calls 2-3 $0.00015; haiku, stable prefix, no cache_control: 6941 prompt tok, cached on calls 2-3 0, cost of calls 2-3 $0.00145; haiku, stable prefix + cache_control: 6941 prompt tok, cached on calls 2-3 13854, cost of calls 2-3 $0.00020",
+  "data": {
+   "calls": {
+    "luna, request id at top": [
+     {
+      "prompt": 4609,
+      "cached": 0,
+      "cost": 0.00060605
+     },
+     {
+      "prompt": 4604,
+      "cached": 0,
+      "cost": 0.000599425
+     },
+     {
+      "prompt": 4608,
+      "cached": 0,
+      "cost": 0.000605425
+     }
+    ],
+    "luna, stable prefix (id moved to the end)": [
+     {
+      "prompt": 4595,
+      "cached": 4560,
+      "cost": 7.99e-05
+     },
+     {
+      "prompt": 4595,
+      "cached": 4560,
+      "cost": 7.74e-05
+     },
+     {
+      "prompt": 4592,
+      "cached": 4560,
+      "cost": 7.0025e-05
+     }
+    ],
+    "haiku, stable prefix, no cache_control": [
+     {
+      "prompt": 6941,
+      "cached": 0,
+      "cost": 0.0007241
+     },
+     {
+      "prompt": 6943,
+      "cached": 0,
+      "cost": 0.0007243
+     },
+     {
+      "prompt": 6943,
+      "cached": 0,
+      "cost": 0.0007243
+     }
+    ],
+    "haiku, stable prefix + cache_control": [
+     {
+      "prompt": 6941,
+      "cached": 6927,
+      "cost": 0.00010067
+     },
+     {
+      "prompt": 6943,
+      "cached": 6927,
+      "cost": 0.00010087
+     },
+     {
+      "prompt": 6943,
+      "cached": 6927,
+      "cost": 0.00010087
+     }
+    ]
+   },
+   "summary": {
+    "luna, request id at top": {
+     "cached_after_first": 0,
+     "prompt_tokens": 4609,
+     "cost_calls_2_3": 0.00120485
+    },
+    "luna, stable prefix (id moved to the end)": {
+     "cached_after_first": 9120,
+     "prompt_tokens": 4595,
+     "cost_calls_2_3": 0.000147425
+    },
+    "haiku, stable prefix, no cache_control": {
+     "cached_after_first": 0,
+     "prompt_tokens": 6941,
+     "cost_calls_2_3": 0.0014486
+    },
+    "haiku, stable prefix + cache_control": {
+     "cached_after_first": 13854,
+     "prompt_tokens": 6941,
+     "cost_calls_2_3": 0.00020174
+    }
+   }
+  },
+  "cost_usd": 0.004513,
+  "seconds": 15.01,
+  "status": "PASS"
+ },
+ "I2": {
+  "id": "I2",
+  "title": "Tool schemas tax every call",
+  "layer": "Cost",
+  "kind": "hosted",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "same 9-word question, prompt tokens: no tools 14, all 8 tools 260, routed tools 86 -> schemas add 246 tokens per call (31/tool); routing cuts that to 72",
+  "data": {
+   "no tools": 14,
+   "all 8 tools": 260,
+   "routed tools": 86
+  },
+  "cost_usd": 8.3e-05,
+  "seconds": 3.77,
+  "status": "PASS"
+ },
+ "J1": {
+  "id": "J1",
+  "title": "Model deprecation and silent drift",
+  "layer": "Ops",
+  "kind": "hosted",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "OpenRouter catalog: 460 models, 15 with an expiration date, 15 within 60 days (first: inception/mercury-2 on 2026-11-08); retired ids -> {'anthropic/claude-3-opus': '404', 'openai/gpt-4.5-preview': '404'}; response.model for luna = 'openai/gpt-6-luna' (no snapshot), catalog slug 'openai/gpt-6-luna-20260922'; model_health today: ok; after a simulated alias move: ['openai/gpt-6-luna: now serves openai/gpt-6-luna-20261201, we pinned openai/gpt-6-luna-20260922: re-run the eval gate']",
+  "data": {
+   "n_models": 460,
+   "expiring": [
+    [
+     "2026-11-08",
+     "inception/mercury-2"
+    ],
+    [
+     "2026-11-08",
+     "inception/mercury-2.5"
+    ],
+    [
+     "2026-11-08",
+     "inception/mercury-3"
+    ],
+    [
+     "2026-11-11",
+     "bytedance-seed/seed-1.6"
+    ],
+    [
+     "2026-11-11",
+     "bytedance-seed/seed-1.6-flash"
+    ],
+    [
+     "2026-11-11",
+     "bytedance-seed/seed-2.0-code"
+    ],
+    [
+     "2026-11-13",
+     "liquid/lfm-2.5-2.6b"
+    ],
+    [
+     "2026-11-13",
+     "liquid/lfm-2.5-2.6b:free"
+    ],
+    [
+     "2026-11-18",
+     "moonshotai/kimi-k2.5"
+    ],
+    [
+     "2026-11-20",
+     "meta-llama/llama-3.2-1b-instruct"
+    ],
+    [
+     "2026-12-01",
+     "openai/gpt-5-image-mini"
+    ],
+    [
+     "2026-12-31",
+     "dots-studio/dots-3-note-preview:free"
+    ],
+    [
+     "2026-12-31",
+     "z-ai/glm-4.5"
+    ],
+    [
+     "2026-12-31",
+     "z-ai/glm-4.5v"
+    ],
+    [
+     "2026-12-31",
+     "z-ai/glm-4.7"
+    ]
+   ],
+   "errors": {
+    "anthropic/claude-3-opus": "404",
+    "openai/gpt-4.5-preview": "404"
+   }
+  },
+  "cost_usd": 6e-06,
+  "seconds": 1.83,
+  "status": "PASS"
+ },
+ "J2": {
+  "id": "J2",
+  "title": "Labeled counter missing until first increment",
+  "layer": "Ops",
+  "kind": "local",
+  "reproduced": true,
+  "fixed": true,
+  "evidence": "after 20 successful requests: naive exports ['llm_requests_total{status=\"2xx\"} 20.0'] (so rate(5xx)/rate(all) is empty, not 0); pre-initialized exports ['llm_requests_total{status=\"2xx\"} 20.0', 'llm_requests_total{status=\"4xx\"} 0.0', 'llm_requests_total{status=\"5xx\"} 0.0']",
+  "data": {
+   "naive": [
+    "llm_requests_total{status=\"2xx\"} 20.0"
+   ],
+   "pre-initialized": [
+    "llm_requests_total{status=\"2xx\"} 20.0",
+    "llm_requests_total{status=\"4xx\"} 0.0",
+    "llm_requests_total{status=\"5xx\"} 0.0"
+   ]
+  },
+  "cost_usd": 0.0,
+  "seconds": 0.0,
+  "status": "PASS"
+ }
+}

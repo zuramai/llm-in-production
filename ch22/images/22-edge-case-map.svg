@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" font-family="Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="960" height="600" rx="12" fill="#ffffff"/>
+  <text x="30" y="40" font-size="21" font-weight="bold" fill="#1d2433">Where the 34 edge cases live in an LLM request</text>
+  <text x="30" y="64" font-size="14" fill="#4a5163">One request, top to bottom. Each chip is an entry in this chapter; most failures were silent (no exception, wrong result).</text>
+
+  <!-- left labels column -->
+  <g font-size="14" font-weight="bold" fill="#1d2433">
+    <text x="30" y="112">Data &amp; time</text>
+    <text x="30" y="172">Prompt &amp; context</text>
+    <text x="30" y="232">Retrieval</text>
+    <text x="30" y="292">Model API</text>
+    <text x="30" y="352">Structured output</text>
+    <text x="30" y="412">Agents &amp; tools</text>
+    <text x="30" y="472">Serving &amp; infra</text>
+    <text x="30" y="532">Ops, evals, security</text>
+  </g>
+
+  <!-- layer bands -->
+  <g fill="#f3f5f9" stroke="#888" stroke-width="1">
+    <rect x="190" y="86" width="740" height="44" rx="8"/>
+    <rect x="190" y="146" width="740" height="44" rx="8"/>
+    <rect x="190" y="206" width="740" height="44" rx="8"/>
+    <rect x="190" y="266" width="740" height="44" rx="8"/>
+    <rect x="190" y="326" width="740" height="44" rx="8"/>
+    <rect x="190" y="386" width="740" height="44" rx="8"/>
+    <rect x="190" y="446" width="740" height="44" rx="8"/>
+    <rect x="190" y="506" width="740" height="44" rx="8"/>
+  </g>
+
+  <!-- chips: silent failures in amber, loud failures in blue -->
+  <g font-size="12.5" fill="#1d2433" text-anchor="middle">
+    <!-- data & time -->
+    <rect x="200" y="94" width="130" height="28" rx="14" fill="#f2c46d"/><text x="265" y="113">G1 "today" in UTC</text>
+    <rect x="338" y="94" width="130" height="28" rx="14" fill="#f2c46d"/><text x="403" y="113">G2 cents as dollars</text>
+    <rect x="476" y="94" width="130" height="28" rx="14" fill="#f2c46d"/><text x="541" y="113">G3 empty %p</text>
+    <rect x="614" y="94" width="150" height="28" rx="14" fill="#f2c46d"/><text x="689" y="113">G4 DST arithmetic</text>
+    <rect x="772" y="94" width="150" height="28" rx="14" fill="#f2c46d"/><text x="847" y="113">G5 'canceled' no-op</text>
+    <!-- prompt & context -->
+    <rect x="200" y="154" width="150" height="28" rx="14" fill="#f2c46d"/><text x="275" y="173">A5 unicode / tokens</text>
+    <rect x="358" y="154" width="160" height="28" rx="14" fill="#f2c46d"/><text x="438" y="173">A6 silent truncation</text>
+    <rect x="526" y="154" width="150" height="28" rx="14" fill="#f2c46d"/><text x="601" y="173">I1 cache busted</text>
+    <rect x="684" y="154" width="150" height="28" rx="14" fill="#f2c46d"/><text x="759" y="173">I2 tool-schema tax</text>
+    <!-- retrieval -->
+    <rect x="200" y="214" width="190" height="28" rx="14" fill="#f2c46d"/><text x="295" y="233">C1 HNSW filter: 30 → 0</text>
+    <rect x="398" y="214" width="200" height="28" rx="14" fill="#f2c46d"/><text x="498" y="233">C2 tsquery AND: no hits</text>
+    <rect x="606" y="214" width="200" height="28" rx="14" fill="#f2c46d"/><text x="706" y="233">H2 injected review</text>
+    <!-- model api -->
+    <rect x="200" y="274" width="150" height="28" rx="14" fill="#8fb3ea"/><text x="275" y="293">A1 length → bad JSON</text>
+    <rect x="358" y="274" width="160" height="28" rx="14" fill="#f2c46d"/><text x="438" y="293">A2 empty, still billed</text>
+    <rect x="526" y="274" width="140" height="28" rx="14" fill="#8fb3ea"/><text x="596" y="293">A3 content None</text>
+    <rect x="674" y="274" width="130" height="28" rx="14" fill="#f2c46d"/><text x="739" y="293">A4 temperature</text>
+    <rect x="812" y="274" width="110" height="28" rx="14" fill="#8fb3ea"/><text x="867" y="293">J1 retired</text>
+    <!-- structured output -->
+    <rect x="200" y="334" width="170" height="28" rx="14" fill="#8fb3ea"/><text x="285" y="353">B1 fenced JSON</text>
+    <rect x="378" y="334" width="190" height="28" rx="14" fill="#f2c46d"/><text x="473" y="353">B2 temp 0 ≠ deterministic</text>
+    <rect x="576" y="334" width="190" height="28" rx="14" fill="#f2c46d"/><text x="671" y="353">B3 content_filter retries</text>
+    <!-- agents & tools -->
+    <rect x="200" y="394" width="170" height="28" rx="14" fill="#f2c46d"/><text x="285" y="413">D1 invented order_id</text>
+    <rect x="378" y="394" width="170" height="28" rx="14" fill="#f2c46d"/><text x="463" y="413">D2 refunded 3 times</text>
+    <rect x="556" y="394" width="170" height="28" rx="14" fill="#f2c46d"/><text x="641" y="413">D3 paging forever</text>
+    <rect x="734" y="394" width="190" height="28" rx="14" fill="#f2c46d"/><text x="829" y="413">D4 resume re-runs node</text>
+    <!-- serving -->
+    <rect x="200" y="454" width="130" height="28" rx="14" fill="#8fb3ea"/><text x="265" y="473">F1 429 waves</text>
+    <rect x="338" y="454" width="150" height="28" rx="14" fill="#f2c46d"/><text x="413" y="473">F2 stream cut, no error</text>
+    <rect x="496" y="454" width="140" height="28" rx="14" fill="#8fb3ea"/><text x="566" y="473">F3 healthz starved</text>
+    <rect x="644" y="454" width="130" height="28" rx="14" fill="#8fb3ea"/><text x="709" y="473">F4 offline crash</text>
+    <rect x="782" y="454" width="140" height="28" rx="14" fill="#f2c46d"/><text x="852" y="473">F5 compose env</text>
+    <!-- ops evals security -->
+    <rect x="200" y="514" width="120" height="28" rx="14" fill="#f2c46d"/><text x="260" y="533">H1 PII in logs</text>
+    <rect x="328" y="514" width="150" height="28" rx="14" fill="#f2c46d"/><text x="403" y="533">J2 "No data" panel</text>
+    <rect x="486" y="514" width="140" height="28" rx="14" fill="#f2c46d"/><text x="556" y="533">E1 judge picks A</text>
+    <rect x="634" y="514" width="140" height="28" rx="14" fill="#f2c46d"/><text x="704" y="533">E2 0.9 when wrong</text>
+    <rect x="782" y="514" width="140" height="28" rx="14" fill="#f2c46d"/><text x="852" y="533">E3 gate = coin flip</text>
+  </g>
+
+  <!-- legend -->
+  <rect x="200" y="566" width="22" height="16" rx="8" fill="#f2c46d"/>
+  <text x="230" y="579" font-size="13" fill="#1d2433">silent: wrong result, no exception (27)</text>
+  <rect x="520" y="566" width="22" height="16" rx="8" fill="#8fb3ea"/>
+  <text x="550" y="579" font-size="13" fill="#1d2433">loud: an error or crash you will see (7)</text>
+</svg>
