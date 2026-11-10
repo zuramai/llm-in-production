@@ -1,0 +1,183 @@
+{
+ "name": "q4-lora-v2",
+ "backend": "unsloth",
+ "model": "Qwen/Qwen3-4B",
+ "quant": "bf16",
+ "rank": 16,
+ "alpha": 16,
+ "epochs": 2,
+ "lr": 0.0002,
+ "effective_batch": 16,
+ "train_files": [
+  "train.jsonl",
+  "synthetic.jsonl"
+ ],
+ "n_train": 1134,
+ "n_val": 150,
+ "tokens_per_epoch": 191770,
+ "load_seconds": 45.5,
+ "train_seconds": 207.2,
+ "steps": 142,
+ "final_train_loss": 0.1976,
+ "final_eval_loss": 0.0882,
+ "peak_vram_allocated_gb": 8.03,
+ "peak_vram_reserved_gb": 8.1,
+ "trainable_params": 33030144,
+ "total_params": 4055498240,
+ "loss": [
+  [
+   5,
+   1.3622713088989258
+  ],
+  [
+   10,
+   0.4143528938293457
+  ],
+  [
+   15,
+   0.3113872528076172
+  ],
+  [
+   20,
+   0.26290414333343504
+  ],
+  [
+   25,
+   0.19958438873291015
+  ],
+  [
+   30,
+   0.19810377359390258
+  ],
+  [
+   35,
+   0.18633569478988649
+  ],
+  [
+   40,
+   0.18604837656021117
+  ],
+  [
+   45,
+   0.16412073373794556
+  ],
+  [
+   50,
+   0.17617950439453126
+  ],
+  [
+   55,
+   0.15773624181747437
+  ],
+  [
+   60,
+   0.13542065620422364
+  ],
+  [
+   65,
+   0.16582517623901366
+  ],
+  [
+   70,
+   0.13258442878723145
+  ],
+  [
+   75,
+   0.13229150772094728
+  ],
+  [
+   80,
+   0.10114984512329102
+  ],
+  [
+   85,
+   0.1372994899749756
+  ],
+  [
+   90,
+   0.11112734079360961
+  ],
+  [
+   95,
+   0.10956780910491944
+  ],
+  [
+   100,
+   0.1028555989265442
+  ],
+  [
+   105,
+   0.08958767652511597
+  ],
+  [
+   110,
+   0.11311987638473511
+  ],
+  [
+   115,
+   0.11535530090332032
+  ],
+  [
+   120,
+   0.12035148143768311
+  ],
+  [
+   125,
+   0.09731558561325074
+  ],
+  [
+   130,
+   0.09002904891967774
+  ],
+  [
+   135,
+   0.09929381608963013
+  ],
+  [
+   140,
+   0.09397416114807129
+  ]
+ ],
+ "eval_loss": [
+  [
+   25,
+   0.15563835203647614
+  ],
+  [
+   50,
+   0.12264541536569595
+  ],
+  [
+   75,
+   0.09958339482545853
+  ],
+  [
+   100,
+   0.08959471434354782
+  ],
+  [
+   125,
+   0.08855943381786346
+  ],
+  [
+   142,
+   0.08824621886014938
+  ],
+  [
+   142,
+   0.08824621886014938
+  ]
+ ],
+ "gpu": "NVIDIA GeForce RTX 3090",
+ "versions": {
+  "torch": "2.14.0+cu130",
+  "transformers": "5.17.0",
+  "trl": "1.15.0",
+  "unsloth": "2026.11.3"
+ },
+ "adapter_mb": 126.1,
+ "example_0": {
+  "prompt": "<|im_start|>system\nYou triage customer-support tickets for ShopFlow, an online shop.\n\nReply with a single JSON object with exactly these keys: category, priority, sentiment, order_id (integer or null), summary. Reply with JSON only.<|im_end|>\n<|im_start|>user\n<ticket>\nchannel: email\nsubject: Unsubscribe from marketing emails\nbody: I keep getting promo emails even though I unsubscribed. Please remove me from the list.\n</ticket><|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+  "tokens_in_loss": "{\"category\": \"account\", \"priority\": \"low\", \"sentiment\": \"negative\", \"order_id\": null, \"summary\": \"The customer continues receiving promotional emails after unsubscribing and asks to be removed from the mailing list.\"}<|im_end|>"
+ }
+}

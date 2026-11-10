@@ -1,0 +1,150 @@
+{
+ "name": "q17-lora",
+ "backend": "unsloth",
+ "model": "Qwen/Qwen3-1.7B",
+ "quant": "bf16",
+ "rank": 16,
+ "alpha": 16,
+ "epochs": 2,
+ "lr": 0.0002,
+ "effective_batch": 16,
+ "train_files": [
+  "train.jsonl"
+ ],
+ "n_train": 844,
+ "n_val": 150,
+ "tokens_per_epoch": 138561,
+ "load_seconds": 40.8,
+ "train_seconds": 66.0,
+ "steps": 106,
+ "final_train_loss": 0.1805,
+ "final_eval_loss": 0.1007,
+ "peak_vram_allocated_gb": 3.53,
+ "peak_vram_reserved_gb": 3.61,
+ "trainable_params": 17432576,
+ "total_params": 1738007552,
+ "loss": [
+  [
+   5,
+   1.1754486083984375
+  ],
+  [
+   10,
+   0.4941284656524658
+  ],
+  [
+   15,
+   0.3021277904510498
+  ],
+  [
+   20,
+   0.23749520778656005
+  ],
+  [
+   25,
+   0.18783022165298463
+  ],
+  [
+   30,
+   0.1317291021347046
+  ],
+  [
+   35,
+   0.137154483795166
+  ],
+  [
+   40,
+   0.11217966079711914
+  ],
+  [
+   45,
+   0.10027866363525391
+  ],
+  [
+   50,
+   0.08917015790939331
+  ],
+  [
+   55,
+   0.08380053639411926
+  ],
+  [
+   60,
+   0.0863702654838562
+  ],
+  [
+   65,
+   0.07375717163085938
+  ],
+  [
+   70,
+   0.07500038146972657
+  ],
+  [
+   75,
+   0.07324415445327759
+  ],
+  [
+   80,
+   0.0674476146697998
+  ],
+  [
+   85,
+   0.07660136222839356
+  ],
+  [
+   90,
+   0.08402445316314697
+  ],
+  [
+   95,
+   0.06720142364501953
+  ],
+  [
+   100,
+   0.07279320359230042
+  ],
+  [
+   105,
+   0.0887328028678894
+  ]
+ ],
+ "eval_loss": [
+  [
+   25,
+   0.1743706315755844
+  ],
+  [
+   50,
+   0.12090139836072922
+  ],
+  [
+   75,
+   0.11163479089736938
+  ],
+  [
+   100,
+   0.10132712125778198
+  ],
+  [
+   106,
+   0.10072564333677292
+  ],
+  [
+   106,
+   0.10072564333677292
+  ]
+ ],
+ "gpu": "NVIDIA GeForce RTX 3090",
+ "versions": {
+  "torch": "2.14.0+cu130",
+  "transformers": "5.17.0",
+  "trl": "1.15.0",
+  "unsloth": "2026.11.3"
+ },
+ "adapter_mb": 66.5,
+ "example_0": {
+  "prompt": "<|im_start|>system\nYou triage customer-support tickets for ShopFlow, an online shop.\n\nReply with a single JSON object with exactly these keys: category, priority, sentiment, order_id (integer or null), summary. Reply with JSON only.<|im_end|>\n<|im_start|>user\n<ticket>\nchannel: email\nsubject: Unsubscribe from marketing emails\nbody: I keep getting promo emails even though I unsubscribed. Please remove me from the list.\n</ticket><|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+  "tokens_in_loss": "{\"category\": \"account\", \"priority\": \"low\", \"sentiment\": \"negative\", \"order_id\": null, \"summary\": \"The customer continues receiving promotional emails after unsubscribing and asks to be removed from the mailing list.\"}<|im_end|>"
+ }
+}

@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 360" width="760" height="360" font-family="Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="760" height="360" rx="14" fill="#ffffff"/>
+  <text x="380" y="34" text-anchor="middle" font-size="19" font-weight="bold" fill="#222">LoRA: freeze W, learn a small correction B·A</text>
+
+  <!-- input -->
+  <rect x="30" y="160" width="90" height="46" rx="8" fill="#cfe3f7" stroke="#5b8fc7"/>
+  <text x="75" y="181" text-anchor="middle" font-size="14" fill="#1b2a3a">input x</text>
+  <text x="75" y="198" text-anchor="middle" font-size="11" fill="#1b2a3a">2,048 numbers</text>
+
+  <!-- frozen W -->
+  <rect x="190" y="62" width="200" height="120" rx="8" fill="#d9d9d9" stroke="#888"/>
+  <text x="290" y="100" text-anchor="middle" font-size="16" font-weight="bold" fill="#222">W (frozen)</text>
+  <text x="290" y="122" text-anchor="middle" font-size="12" fill="#222">2,048 × 6,144 = 12.6M weights</text>
+  <text x="290" y="142" text-anchor="middle" font-size="12" fill="#222">one gate_proj of Qwen3-1.7B</text>
+  <text x="290" y="162" text-anchor="middle" font-size="12" fill="#222">bf16 (LoRA) or 4-bit (QLoRA)</text>
+
+  <!-- A and B -->
+  <rect x="190" y="228" width="80" height="80" rx="8" fill="#f7d9a8" stroke="#c98b2b"/>
+  <text x="230" y="258" text-anchor="middle" font-size="15" font-weight="bold" fill="#3a2a10">A</text>
+  <text x="230" y="278" text-anchor="middle" font-size="11" fill="#3a2a10">2,048 → 16</text>
+  <text x="230" y="294" text-anchor="middle" font-size="11" fill="#3a2a10">32,768</text>
+  <rect x="310" y="228" width="80" height="80" rx="8" fill="#f7d9a8" stroke="#c98b2b"/>
+  <text x="350" y="258" text-anchor="middle" font-size="15" font-weight="bold" fill="#3a2a10">B</text>
+  <text x="350" y="278" text-anchor="middle" font-size="11" fill="#3a2a10">16 → 6,144</text>
+  <text x="350" y="294" text-anchor="middle" font-size="11" fill="#3a2a10">98,304</text>
+  <text x="290" y="330" text-anchor="middle" font-size="12" fill="#3a2a10">trained: 131,072 weights (1% of W), rank r = 16</text>
+
+  <!-- sum -->
+  <circle cx="470" cy="183" r="20" fill="#ffffff" stroke="#888" stroke-width="2"/>
+  <text x="470" y="190" text-anchor="middle" font-size="22" fill="#222">+</text>
+
+  <!-- output -->
+  <rect x="540" y="160" width="190" height="46" rx="8" fill="#c9e8c9" stroke="#4f9a4f"/>
+  <text x="635" y="181" text-anchor="middle" font-size="14" fill="#173317">h = W·x + (α/r)·B·A·x</text>
+  <text x="635" y="198" text-anchor="middle" font-size="11" fill="#173317">same shape as before</text>
+
+  <!-- arrows -->
+  <g stroke="#888" stroke-width="2" fill="none">
+    <path d="M120 183 L160 183 L160 122 L190 122"/>
+    <path d="M160 183 L160 268 L190 268"/>
+    <path d="M270 268 L310 268"/>
+    <path d="M390 122 L470 122 L470 163"/>
+    <path d="M390 268 L470 268 L470 203"/>
+    <path d="M490 183 L540 183"/>
+  </g>
+  <g fill="#888">
+    <polygon points="190,122 182,117 182,127"/>
+    <polygon points="190,268 182,263 182,273"/>
+    <polygon points="310,268 302,263 302,273"/>
+    <polygon points="470,163 465,155 475,155"/>
+    <polygon points="470,203 465,211 475,211"/>
+    <polygon points="540,183 532,178 532,188"/>
+  </g>
+
+  <!-- side note -->
+  <rect x="540" y="236" width="190" height="92" rx="8" fill="#eef1f5" stroke="#888"/>
+  <text x="635" y="258" text-anchor="middle" font-size="12" fill="#222">7 projections × 28 layers</text>
+  <text x="635" y="276" text-anchor="middle" font-size="12" fill="#222">= 17.4M trained weights</text>
+  <text x="635" y="294" text-anchor="middle" font-size="12" fill="#222">of 1.7B (1.0%)</text>
+  <text x="635" y="312" text-anchor="middle" font-size="12" fill="#222">adapter file: ~67 MB</text>
+</svg>

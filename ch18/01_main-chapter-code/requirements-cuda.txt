@@ -1,0 +1,8 @@
+# CUDA-only stack for Chapter 18 (installed into ch18/01_main-chapter-code/.venv-cuda, never the main .venv).
+#   uv venv ch18/01_main-chapter-code/.venv-cuda --python 3.12
+#   uv pip install -r ch18/01_main-chapter-code/requirements-cuda.txt --python ch18/01_main-chapter-code/.venv-cuda
+# Resolved together on 2026-11-07 (torch 2.14.0, transformers 5.17.0, trl 1.15.0, peft 0.21.2,
+# bitsandbytes 0.50.2). One venv serves both training (Unsloth) and serving (vLLM).
+unsloth==2026.11.3
+unsloth-zoo==2026.11.3
+vllm==0.33.0
