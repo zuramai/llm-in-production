@@ -141,7 +141,7 @@ uv run python datasets/shopflow/seed.py --reset --seed 42 --days 180 \
 LLM-generated SQL always runs as `shopflow_ro`. The test suite checks this:
 
 ```bash
-uv run pytest -m docker datasets
+uv run pytest -m reseed datasets   # re-runs seed.py --reset: chapter tables are dropped
 ```
 
 ## Files

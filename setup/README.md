@@ -49,11 +49,15 @@ LLM_MODEL_STRONG=gpt-6.1-sol
 ### Ollama (local, free, offline)
 
 ```bash
-brew install ollama          # or download from https://ollama.com
-ollama serve                 # or start the Ollama app
+curl -fsSL https://ollama.com/install.sh | sh   # Linux; macOS/Windows: download from ollama.com
+ollama serve                                    # skip if the installer started the service
 ollama pull qwen3:8b
 ollama pull nomic-embed-text
 ```
+
+Ollama uses an NVIDIA GPU automatically when the driver is installed (`nvidia-smi` works);
+`ollama ps` shows `100% GPU` for a loaded model. It also runs on Apple Silicon and on CPU,
+only slower. The book's local numbers come from one RTX 3090 (24 GB).
 
 ```ini
 LLM_BASE_URL=http://localhost:11434/v1

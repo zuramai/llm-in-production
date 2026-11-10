@@ -1,7 +1,7 @@
 # Chapter N: <Title>
 
-> **Tested on:** YYYY-MM-DD · macOS (Apple M2 Pro, 16 GB) · Python 3.12 · <models + providers> ·
-> <key library versions>
+> **Tested on:** YYYY-MM-DD · Ubuntu 22.04 (NVIDIA RTX 3090, 24 GB) · Python 3.12 ·
+> <models + providers> · <key library versions>
 
 <Opening hook: a concrete scene from a real team, then what is happening in the industry right
 now, dated and sourced.>

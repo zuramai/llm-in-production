@@ -1,4 +1,9 @@
-"""Invariants of the ShopFlow seed. Needs the docker DB: `uv run pytest -m docker datasets`."""
+"""Invariants of the ShopFlow seed.
+
+These tests re-run `seed.py --reset`, which drops the whole `public` schema, including tables
+that chapters create (e.g. `ch04_doc_chunks`). They are excluded from a plain `uv run pytest`;
+run them on purpose with `uv run pytest -m reseed datasets`, then re-run any chapter setup.
+"""
 
 from __future__ import annotations
 
@@ -11,7 +16,7 @@ import psycopg
 import pytest
 from dotenv import find_dotenv, load_dotenv
 
-pytestmark = pytest.mark.docker
+pytestmark = [pytest.mark.docker, pytest.mark.reseed]
 
 SEED = Path(__file__).resolve().parents[1] / "seed.py"
 TODAY_ORDERS = 37  # deliberately not the default, to prove the flag is honoured

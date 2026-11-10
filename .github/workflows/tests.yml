@@ -39,4 +39,5 @@ jobs:
       - run: uv sync
       - run: uv run ruff check .
       - run: uv run python datasets/shopflow/seed.py --reset
-      - run: uv run pytest -m "not llm"
+      - run: uv run pytest
+      - run: uv run pytest -m reseed datasets

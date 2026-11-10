@@ -75,44 +75,45 @@ Full instructions, other providers (OpenAI direct, local Ollama) and troubleshoo
 |---|---|---|
 | **Part I: Foundations** | | |
 | [Ch 1: From API call to production chatbot](ch01/README.md) | [ch01.ipynb](ch01/01_main-chapter-code/ch01.ipynb) | [ch01/01_main-chapter-code](ch01/01_main-chapter-code) |
-| Ch 2: Structured outputs & extraction | coming soon | coming soon |
-| Ch 3: Evaluating LLM systems | coming soon | coming soon |
+| [Ch 2: Structured outputs & extraction](ch02/README.md) | [ch02.ipynb](ch02/01_main-chapter-code/ch02.ipynb) | [ch02/01_main-chapter-code](ch02/01_main-chapter-code) |
+| [Ch 3: Evaluating LLM systems](ch03/README.md) | [ch03.ipynb](ch03/01_main-chapter-code/ch03.ipynb) | [ch03/01_main-chapter-code](ch03/01_main-chapter-code) |
 | **Part II: Data & Retrieval** | | |
-| Ch 4: RAG over internal docs | coming soon | coming soon |
-| Ch 5: Agentic RAG | coming soon | coming soon |
+| [Ch 4: RAG over internal docs](ch04/README.md) | [ch04.ipynb](ch04/01_main-chapter-code/ch04.ipynb) | [ch04/01_main-chapter-code](ch04/01_main-chapter-code) |
+| [Ch 5: Agentic RAG](ch05/README.md) | [ch05.ipynb](ch05/01_main-chapter-code/ch05.ipynb) | [ch05/01_main-chapter-code](ch05/01_main-chapter-code) |
 | [Ch 6: Text-to-SQL Slack bot over production data](ch06/README.md) | [ch06.ipynb](ch06/01_main-chapter-code/ch06.ipynb) | [ch06/01_main-chapter-code](ch06/01_main-chapter-code) |
-| Ch 7: Semantic layers | coming soon | coming soon |
-| Ch 8: Document & multimodal processing | coming soon | coming soon |
+| [Ch 7: Semantic layers](ch07/README.md) | [ch07.ipynb](ch07/01_main-chapter-code/ch07.ipynb) | [ch07/01_main-chapter-code](ch07/01_main-chapter-code) |
+| [Ch 8: Document & multimodal processing](ch08/README.md) | [ch08.ipynb](ch08/01_main-chapter-code/ch08.ipynb) | [ch08/01_main-chapter-code](ch08/01_main-chapter-code) |
 | **Part III: Agents & Tools** | | |
-| Ch 9: Tool calling & MCP | coming soon | coming soon |
-| Ch 10: Reliable agents | coming soon | coming soon |
-| Ch 11: Incident analysis agent | coming soon | coming soon |
-| Ch 12: Code-review bot | coming soon | coming soon |
+| [Ch 9: Tool calling & MCP](ch09/README.md) | [ch09.ipynb](ch09/01_main-chapter-code/ch09.ipynb) | [ch09/01_main-chapter-code](ch09/01_main-chapter-code) |
+| [Ch 10: Reliable agents](ch10/README.md) | [ch10.ipynb](ch10/01_main-chapter-code/ch10.ipynb) | [ch10/01_main-chapter-code](ch10/01_main-chapter-code) |
+| [Ch 11: Incident analysis agent](ch11/README.md) | [ch11.ipynb](ch11/01_main-chapter-code/ch11.ipynb) | [ch11/01_main-chapter-code](ch11/01_main-chapter-code) |
+| [Ch 12: Code-review bot](ch12/README.md) | [ch12.ipynb](ch12/01_main-chapter-code/ch12.ipynb) | [ch12/01_main-chapter-code](ch12/01_main-chapter-code) |
 | **Part IV: Production Hardening** | | |
-| Ch 13: Guardrails & security | coming soon | coming soon |
-| Ch 14: Observability & LLMOps | coming soon | coming soon |
-| Ch 15: Gateway, caching & cost control | coming soon | coming soon |
+| [Ch 13: Guardrails & security](ch13/README.md) | [ch13.ipynb](ch13/01_main-chapter-code/ch13.ipynb) | [ch13/01_main-chapter-code](ch13/01_main-chapter-code) |
+| [Ch 14: Observability & LLMOps](ch14/README.md) | [ch14.ipynb](ch14/01_main-chapter-code/ch14.ipynb) | [ch14/01_main-chapter-code](ch14/01_main-chapter-code) |
+| [Ch 15: Gateway, caching & cost control](ch15/README.md) | [ch15.ipynb](ch15/01_main-chapter-code/ch15.ipynb) | [ch15/01_main-chapter-code](ch15/01_main-chapter-code) |
 | **Part V: Models & Compute** | | |
-| Ch 16: Self-hosting open models | coming soon | coming soon |
-| Ch 17: GPU & compute optimization | coming soon | coming soon |
-| Ch 18: Fine-tuning your own model | coming soon | coming soon |
-| Ch 19: Managed fine-tuning (SageMaker, Vertex, OpenAI) | coming soon | coming soon |
+| [Ch 16: Self-hosting open models](ch16/README.md) | [ch16.ipynb](ch16/01_main-chapter-code/ch16.ipynb) | [ch16/01_main-chapter-code](ch16/01_main-chapter-code) |
+| [Ch 17: GPU & compute optimization](ch17/README.md) | [ch17.ipynb](ch17/01_main-chapter-code/ch17.ipynb) | [ch17/01_main-chapter-code](ch17/01_main-chapter-code) |
+| [Ch 18: Fine-tuning your own model](ch18/README.md) | [ch18.ipynb](ch18/01_main-chapter-code/ch18.ipynb) | [ch18/01_main-chapter-code](ch18/01_main-chapter-code) |
+| [Ch 19: Managed fine-tuning (SageMaker, Vertex, OpenAI)](ch19/README.md) | [ch19.ipynb](ch19/01_main-chapter-code/ch19.ipynb) | [ch19/01_main-chapter-code](ch19/01_main-chapter-code) |
 | **Part VI: Production at Scale** | | |
-| Ch 20: Deploying to production | coming soon | coming soon |
-| Ch 21: Scaling to a million users | coming soon | coming soon |
-| Ch 22: Edge cases from the field & what to expect | coming soon | coming soon |
+| [Ch 20: Deploying to production](ch20/README.md) | [ch20.ipynb](ch20/01_main-chapter-code/ch20.ipynb) | [ch20/01_main-chapter-code](ch20/01_main-chapter-code) |
+| [Ch 21: Scaling to a million users](ch21/README.md) | [ch21.ipynb](ch21/01_main-chapter-code/ch21.ipynb) | [ch21/01_main-chapter-code](ch21/01_main-chapter-code) |
+| [Ch 22: Edge cases from the field & what to expect](ch22/README.md) | [ch22.ipynb](ch22/01_main-chapter-code/ch22.ipynb) | [ch22/01_main-chapter-code](ch22/01_main-chapter-code) |
 | **Appendices** | | |
-| A: Model selection & pricing snapshot | coming soon | coming soon |
-| B: Glossary | coming soon | coming soon |
-| C: References & further reading | coming soon | coming soon |
+| [A: Model selection & pricing snapshot](appendix-A/README.md) | [fetch_models.py](appendix-A/fetch_models.py) | [appendix-A](appendix-A) |
+| [B: Glossary](appendix-B/README.md) | — | — |
+| [C: References & further reading](appendix-C/README.md) | — | — |
 
 ## Hardware
 
 - **Parts I–IV:** any laptop with Docker. Model calls go to a hosted API (OpenRouter by
   default) or to a local Ollama.
-- **Part V:** the local runs use Apple Silicon (MLX, llama.cpp, Ollama) and were tested on an
-  M2 Pro with 16 GB. CUDA and cloud code (vLLM, SGLang, Unsloth, SageMaker, Vertex) comes from
-  official docs and is marked **Not executed by the author** wherever that applies.
+- **Part V:** the local runs use an NVIDIA GPU (Ollama, llama.cpp, vLLM, Unsloth) and were
+  tested on one RTX 3090 (24 GB, Ampere) under Ubuntu 22.04. Each Part V chapter keeps its
+  CUDA-only packages in a chapter-local `requirements-cuda.txt`. Cloud code (SageMaker, Vertex)
+  comes from official docs and is marked **Not executed by the author** wherever that applies.
 
 ## Running the notebooks
 
@@ -129,9 +130,10 @@ uv run jupyter nbconvert --to notebook --execute --inplace ch01/01_main-chapter-
 ## Running the tests
 
 ```bash
-uv run pytest                # unit tests; never calls a model (llm marker is skipped)
-uv run pytest -m docker      # tests that need the ShopFlow Postgres container
+uv run pytest                # unit tests; never calls a model, never re-seeds the database
+uv run pytest -m "docker and not reseed"   # tests that need the ShopFlow Postgres container
 uv run pytest -m llm         # tests that call the configured model (costs money)
+uv run pytest -m reseed datasets   # seed invariants: re-seed the DB and drop chapter tables
 ```
 
 ## Repository layout

@@ -38,15 +38,26 @@ ch04 = ["pgvector>=0.5", "sentence-transformers>=6.2"]
 ch08 = ["pypdf", "reportlab", "pillow"]
 ch09 = ["mcp>=2.3"]
 ch11 = ["fastapi>=0.162", "uvicorn>=0.54", "prometheus-client"]
+ch05 = ["langgraph>=1.2", "pgvector>=0.5", "sentence-transformers>=6.2", "sqlglot>=30.30"]
+ch07 = ["sqlglot>=30.30"]
+ch10 = ["langgraph>=1.2", "langgraph-checkpoint-postgres", "openai-agents>=0.24"]
+ch14 = ["langfuse>=5.2"]
+ch15 = ["redis", "pgvector>=0.5"]
+ch20 = ["fastapi>=0.162", "uvicorn>=0.54", "sse-starlette>=3.6", "sqlglot>=30.30"]
+ch21 = ["locust", "redis", "fastapi>=0.162", "uvicorn>=0.54"]
 
 [tool.uv]
 default-groups = "all"
 
 [tool.pytest.ini_options]
-markers = ["llm: calls a real model", "docker: needs docker services"]
-testpaths = ["datasets", "src", "ch01", "ch06"]
-addopts = "-m 'not llm'"
+markers = [
+    "llm: calls a real model",
+    "docker: needs docker services",
+    "reseed: re-seeds the shared ShopFlow DB (drops chapter tables); opt in with -m reseed",
+]
+testpaths = ["datasets", "src", "ch01", "ch02", "ch03", "ch04", "ch05", "ch06", "ch07", "ch08", "ch09", "ch10", "ch11", "ch12", "ch13", "ch14", "ch15", "ch16", "ch17", "ch18", "ch19", "ch20", "ch21", "ch22"]
+addopts = "-m 'not llm and not reseed'"
 
 [tool.ruff]
 line-length = 100
-extend-exclude = ["*.ipynb"]
+extend-exclude = ["*.ipynb", "unsloth_compiled_cache"]

@@ -77,18 +77,18 @@ Use GitHub alert syntax so the callouts render on github.com:
 Executed chapters start with:
 
 ```markdown
-> **Tested on:** 2026-11-07 · macOS (Apple M2 Pro, 16 GB) · Python 3.12 ·
-> openai/gpt-6-luna, anthropic/claude-sonnet-5.5 via OpenRouter; qwen3:8b via Ollama 0.15 ·
+> **Tested on:** 2026-11-07 · Ubuntu 22.04 (NVIDIA RTX 3090, 24 GB) · Python 3.12 ·
+> openai/gpt-6-luna, anthropic/claude-sonnet-5.5 via OpenRouter; qwen3:8b via Ollama ·
 > openai 3.46, fastapi 0.162
 ```
 
-Code that was **not** executed (needs CUDA, a cloud account, a third-party workspace) carries
-this badge directly above it:
+Code that was **not** executed (needs a cloud account, a third-party workspace, or hardware
+beyond one 24 GB GPU) carries this badge directly above it:
 
 ```markdown
 > [!CAUTION]
-> **Not executed by the author** — requires an NVIDIA GPU with CUDA 12+. Written against
-> <official doc URL> (accessed 2026-11-07) and checked with `python -m py_compile`.
+> **Not executed by the author** — requires <AWS account | GCP project | 2+ GPUs>. Written
+> against <official doc URL> (accessed 2026-11-07) and checked with `python -m py_compile`.
 ```
 
 ## Visuals

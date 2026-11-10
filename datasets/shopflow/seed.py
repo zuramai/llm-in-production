@@ -191,7 +191,8 @@ class Builder:
         lines = self._order_lines(rng)
         subtotal = sum(q * price for _, q, price in lines)
         discount = round(subtotal * 0.10) if rng.random() < 0.15 else 0
-        free = segment == "vip" or subtotal >= FREE_SHIPPING_THRESHOLD_CENTS
+        # Policy (docs/policies/shipping-policy.md): the threshold applies *after* discounts.
+        free = segment == "vip" or subtotal - discount >= FREE_SHIPPING_THRESHOLD_CENTS
         shipping = 0 if free else SHIPPING_CENTS
         total = subtotal - discount + shipping
         channel = rng.choices(["web", "ios", "android"], [0.55, 0.28, 0.17])[0]

@@ -7,6 +7,8 @@ dist/
 .pytest_cache/
 .ruff_cache/
 .venv/
+.venv-*/
+unsloth_compiled_cache/
 .ipynb_checkpoints/
 
 # Secrets
@@ -14,6 +16,9 @@ dist/
 
 # Reference material (copyrighted, never committed)
 /*.pdf
+
+# Agent session transcripts (may contain API keys)
+/*.jsonl
 
 # Large local artifacts
 **/adapters/
