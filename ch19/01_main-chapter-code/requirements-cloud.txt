@@ -1,0 +1,16 @@
+# Cloud SDKs for Chapter 19's launchers. Not part of the book's main environment (pyproject);
+# install into a chapter-local venv:
+#   uv venv ch19/01_main-chapter-code/.venv-cloud --python 3.12
+#   UV_CACHE_DIR=$HOME/.cache/uv-cloud-ch19 uv pip install \
+#       -r ch19/01_main-chapter-code/requirements-cloud.txt \
+#       --python ch19/01_main-chapter-code/.venv-cloud
+# Versions are the latest on PyPI on 2026-11-08, the ones the scripts were checked against.
+openai==3.46.0                # openai_ft.py (also in the main env)
+boto3==1.43.126               # bedrock_ft.py, sagemaker_ft.py (S3 upload)
+sagemaker==3.29.0             # sagemaker_ft.py: sagemaker.train.SFTTrainer (SDK v3)
+google-genai==3.0.0           # vertex_ft.py: client.tunings
+google-cloud-storage          # vertex_ft.py: upload to gs://
+# what the launchers import from the chapter code (validators, scoring)
+pydantic>=2.14
+python-dotenv>=1.2
+tiktoken>=0.14

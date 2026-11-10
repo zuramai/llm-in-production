@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 470" width="960" height="470" font-family="Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="960" height="470" rx="16" fill="#ffffff"/>
+  <text x="480" y="34" text-anchor="middle" font-size="20" font-weight="bold" fill="#222222">One dataset you own, four managed envelopes</text>
+
+  <!-- source -->
+  <rect x="24" y="150" width="190" height="150" rx="10" fill="#d9e8f5" stroke="#4a78a6"/>
+  <text x="119" y="178" text-anchor="middle" font-size="15" font-weight="bold" fill="#1d3557">Chapter 18 split</text>
+  <text x="119" y="202" text-anchor="middle" font-size="13" fill="#1d3557">train 1,200 · val 150</text>
+  <text x="119" y="222" text-anchor="middle" font-size="13" fill="#1d3557">test 210 (60 hard)</text>
+  <text x="119" y="250" text-anchor="middle" font-size="12" fill="#1d3557">JSONL rows: ticket +</text>
+  <text x="119" y="268" text-anchor="middle" font-size="12" fill="#1d3557">gold labels + summary</text>
+
+  <line x1="214" y1="225" x2="262" y2="225" stroke="#888888" stroke-width="2"/>
+  <polygon points="262,219 274,225 262,231" fill="#888888"/>
+
+  <!-- canonical -->
+  <rect x="276" y="130" width="200" height="190" rx="10" fill="#e6dcf2" stroke="#6f4e9c"/>
+  <text x="376" y="158" text-anchor="middle" font-size="15" font-weight="bold" fill="#3d2466">convert.py</text>
+  <text x="376" y="182" text-anchor="middle" font-size="13" fill="#3d2466">canonical example</text>
+  <rect x="294" y="194" width="164" height="26" rx="5" fill="#ffffff" stroke="#6f4e9c"/>
+  <text x="376" y="212" text-anchor="middle" font-size="12" fill="#3d2466">system: 1-line rule</text>
+  <rect x="294" y="226" width="164" height="26" rx="5" fill="#ffffff" stroke="#6f4e9c"/>
+  <text x="376" y="244" text-anchor="middle" font-size="12" fill="#3d2466">user: &lt;ticket&gt;…&lt;/ticket&gt;</text>
+  <rect x="294" y="258" width="164" height="26" rx="5" fill="#ffffff" stroke="#6f4e9c"/>
+  <text x="376" y="276" text-anchor="middle" font-size="12" fill="#3d2466">assistant: JSON answer</text>
+  <text x="376" y="306" text-anchor="middle" font-size="11" fill="#3d2466">dedupe · validate · count tokens</text>
+
+  <!-- arrows to targets -->
+  <line x1="476" y1="225" x2="540" y2="95" stroke="#888888" stroke-width="2"/>
+  <line x1="476" y1="225" x2="540" y2="185" stroke="#888888" stroke-width="2"/>
+  <line x1="476" y1="225" x2="540" y2="275" stroke="#888888" stroke-width="2"/>
+  <line x1="476" y1="225" x2="540" y2="365" stroke="#888888" stroke-width="2"/>
+
+  <!-- OpenAI -->
+  <rect x="540" y="60" width="396" height="72" rx="10" fill="#f6d6d2" stroke="#b5544a"/>
+  <text x="556" y="84" font-size="14" font-weight="bold" fill="#5c1f18">OpenAI · chat JSONL</text>
+  <text x="556" y="104" font-size="12" fill="#5c1f18">{"messages":[{"role":"system","content":…}, …]}</text>
+  <text x="556" y="122" font-size="12" fill="#5c1f18">winding down: no new jobs after 2027-01-06</text>
+
+  <!-- Bedrock -->
+  <rect x="540" y="150" width="396" height="72" rx="10" fill="#fbe7c6" stroke="#b07d2b"/>
+  <text x="556" y="174" font-size="14" font-weight="bold" fill="#5a3d0c">Amazon Bedrock · bedrock-conversation-2024</text>
+  <text x="556" y="194" font-size="12" fill="#5a3d0c">{"schemaVersion":…,"system":[{"text"}],"messages":[…]}</text>
+  <text x="556" y="212" font-size="12" fill="#5a3d0c">content is a list of {"text"} blocks</text>
+
+  <!-- Vertex -->
+  <rect x="540" y="240" width="396" height="72" rx="10" fill="#d4ecd9" stroke="#4c8a5a"/>
+  <text x="556" y="264" font-size="14" font-weight="bold" fill="#1e4a2a">Vertex AI · Gemini contents/parts</text>
+  <text x="556" y="284" font-size="12" fill="#1e4a2a">{"systemInstruction":{"parts":…},"contents":[…]}</text>
+  <text x="556" y="302" font-size="12" fill="#1e4a2a">the assistant role is called "model"</text>
+
+  <!-- SageMaker -->
+  <rect x="540" y="330" width="396" height="72" rx="10" fill="#dde3ea" stroke="#5b6b7d"/>
+  <text x="556" y="354" font-size="14" font-weight="bold" fill="#26313d">SageMaker · your training script, your weights</text>
+  <text x="556" y="374" font-size="12" fill="#26313d">Chapter 18's chat JSONL + LoRA on a rented GPU</text>
+  <text x="556" y="392" font-size="12" fill="#26313d">the adapter lands in your S3 bucket</text>
+
+  <text x="480" y="440" text-anchor="middle" font-size="13" fill="#444444">The data, the eval set and the converter are portable. A provider's tuned model is not:</text>
+  <text x="480" y="458" text-anchor="middle" font-size="13" fill="#444444">only the SageMaker path hands you the weights.</text>
+</svg>
