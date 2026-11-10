@@ -1,0 +1,367 @@
+{
+ "meta": {
+  "config": "scan-printed-qwen2.5vl-7b",
+  "kind": "vision",
+  "provider": "ollama",
+  "model": "qwen2.5vl:7b",
+  "naive": false,
+  "printed": true,
+  "max_side": null,
+  "workers": 2,
+  "per_layout": null,
+  "note": "",
+  "n": 10,
+  "wall_s": 67.2,
+  "run_at": "2026-11-09T15:11:29"
+ },
+ "files": {
+  "scan-01.png": {
+   "method": "vision",
+   "model": "qwen2.5vl:7b",
+   "invoice": {
+    "supplier": "Harbor Lane Packaging Inc.",
+    "invoice_no": "B-29425",
+    "date": "2026-06-11",
+    "currency": "USD",
+    "line_items": [
+     {
+      "sku": "HL-8475",
+      "desc": "Insulated shipping envelope",
+      "qty": 48,
+      "unit_price_cents": 131
+     },
+     {
+      "sku": "HL-6844",
+      "desc": "Yoga mat 6 mm",
+      "qty": 36,
+      "unit_price_cents": 1376
+     },
+     {
+      "sku": "HL-2599",
+      "desc": "Spiral notebook A5, 80 sheets",
+      "qty": 100,
+      "unit_price_cents": 316
+     }
+    ],
+    "subtotal_cents": 87424,
+    "tax_cents": 6994,
+    "total_cents": 94418
+   },
+   "error": null,
+   "raw": "{\n  \"supplier\": \"Harbor Lane Packaging Inc.\",\n  \"supplier_country\": \"USA\",\n  \"invoice_no\": \"B-29425\",\n  \"invoice_date\": \"06/11/2026\",\n  \"line_items\": [\n    {\n      \"sku\": \"HL-8475\",\n      \"desc\": \"Insulated shipping envelope\",\n      \"qty\": \"48\",\n      \"unit_price\": \"$1.31\"\n    },\n    {\n      \"sku\": \"HL-6844\",\n      \"desc\": \"Yoga mat 6 mm\",\n      \"qty\": \"36\",\n      \"unit_price\": \"$13.76\"\n    },\n    {\n      \"sku\": \"HL-2599\",\n      \"desc\": \"Spiral notebook A5, 80 sheets\",\n      \"qty\": \"100\",\n      \"unit_price\": \"$3.16\"\n    }\n  ],\n  \"subtotal\": \"$874.24\",\n  \"tax\": \"$69.94\",\n  \"total\": \"$944.18\"\n}",
+   "latency_s": 5.979833595920354,
+   "prompt_tokens": 2986,
+   "completion_tokens": 243,
+   "cost_usd": 0.0,
+   "finish_reason": "stop",
+   "notes": {}
+  },
+  "scan-02.png": {
+   "method": "vision",
+   "model": "qwen2.5vl:7b",
+   "invoice": {
+    "supplier": "Nordlicht Verpackung GmbH",
+    "invoice_no": "RE-2026-1475",
+    "date": "2026-04-02",
+    "currency": "EUR",
+    "line_items": [
+     {
+      "sku": "NV-7000",
+      "desc": "Edelstahl-Trinkflasche 750 ml",
+      "qty": 2,
+      "unit_price_cents": 1057
+     },
+     {
+      "sku": "NV-1607",
+      "desc": "Fahrradschlauch 700x25c",
+      "qty": 24,
+      "unit_price_cents": 493
+     },
+     {
+      "sku": "NV-6857",
+      "desc": "Keramiktasse 350 ml",
+      "qty": 24,
+      "unit_price_cents": 233
+     },
+     {
+      "sku": "NV-2867",
+      "desc": "Frischhaltedose",
+      "qty": 24,
+      "unit_price_cents": 722
+     },
+     {
+      "sku": "NV-3573",
+      "desc": "Notizbuch A5, 80 Blatt",
+      "qty": 12,
+      "unit_price_cents": 229
+     },
+     {
+      "sku": "NV-8065",
+      "desc": "Edelstahl-Trinkflasche 750 ml",
+      "qty": 2,
+      "unit_price_cents": 691
+     },
+     {
+      "sku": "NV-4647",
+      "desc": "Yogamatte 6 mm",
+      "qty": 2,
+      "unit_price_cents": 1650
+     }
+    ],
+    "subtotal_cents": 44296,
+    "tax_cents": 8416,
+    "total_cents": 52712
+   },
+   "error": null,
+   "raw": "{\n  \"supplier\": \"Nordlicht Verpackung GmbH\",\n  \"supplier_country\": \"Deutschland\",\n  \"invoice_no\": \"RE-2026-1475\",\n  \"invoice_date\": \"02.04.2026\",\n  \"line_items\": [\n    {\n      \"sku\": \"NV-7000\",\n      \"desc\": \"Edelstahl-Trinkflasche 750 ml\",\n      \"qty\": \"2\",\n      \"unit_price\": \"10,57 €\"\n    },\n    {\n      \"sku\": \"NV-1607\",\n      \"desc\": \"Fahrradschlauch 700x25c\",\n      \"qty\": \"24\",\n      \"unit_price\": \"4,93 €\"\n    },\n    {\n      \"sku\": \"NV-6857\",\n      \"desc\": \"Keramiktasse 350 ml\",\n      \"qty\": \"24\",\n      \"unit_price\": \"2,33 €\"\n    },\n    {\n      \"sku\": \"NV-2867\",\n      \"desc\": \"Frischhaltedose\",\n      \"qty\": \"24\",\n      \"unit_price\": \"7,22 €\"\n    },\n    {\n      \"sku\": \"NV-3573\",\n      \"desc\": \"Notizbuch A5, 80 Blatt\",\n      \"qty\": \"12\",\n      \"unit_price\": \"2,29 €\"\n    },\n    {\n      \"sku\": \"NV-8065\",\n      \"desc\": \"Edelstahl-Trinkflasche 750 ml\",\n      \"qty\": \"2\",\n      \"unit_price\": \"6,91 €\"\n    },\n    {\n      \"sku\": \"NV-4647\",\n      \"desc\": \"Yogamatte 6 mm\",\n      \"qty\": \"2\",\n      \"unit_price\": \"16,50 €\"\n    }\n  ],\n  \"subtotal\": \"442,96 €\",\n  \"tax\": \"84,16 €\",\n  \"total\": \"527,12 €\"\n}",
+   "latency_s": 11.66497889533639,
+   "prompt_tokens": 2986,
+   "completion_tokens": 480,
+   "cost_usd": 0.0,
+   "finish_reason": "stop",
+   "notes": {}
+  },
+  "scan-03.png": {
+   "method": "vision",
+   "model": "qwen2.5vl:7b",
+   "invoice": null,
+   "error": "parse_error: ValueError: not an amount: '8%'",
+   "raw": "{\n  \"supplier\": \"Redwood Parcel Systems\",\n  \"supplier_country\": \"USA\",\n  \"invoice_no\": \"T-96094\",\n  \"invoice_date\": \"05/16/2026\",\n  \"line_items\": [\n    {\n      \"sku\": \"RP-5145\",\n      \"desc\": \"Packing tape 50 mm x 66 m\",\n      \"qty\": \"36\",\n      \"unit_price\": \"$2.97\"\n    },\n    {\n      \"sku\": \"RP-4262\",\n      \"desc\": \"Glass storage jar 1 L\",\n      \"qty\": \"1\",\n      \"unit_price\": \"$3.85\"\n    },\n    {\n      \"sku\": \"RP-8999\",\n      \"desc\": \"Bubble wrap roll 50 m\",\n      \"qty\": \"24\",\n      \"unit_price\": \"$17.80\"\n    },\n    {\n      \"sku\": \"RP-1904\",\n      \"desc\": \"Bike inner tube 700x25c\",\n      \"qty\": \"36\",\n      \"unit_price\": \"$5.48\"\n    }\n  ],\n  \"subtotal\": \"$735.25\",\n  \"tax\": \"8%\",\n  \"total\": \"$794.07\"\n}",
+   "latency_s": 8.325778556987643,
+   "prompt_tokens": 2986,
+   "completion_tokens": 293,
+   "cost_usd": 0.0,
+   "finish_reason": "stop",
+   "notes": {}
+  },
+  "scan-04.png": {
+   "method": "vision",
+   "model": "qwen2.5vl:7b",
+   "invoice": null,
+   "error": "api_error: InternalServerError: Error code: 500 - prediction aborted, token repeat limit reached",
+   "raw": "",
+   "latency_s": 7.1560851046815515,
+   "prompt_tokens": 0,
+   "completion_tokens": 0,
+   "cost_usd": 0.0,
+   "finish_reason": null,
+   "notes": {}
+  },
+  "scan-05.png": {
+   "method": "vision",
+   "model": "qwen2.5vl:7b",
+   "invoice": null,
+   "error": "api_error: InternalServerError: Error code: 500 - prediction aborted, token repeat limit reached",
+   "raw": "",
+   "latency_s": 7.041503394022584,
+   "prompt_tokens": 0,
+   "completion_tokens": 0,
+   "cost_usd": 0.0,
+   "finish_reason": null,
+   "notes": {}
+  },
+  "scan-06.png": {
+   "method": "vision",
+   "model": "qwen2.5vl:7b",
+   "invoice": null,
+   "error": "parse_error: ValueError: no JSON object found in model output",
+   "raw": "{\n  \"supplier\": \"Cobalt & Finch Hardware\",\n  \"supplier_country\": \"USA\",\n  \"invoice_no\": \"INV-2026-08597\",\n  \"invoice_date\": \"February 2, 2026\",\n  \"line_items\": [\n    {\n      \"sku\": \"CF-7975\",\n      \"desc\": \"Insulated shipping envelope\",\n      \"qty\": \"48\",\n      \"unit_price\": \"$2.02 each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit price each unit",
+   "latency_s": 48.385143022052944,
+   "prompt_tokens": 2986,
+   "completion_tokens": 4000,
+   "cost_usd": 0.0,
+   "finish_reason": "length",
+   "notes": {}
+  },
+  "scan-07.png": {
+   "method": "vision",
+   "model": "qwen2.5vl:7b",
+   "invoice": {
+    "supplier": "Thistle & Oak Wholesale Ltd",
+    "invoice_no": "A-47841",
+    "date": "2026-08-03",
+    "currency": "GBP",
+    "line_items": [
+     {
+      "sku": "TO-6165",
+      "desc": "Yoga mat 6 mm",
+      "qty": 12,
+      "unit_price_cents": 2097
+     },
+     {
+      "sku": "TO-8372",
+      "desc": "Stainless steel water bottle 750 m",
+      "qty": 24,
+      "unit_price_cents": 918
+     },
+     {
+      "sku": "TO-3976",
+      "desc": "Ceramic mug 350 ml",
+      "qty": 36,
+      "unit_price_cents": 362
+     },
+     {
+      "sku": "TO-2979",
+      "desc": "Corrugated shipping box 40x30x20 c",
+      "qty": 1,
+      "unit_price_cents": 141
+     },
+     {
+      "sku": "TO-7688",
+      "desc": "Bamboo cutting board",
+      "qty": 100,
+      "unit_price_cents": 1001
+     },
+     {
+      "sku": "TO-3369",
+      "desc": "Insulated shipping envelope",
+      "qty": 5,
+      "unit_price_cents": 206
+     },
+     {
+      "sku": "TO-2625",
+      "desc": "Pallet wrap 500 mm x 300 m",
+      "qty": 5,
+      "unit_price_cents": 1564
+     },
+     {
+      "sku": "TO-8348",
+      "desc": "Cable ties 300 mm, bag of 100",
+      "qty": 5,
+      "unit_price_cents": 339
+     },
+     {
+      "sku": "TO-7240",
+      "desc": "Bike inner tube 700x25c",
+      "qty": 12,
+      "unit_price_cents": 599
+     }
+    ],
+    "subtotal_cents": 178202,
+    "tax_cents": 35640,
+    "total_cents": 213842
+   },
+   "error": null,
+   "raw": "{\n  \"supplier\": \"Thistle & Oak Wholesale Ltd\",\n  \"supplier_country\": \"United Kingdom\",\n  \"invoice_no\": \"A-47841\",\n  \"invoice_date\": \"03/08/2026\",\n  \"line_items\": [\n    {\n      \"sku\": \"TO-6165\",\n      \"desc\": \"Yoga mat 6 mm\",\n      \"qty\": \"12\",\n      \"unit_price\": \"£20.97\"\n    },\n    {\n      \"sku\": \"TO-8372\",\n      \"desc\": \"Stainless steel water bottle 750 m\",\n      \"qty\": \"24\",\n      \"unit_price\": \"£9.18\"\n    },\n    {\n      \"sku\": \"TO-3976\",\n      \"desc\": \"Ceramic mug 350 ml\",\n      \"qty\": \"36\",\n      \"unit_price\": \"£3.62\"\n    },\n    {\n      \"sku\": \"TO-2979\",\n      \"desc\": \"Corrugated shipping box 40x30x20 c\",\n      \"qty\": \"1\",\n      \"unit_price\": \"£1.41\"\n    },\n    {\n      \"sku\": \"TO-7688\",\n      \"desc\": \"Bamboo cutting board\",\n      \"qty\": \"100\",\n      \"unit_price\": \"£10.01\"\n    },\n    {\n      \"sku\": \"TO-3369\",\n      \"desc\": \"Insulated shipping envelope\",\n      \"qty\": \"5\",\n      \"unit_price\": \"£2.06\"\n    },\n    {\n      \"sku\": \"TO-2625\",\n      \"desc\": \"Pallet wrap 500 mm x 300 m\",\n      \"qty\": \"5\",\n      \"unit_price\": \"£15.64\"\n    },\n    {\n      \"sku\": \"TO-8348\",\n      \"desc\": \"Cable ties 300 mm, bag of 100\",\n      \"qty\": \"5\",\n      \"unit_price\": \"£3.39\"\n    },\n    {\n      \"sku\": \"TO-7240\",\n      \"desc\": \"Bike inner tube 700x25c\",\n      \"qty\": \"12\",\n      \"unit_price\": \"£5.99\"\n    }\n  ],\n  \"subtotal\": \"£1,782.02\",\n  \"tax\": \"£356.40\",\n  \"total\": \"£2,138.42\"\n}",
+   "latency_s": 11.516794560942799,
+   "prompt_tokens": 2986,
+   "completion_tokens": 574,
+   "cost_usd": 0.0,
+   "finish_reason": "stop",
+   "notes": {}
+  },
+  "scan-08.png": {
+   "method": "vision",
+   "model": "qwen2.5vl:7b",
+   "invoice": {
+    "supplier": "Schwarzwald Werkzeuge AG",
+    "invoice_no": "RE-2026-5347",
+    "date": "2026-08-01",
+    "currency": "EUR",
+    "line_items": [
+     {
+      "sku": "SW-5763",
+      "desc": "Thermo-Versandtasche",
+      "qty": 24,
+      "unit_price_cents": 92
+     },
+     {
+      "sku": "SW-3681",
+      "desc": "Kugelschreiber. Packung à 50",
+      "qty": 36,
+      "unit_price_cents": 624
+     },
+     {
+      "sku": "SW-2474",
+      "desc": "Notizbuch A5, 80 Blatt",
+      "qty": 12,
+      "unit_price_cents": 206
+     },
+     {
+      "sku": "SW-3695",
+      "desc": "Klebeband 50 mm x 66 m",
+      "qty": 48,
+      "unit_price_cents": 176
+     },
+     {
+      "sku": "SW-3228",
+      "desc": "Thermo-Versandtasche",
+      "qty": 48,
+      "unit_price_cents": 144
+     },
+     {
+      "sku": "SW-4217",
+      "desc": "Edelstahl-Trinkflasche 750 ml",
+      "qty": 100,
+      "unit_price_cents": 1078
+     }
+    ],
+    "subtotal_cents": 150304,
+    "tax_cents": 28558,
+    "total_cents": 178862
+   },
+   "error": null,
+   "raw": "{\n  \"supplier\": \"Schwarzwald Werkzeuge AG\",\n  \"supplier_country\": \"Deutschland\",\n  \"invoice_no\": \"RE-2026-5347\",\n  \"invoice_date\": \"01.08.2026\",\n  \"line_items\": [\n    {\n      \"sku\": \"SW-5763\",\n      \"desc\": \"Thermo-Versandtasche\",\n      \"qty\": \"24\",\n      \"unit_price\": \"0,92 €\"\n    },\n    {\n      \"sku\": \"SW-3681\",\n      \"desc\": \"Kugelschreiber. Packung à 50\",\n      \"qty\": \"36\",\n      \"unit_price\": \"6,24 €\"\n    },\n    {\n      \"sku\": \"SW-2474\",\n      \"desc\": \"Notizbuch A5, 80 Blatt\",\n      \"qty\": \"12\",\n      \"unit_price\": \"2,06 €\"\n    },\n    {\n      \"sku\": \"SW-3695\",\n      \"desc\": \"Klebeband 50 mm x 66 m\",\n      \"qty\": \"48\",\n      \"unit_price\": \"1,76 €\"\n    },\n    {\n      \"sku\": \"SW-3228\",\n      \"desc\": \"Thermo-Versandtasche\",\n      \"qty\": \"48\",\n      \"unit_price\": \"1,44 €\"\n    },\n    {\n      \"sku\": \"SW-4217\",\n      \"desc\": \"Edelstahl-Trinkflasche 750 ml\",\n      \"qty\": \"100\",\n      \"unit_price\": \"10,78 €\"\n    }\n  ],\n  \"subtotal\": \"1.503,04 €\",\n  \"tax\": \"285,58 €\",\n  \"total\": \"1.788,62 €\"\n}",
+   "latency_s": 5.8551744180731475,
+   "prompt_tokens": 2986,
+   "completion_tokens": 433,
+   "cost_usd": 0.0,
+   "finish_reason": "stop",
+   "notes": {}
+  },
+  "scan-09.png": {
+   "method": "vision",
+   "model": "qwen2.5vl:7b",
+   "invoice": null,
+   "error": "api_error: InternalServerError: Error code: 500 - prediction aborted, token repeat limit reached",
+   "raw": "",
+   "latency_s": 4.0218641818501055,
+   "prompt_tokens": 0,
+   "completion_tokens": 0,
+   "cost_usd": 0.0,
+   "finish_reason": null,
+   "notes": {}
+  },
+  "scan-10.png": {
+   "method": "vision",
+   "model": "qwen2.5vl:7b",
+   "invoice": {
+    "supplier": "Nordlicht Verpackung GmbH",
+    "invoice_no": "RE-2026-9395",
+    "date": "2026-10-17",
+    "currency": "EUR",
+    "line_items": [
+     {
+      "sku": "NV-1847",
+      "desc": "Klebeband 50 mm x 66 m",
+      "qty": 24,
+      "unit_price_cents": 287
+     },
+     {
+      "sku": "NV-5375",
+      "desc": "Gartenhandschuhe, Größe M",
+      "qty": 1,
+      "unit_price_cents": 373
+     },
+     {
+      "sku": "NV-8490",
+      "desc": "Baumwolltasche, natur",
+      "qty": 2,
+      "unit_price_cents": 244
+     }
+    ],
+    "subtotal_cents": 7749,
+    "tax_cents": 1472,
+    "total_cents": 9221
+   },
+   "error": null,
+   "raw": "{\n  \"supplier\": \"Nordlicht Verpackung GmbH\",\n  \"supplier_country\": \"Deutschland\",\n  \"invoice_no\": \"RE-2026-9395\",\n  \"invoice_date\": \"17.10.2026\",\n  \"line_items\": [\n    {\n      \"sku\": \"NV-1847\",\n      \"desc\": \"Klebeband 50 mm x 66 m\",\n      \"qty\": \"24\",\n      \"unit_price\": \"2,87 €\"\n    },\n    {\n      \"sku\": \"NV-5375\",\n      \"desc\": \"Gartenhandschuhe, Größe M\",\n      \"qty\": \"1\",\n      \"unit_price\": \"3,73 €\"\n    },\n    {\n      \"sku\": \"NV-8490\",\n      \"desc\": \"Baumwolltasche, natur\",\n      \"qty\": \"2\",\n      \"unit_price\": \"2,44 €\"\n    }\n  ],\n  \"subtotal\": \"77,49 €\",\n  \"tax\": \"14,72 €\",\n  \"total\": \"92,21 €\"\n}",
+   "latency_s": 6.411150440108031,
+   "prompt_tokens": 2986,
+   "completion_tokens": 261,
+   "cost_usd": 0.0,
+   "finish_reason": "stop",
+   "notes": {}
+  }
+ }
+}

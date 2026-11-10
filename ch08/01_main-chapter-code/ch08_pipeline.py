@@ -13,10 +13,9 @@ from pathlib import Path
 
 import psycopg
 from ch08_extract import (
+    SYSTEM_RULES,
     Extraction,
     call_model,
-    extract_from_image,
-    extract_from_text,
     has_text_layer,
     image_messages,
     pdf_text,
@@ -24,6 +23,7 @@ from ch08_extract import (
     text_messages,
 )
 from ch08_invoice import Invoice, Violation, validate_invoice, violations_to_text
+from ch08_normalize import PRINTED_FORMAT, PRINTED_RULES, parse_printed
 from openai import OpenAI
 
 SETUP_SQL = """
@@ -96,42 +96,67 @@ def _check(ex: Extraction, today: date | None) -> list[Violation]:
     return validate_invoice(ex.invoice, today)
 
 
-def process_file(path: Path, *, client: OpenAI, model: str, strong_model: str | None = None,
-                 repair: bool = True, today: date | None = None) -> Outcome:
+@dataclass(frozen=True)
+class ModelSpec:
+    """Which model to call, through which client, with which extra arguments.
+
+    `printed=True` switches to copy-then-convert: the model returns values as printed
+    (`PrintedInvoice`) and `ch08_normalize` turns them into cents and ISO dates.
+    """
+
+    client: OpenAI
+    model: str
+    kwargs: dict = field(default_factory=dict)  # e.g. {"reasoning_effort": "none"} for qwen3
+    max_side: int | None = None  # downscale page images for this model (vision only)
+    printed: bool = False
+
+    def messages(self, method: str, path: Path, text: str) -> list[dict]:
+        system = PRINTED_RULES if self.printed else SYSTEM_RULES
+        return (text_messages(text, system=system) if method == "text"
+                else image_messages(path, system=system, max_side=self.max_side))
+
+    def extract(self, messages: list[dict], method: str) -> Extraction:
+        if self.printed:
+            return call_model(self.client, self.model, messages, method=method,
+                              response_format=PRINTED_FORMAT, parse=parse_printed,
+                              **self.kwargs)
+        return call_model(self.client, self.model, messages, method=method, **self.kwargs)
+
+
+def process_file(path: Path, *, text: ModelSpec, vision: ModelSpec | None = None,
+                 strong: ModelSpec | None = None, repair: bool = True,
+                 escalate_fresh: bool = True, today: date | None = None) -> Outcome:
     """Run one file through the pipeline.
 
-    attempt 1: `model`, strict schema.  If a validation rule fails:
-    attempt 2: same model, shown its own answer and the broken rules (`repair`).  If still bad:
-    attempt 3: `strong_model`, same repair conversation.  If still bad: human review.
+    attempt 1: `text` model for PDFs with a text layer, `vision` model for images.
+    If a validation rule fails:
+    attempt 2: same model, shown its own answer and the broken rules (`repair`). If still bad:
+    attempt 3: `strong` model. With `escalate_fresh` (default) it reads the document from
+    scratch; otherwise it gets the repair conversation, weak answer included. If still bad:
+    human review.
     """
-    method, text = route(path)
+    method, page_text = route(path)
     if method == "unsupported":
         return Outcome(path.name, method, "review", None,
                        reasons=[Violation("no_text_layer", "image-only PDF; needs vision")])
-    messages = text_messages(text) if method == "text" else image_messages(path)
-    first = (extract_from_text(client, model, text) if method == "text"
-             else extract_from_image(client, model, path))
-    attempts = [Attempt("first", first, _check(first, today))]
-
-    def accepted(a: Attempt) -> Outcome:
-        return Outcome(path.name, method, "accepted", a.extraction.invoice, attempts)
-
-    if not attempts[-1].violations:
-        return accepted(attempts[-1])
-
-    plan = []
+    first_spec = text if method == "text" else (vision or text)
+    plan = [("first", first_spec)]
     if repair:
-        plan.append(("repair", model))
-    if strong_model:
-        plan.append(("escalate", strong_model))
-    for stage, m in plan:
-        prev = attempts[-1]
-        ex = call_model(client, m, repair_messages(messages, prev.extraction.raw,
-                                                   violations_to_text(prev.violations)),
-                        method=method)
+        plan.append(("repair", first_spec))
+    if strong:
+        plan.append(("escalate", strong))
+
+    attempts: list[Attempt] = []
+    for stage, spec in plan:
+        messages = spec.messages(method, path, page_text)
+        if attempts and not (stage == "escalate" and escalate_fresh):
+            prev = attempts[-1]
+            messages = repair_messages(messages, prev.extraction.raw,
+                                       violations_to_text(prev.violations))
+        ex = spec.extract(messages, method)
         attempts.append(Attempt(stage, ex, _check(ex, today)))
         if not attempts[-1].violations:
-            return accepted(attempts[-1])
+            return Outcome(path.name, method, "accepted", ex.invoice, attempts)
 
     last = attempts[-1]
     return Outcome(path.name, method, "review", last.extraction.invoice, attempts,

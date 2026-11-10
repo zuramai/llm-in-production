@@ -1,0 +1,629 @@
+{
+ "meta": {
+  "config": "scan-ocr-glm-qwen3-8b",
+  "kind": "ocr",
+  "provider": "ollama",
+  "model": "qwen3:8b",
+  "naive": false,
+  "printed": false,
+  "max_side": null,
+  "workers": 2,
+  "per_layout": null,
+  "note": "",
+  "n": 10,
+  "wall_s": 23.3,
+  "run_at": "2026-11-09T15:11:53"
+ },
+ "files": {
+  "scan-01.png": {
+   "method": "ocr+llm",
+   "model": "glm-ocr -> qwen3:8b",
+   "invoice": {
+    "supplier": "ShopFlow Inc.",
+    "invoice_no": "",
+    "date": "",
+    "currency": "USD",
+    "line_items": [
+     {
+      "sku": "HL-8475",
+      "desc": "Insulated shipping envelope",
+      "qty": 48,
+      "unit_price_cents": 131
+     },
+     {
+      "sku": "HL-6844",
+      "desc": "Yoga mat 6 mm",
+      "qty": 36,
+      "unit_price_cents": 1376
+     },
+     {
+      "sku": "HL-2599",
+      "desc": "Spiral notebook A5, 80 sheets",
+      "qty": 100,
+      "unit_price_cents": 316
+     }
+    ],
+    "subtotal_cents": 87424,
+    "tax_cents": 6994,
+    "total_cents": 94418
+   },
+   "error": null,
+   "raw": "{\n  \"supplier\": \"ShopFlow Inc.\",\n  \"invoice_no\": \"\",\n  \"date\": \"\",\n  \"currency\": \"USD\",\n  \"line_items\": [\n    {\n      \"sku\": \"HL-8475\",\n      \"desc\": \"Insulated shipping envelope\",\n      \"qty\": 48,\n      \"unit_price_cents\": 131\n    },\n    {\n      \"sku\": \"HL-6844\",\n      \"desc\": \"Yoga mat 6 mm\",\n      \"qty\": 36,\n      \"unit_price_cents\": 1376\n    },\n    {\n      \"sku\": \"HL-2599\",\n      \"desc\": \"Spiral notebook A5, 80 sheets\",\n      \"qty\": 100,\n      \"unit_price_cents\": 316\n    }\n  ],\n  \"subtotal_cents\": 87424,\n  \"tax_cents\": 6994,\n  \"total_cents\": 94418\n}",
+   "latency_s": 6.406869529746473,
+   "prompt_tokens": 1481,
+   "completion_tokens": 559,
+   "cost_usd": 0.0,
+   "finish_reason": "stop",
+   "notes": {
+    "ocr_chars": 672
+   }
+  },
+  "scan-02.png": {
+   "method": "ocr+llm",
+   "model": "glm-ocr -> qwen3:8b",
+   "invoice": {
+    "supplier": "Nordlicht Verpackung GmbH",
+    "invoice_no": "RE-2026-1475",
+    "date": "2026-04-02",
+    "currency": "EUR",
+    "line_items": [
+     {
+      "sku": "NV-7000",
+      "desc": "Edelstahl-Trinkflasche 750 ml",
+      "qty": 2,
+      "unit_price_cents": 1057
+     },
+     {
+      "sku": "NV-1607",
+      "desc": "Fahrradschlauch 700x25c",
+      "qty": 24,
+      "unit_price_cents": 493
+     },
+     {
+      "sku": "NV-6857",
+      "desc": "Keramiktasse 350 ml",
+      "qty": 24,
+      "unit_price_cents": 233
+     },
+     {
+      "sku": "NV-2867",
+      "desc": "Frischhaltedose",
+      "qty": 24,
+      "unit_price_cents": 722
+     },
+     {
+      "sku": "NV-3573",
+      "desc": "Notizbuch A5, 80 Blatt",
+      "qty": 12,
+      "unit_price_cents": 229
+     },
+     {
+      "sku": "NV-8065",
+      "desc": "Edelstahl-Trinkflasche 750 ml",
+      "qty": 2,
+      "unit_price_cents": 691
+     },
+     {
+      "sku": "NV-4647",
+      "desc": "Yogamatte 6 mm",
+      "qty": 2,
+      "unit_price_cents": 1650
+     }
+    ],
+    "subtotal_cents": 44296,
+    "tax_cents": 8416,
+    "total_cents": 52712
+   },
+   "error": null,
+   "raw": "{\n  \"supplier\": \"Nordlicht Verpackung GmbH\",\n  \"invoice_no\": \"RE-2026-1475\",\n  \"date\": \"2026-04-02\",\n  \"currency\": \"EUR\",\n  \"line_items\": [\n    {\n      \"sku\": \"NV-7000\",\n      \"desc\": \"Edelstahl-Trinkflasche 750 ml\",\n      \"qty\": 2,\n      \"unit_price_cents\": 1057\n    },\n    {\n      \"sku\": \"NV-1607\",\n      \"desc\": \"Fahrradschlauch 700x25c\",\n      \"qty\": 24,\n      \"unit_price_cents\": 493\n    },\n    {\n      \"sku\": \"NV-6857\",\n      \"desc\": \"Keramiktasse 350 ml\",\n      \"qty\": 24,\n      \"unit_price_cents\": 233\n    },\n    {\n      \"sku\": \"NV-2867\",\n      \"desc\": \"Frischhaltedose\",\n      \"qty\": 24,\n      \"unit_price_cents\": 722\n    },\n    {\n      \"sku\": \"NV-3573\",\n      \"desc\": \"Notizbuch A5, 80 Blatt\",\n      \"qty\": 12,\n      \"unit_price_cents\": 229\n    },\n    {\n      \"sku\": \"NV-8065\",\n      \"desc\": \"Edelstahl-Trinkflasche 750 ml\",\n      \"qty\": 2,\n      \"unit_price_cents\": 691\n    },\n    {\n      \"sku\": \"NV-4647\",\n      \"desc\": \"Yogamatte 6 mm\",\n      \"qty\": 2,\n      \"unit_price_cents\": 1650\n    }\n  ],\n  \"subtotal_cents\": 44296,\n  \"tax_cents\": 8416,\n  \"total_cents\": 52712\n}",
+   "latency_s": 8.87197306798771,
+   "prompt_tokens": 1551,
+   "completion_tokens": 865,
+   "cost_usd": 0.0,
+   "finish_reason": "stop",
+   "notes": {
+    "ocr_chars": 619
+   }
+  },
+  "scan-03.png": {
+   "method": "ocr+llm",
+   "model": "glm-ocr -> qwen3:8b",
+   "invoice": {
+    "supplier": "ShopFlow Inc.",
+    "invoice_no": "",
+    "date": "",
+    "currency": "USD",
+    "line_items": [
+     {
+      "sku": "RP-5145",
+      "desc": "Packing tape 50 mm x 66 m",
+      "qty": 36,
+      "unit_price_cents": 297
+     },
+     {
+      "sku": "RP-4262",
+      "desc": "Glass storage jar 1 L",
+      "qty": 1,
+      "unit_price_cents": 385
+     },
+     {
+      "sku": "RP-8999",
+      "desc": "Bubble wrap roll 50 m",
+      "qty": 24,
+      "unit_price_cents": 1780
+     },
+     {
+      "sku": "RP-1904",
+      "desc": "Bike inner tube 700x25c",
+      "qty": 36,
+      "unit_price_cents": 548
+     }
+    ],
+    "subtotal_cents": 73525,
+    "tax_cents": 5882,
+    "total_cents": 79407
+   },
+   "error": null,
+   "raw": "{\n  \"supplier\": \"ShopFlow Inc.\",\n  \"invoice_no\": \"\",\n  \"date\": \"\",\n  \"currency\": \"USD\",\n  \"line_items\": [\n    {\n      \"sku\": \"RP-5145\",\n      \"desc\": \"Packing tape 50 mm x 66 m\",\n      \"qty\": 36,\n      \"unit_price_cents\": 297\n    },\n    {\n      \"sku\": \"RP-4262\",\n      \"desc\": \"Glass storage jar 1 L\",\n      \"qty\": 1,\n      \"unit_price_cents\": 385\n    },\n    {\n      \"sku\": \"RP-8999\",\n      \"desc\": \"Bubble wrap roll 50 m\",\n      \"qty\": 24,\n      \"unit_price_cents\": 1780\n    },\n    {\n      \"sku\": \"RP-1904\",\n      \"desc\": \"Bike inner tube 700x25c\",\n      \"qty\": 36,\n      \"unit_price_cents\": 548\n    }\n  ],\n  \"subtotal_cents\": 73525,\n  \"tax_cents\": 5882,\n  \"total_cents\": 79407\n}",
+   "latency_s": 4.277464107144624,
+   "prompt_tokens": 1540,
+   "completion_tokens": 680,
+   "cost_usd": 0.0,
+   "finish_reason": "stop",
+   "notes": {
+    "ocr_chars": 765
+   }
+  },
+  "scan-04.png": {
+   "method": "ocr+llm",
+   "model": "glm-ocr -> qwen3:8b",
+   "invoice": {
+    "supplier": "Not specified",
+    "invoice_no": "Not specified",
+    "date": "Not specified",
+    "currency": "USD",
+    "line_items": [
+     {
+      "sku": "SR-6774",
+      "desc": "Corrugated shipping box 40x30x20 c",
+      "qty": 5,
+      "unit_price_cents": 184
+     },
+     {
+      "sku": "SR-6454",
+      "desc": "Cable ties 300 mm, bag of 100",
+      "qty": 100,
+      "unit_price_cents": 366
+     },
+     {
+      "sku": "SR-2812",
+      "desc": "Adhesive labels 100x150 mm, roll o",
+      "qty": 36,
+      "unit_price_cents": 1041
+     },
+     {
+      "sku": "SR-7847",
+      "desc": "Glass storage jar 1 L",
+      "qty": 5,
+      "unit_price_cents": 277
+     },
+     {
+      "sku": "SR-3980",
+      "desc": "Rain poncho, adult",
+      "qty": 10,
+      "unit_price_cents": 343
+     }
+    ],
+    "subtotal_cents": 79811,
+    "tax_cents": 6385,
+    "total_cents": 86196
+   },
+   "error": null,
+   "raw": "{\n  \"supplier\": \"Not specified\",\n  \"invoice_no\": \"Not specified\",\n  \"date\": \"Not specified\",\n  \"currency\": \"USD\",\n  \"line_items\": [\n    {\n      \"sku\": \"SR-6774\",\n      \"desc\": \"Corrugated shipping box 40x30x20 c\",\n      \"qty\": 5,\n      \"unit_price_cents\": 184\n    },\n    {\n      \"sku\": \"SR-6454\",\n      \"desc\": \"Cable ties 300 mm, bag of 100\",\n      \"qty\": 100,\n      \"unit_price_cents\": 366\n    },\n    {\n      \"sku\": \"SR-2812\",\n      \"desc\": \"Adhesive labels 100x150 mm, roll o\",\n      \"qty\": 36,\n      \"unit_price_cents\": 1041\n    },\n    {\n      \"sku\": \"SR-7847\",\n      \"desc\": \"Glass storage jar 1 L\",\n      \"qty\": 5,\n      \"unit_price_cents\": 277\n    },\n    {\n      \"sku\": \"SR-3980\",\n      \"desc\": \"Rain poncho, adult\",\n      \"qty\": 10,\n      \"unit_price_cents\": 343\n    }\n  ],\n  \"subtotal_cents\": 79811,\n  \"tax_cents\": 6385,\n  \"total_cents\": 86196\n}",
+   "latency_s": 5.099595567211509,
+   "prompt_tokens": 1617,
+   "completion_tokens": 825,
+   "cost_usd": 0.0,
+   "finish_reason": "stop",
+   "notes": {
+    "ocr_chars": 911
+   }
+  },
+  "scan-05.png": {
+   "method": "ocr+llm",
+   "model": "glm-ocr -> qwen3:8b",
+   "invoice": {
+    "supplier": "ShopFlow Inc.",
+    "invoice_no": "",
+    "date": "",
+    "currency": "USD",
+    "line_items": [
+     {
+      "sku": "HL-5929",
+      "desc": "Stainless steel water bottle 750 m",
+      "qty": 100,
+      "unit_price_cents": 862
+     },
+     {
+      "sku": "HL-3289",
+      "desc": "Corrugated shipping box 40x30x20 c",
+      "qty": 1,
+      "unit_price_cents": 217
+     },
+     {
+      "sku": "HL-3150",
+      "desc": "Pallet wrap 500 mm x 300 m",
+      "qty": 24,
+      "unit_price_cents": 1579
+     },
+     {
+      "sku": "HL-5268",
+      "desc": "Cable ties 300 mm, bag of 100",
+      "qty": 24,
+      "unit_price_cents": 370
+     },
+     {
+      "sku": "HL-3221",
+      "desc": "Ceramic mug 350 ml",
+      "qty": 24,
+      "unit_price_cents": 444
+     },
+     {
+      "sku": "HL-4753",
+      "desc": "Cable ties 300 mm, bag of 100",
+      "qty": 100,
+      "unit_price_cents": 416
+     }
+    ],
+    "subtotal_cents": 185449,
+    "tax_cents": 0,
+    "total_cents": 185449
+   },
+   "error": null,
+   "raw": "{\n  \"supplier\": \"ShopFlow Inc.\",\n  \"invoice_no\": \"\",\n  \"date\": \"\",\n  \"currency\": \"USD\",\n  \"line_items\": [\n    {\n      \"sku\": \"HL-5929\",\n      \"desc\": \"Stainless steel water bottle 750 m\",\n      \"qty\": 100,\n      \"unit_price_cents\": 862\n    },\n    {\n      \"sku\": \"HL-3289\",\n      \"desc\": \"Corrugated shipping box 40x30x20 c\",\n      \"qty\": 1,\n      \"unit_price_cents\": 217\n    },\n    {\n      \"sku\": \"HL-3150\",\n      \"desc\": \"Pallet wrap 500 mm x 300 m\",\n      \"qty\": 24,\n      \"unit_price_cents\": 1579\n    },\n    {\n      \"sku\": \"HL-5268\",\n      \"desc\": \"Cable ties 300 mm, bag of 100\",\n      \"qty\": 24,\n      \"unit_price_cents\": 370\n    },\n    {\n      \"sku\": \"HL-3221\",\n      \"desc\": \"Ceramic mug 350 ml\",\n      \"qty\": 24,\n      \"unit_price_cents\": 444\n    },\n    {\n      \"sku\": \"HL-4753\",\n      \"desc\": \"Cable ties 300 mm, bag of 100\",\n      \"qty\": 100,\n      \"unit_price_cents\": 416\n    }\n  ],\n  \"subtotal_cents\": 185449,\n  \"tax_cents\": 0,\n  \"total_cents\": 185449\n}",
+   "latency_s": 5.903982487972826,
+   "prompt_tokens": 1677,
+   "completion_tokens": 949,
+   "cost_usd": 0.0,
+   "finish_reason": "stop",
+   "notes": {
+    "ocr_chars": 999
+   }
+  },
+  "scan-06.png": {
+   "method": "ocr+llm",
+   "model": "glm-ocr -> qwen3:8b",
+   "invoice": {
+    "supplier": "CF",
+    "invoice_no": "",
+    "date": "",
+    "currency": "USD",
+    "line_items": [
+     {
+      "sku": "CF-7975",
+      "desc": "Insulated shipping envelope",
+      "qty": 48,
+      "unit_price_cents": 202
+     },
+     {
+      "sku": "CF-2550",
+      "desc": "Rain poncho, adult",
+      "qty": 36,
+      "unit_price_cents": 365
+     },
+     {
+      "sku": "CF-7967",
+      "desc": "Wool throw blanket 130x170",
+      "qty": 48,
+      "unit_price_cents": 4636
+     },
+     {
+      "sku": "CF-2017",
+      "desc": "Hiking socks, pair",
+      "qty": 100,
+      "unit_price_cents": 721
+     },
+     {
+      "sku": "CF-4832",
+      "desc": "Ballpoint pens, box of 50",
+      "qty": 100,
+      "unit_price_cents": 561
+     },
+     {
+      "sku": "CF-7805",
+      "desc": "Hiking socks, pair",
+      "qty": 24,
+      "unit_price_cents": 504
+     },
+     {
+      "sku": "CF-6521",
+      "desc": "LED desk lamp, black",
+      "qty": 100,
+      "unit_price_cents": 1921
+     },
+     {
+      "sku": "CF-4871",
+      "desc": "Ceramic mug 350 ml",
+      "qty": 36,
+      "unit_price_cents": 410
+     },
+     {
+      "sku": "CF-5281",
+      "desc": "Yoga mat 6 mm",
+      "qty": 48,
+      "unit_price_cents": 1782
+     }
+    ],
+    "subtotal_cents": 678056,
+    "tax_cents": 54244,
+    "total_cents": 732300
+   },
+   "error": null,
+   "raw": "{\n  \"supplier\": \"CF\",\n  \"invoice_no\": \"\",\n  \"date\": \"\",\n  \"currency\": \"USD\",\n  \"line_items\": [\n    {\n      \"sku\": \"CF-7975\",\n      \"desc\": \"Insulated shipping envelope\",\n      \"qty\": 48,\n      \"unit_price_cents\": 202\n    },\n    {\n      \"sku\": \"CF-2550\",\n      \"desc\": \"Rain poncho, adult\",\n      \"qty\": 36,\n      \"unit_price_cents\": 365\n    },\n    {\n      \"sku\": \"CF-7967\",\n      \"desc\": \"Wool throw blanket 130x170\",\n      \"qty\": 48,\n      \"unit_price_cents\": 4636\n    },\n    {\n      \"sku\": \"CF-2017\",\n      \"desc\": \"Hiking socks, pair\",\n      \"qty\": 100,\n      \"unit_price_cents\": 721\n    },\n    {\n      \"sku\": \"CF-4832\",\n      \"desc\": \"Ballpoint pens, box of 50\",\n      \"qty\": 100,\n      \"unit_price_cents\": 561\n    },\n    {\n      \"sku\": \"CF-7805\",\n      \"desc\": \"Hiking socks, pair\",\n      \"qty\": 24,\n      \"unit_price_cents\": 504\n    },\n    {\n      \"sku\": \"CF-6521\",\n      \"desc\": \"LED desk lamp, black\",\n      \"qty\": 100,\n      \"unit_price_cents\": 1921\n    },\n    {\n      \"sku\": \"CF-4871\",\n      \"desc\": \"Ceramic mug 350 ml\",\n      \"qty\": 36,\n      \"unit_price_cents\": 410\n    },\n    {\n      \"sku\": \"CF-5281\",\n      \"desc\": \"Yoga mat 6 mm\",\n      \"qty\": 48,\n      \"unit_price_cents\": 1782\n    }\n  ],\n  \"subtotal_cents\": 678056,\n  \"tax_cents\": 54244,\n  \"total_cents\": 732300\n}",
+   "latency_s": 7.369311126880348,
+   "prompt_tokens": 1813,
+   "completion_tokens": 1208,
+   "cost_usd": 0.0,
+   "finish_reason": "stop",
+   "notes": {
+    "ocr_chars": 1249
+   }
+  },
+  "scan-07.png": {
+   "method": "ocr+llm",
+   "model": "glm-ocr -> qwen3:8b",
+   "invoice": {
+    "supplier": "Unknown",
+    "invoice_no": "",
+    "date": "",
+    "currency": "GBP",
+    "line_items": [
+     {
+      "sku": "TO-6165",
+      "desc": "Yoga mat 6 mm",
+      "qty": 12,
+      "unit_price_cents": 2097
+     },
+     {
+      "sku": "TO-8372",
+      "desc": "Stainless steel water bottle 750 m",
+      "qty": 24,
+      "unit_price_cents": 918
+     },
+     {
+      "sku": "TO-3976",
+      "desc": "Ceramic mug 350 ml",
+      "qty": 36,
+      "unit_price_cents": 362
+     },
+     {
+      "sku": "TO-2979",
+      "desc": "Corrugated shipping box 40x30x20 c",
+      "qty": 1,
+      "unit_price_cents": 141
+     },
+     {
+      "sku": "TO-7688",
+      "desc": "Bamboo cutting board",
+      "qty": 100,
+      "unit_price_cents": 1001
+     },
+     {
+      "sku": "TO-3369",
+      "desc": "Insulated shipping envelope",
+      "qty": 5,
+      "unit_price_cents": 206
+     },
+     {
+      "sku": "TO-2625",
+      "desc": "Pallet wrap 500 mm x 300 m",
+      "qty": 5,
+      "unit_price_cents": 1564
+     },
+     {
+      "sku": "TO-8348",
+      "desc": "Cable ties 300 mm, bag of 100",
+      "qty": 5,
+      "unit_price_cents": 339
+     },
+     {
+      "sku": "TO-7240",
+      "desc": "Bike inner tube 700x25c",
+      "qty": 12,
+      "unit_price_cents": 599
+     },
+     {
+      "sku": "",
+      "desc": "",
+      "qty": 0,
+      "unit_price_cents": 0
+     },
+     {
+      "sku": "",
+      "desc": "",
+      "qty": 0,
+      "unit_price_cents": 0
+     },
+     {
+      "sku": "",
+      "desc": "",
+      "qty": 0,
+      "unit_price_cents": 0
+     }
+    ],
+    "subtotal_cents": 178202,
+    "tax_cents": 35640,
+    "total_cents": 213842
+   },
+   "error": null,
+   "raw": "{\n  \"supplier\": \"Unknown\",\n  \"invoice_no\": \"\",\n  \"date\": \"\",\n  \"currency\": \"GBP\",\n  \"line_items\": [\n    {\n      \"sku\": \"TO-6165\",\n      \"desc\": \"Yoga mat 6 mm\",\n      \"qty\": 12,\n      \"unit_price_cents\": 2097\n    },\n    {\n      \"sku\": \"TO-8372\",\n      \"desc\": \"Stainless steel water bottle 750 m\",\n      \"qty\": 24,\n      \"unit_price_cents\": 918\n    },\n    {\n      \"sku\": \"TO-3976\",\n      \"desc\": \"Ceramic mug 350 ml\",\n      \"qty\": 36,\n      \"unit_price_cents\": 362\n    },\n    {\n      \"sku\": \"TO-2979\",\n      \"desc\": \"Corrugated shipping box 40x30x20 c\",\n      \"qty\": 1,\n      \"unit_price_cents\": 141\n    },\n    {\n      \"sku\": \"TO-7688\",\n      \"desc\": \"Bamboo cutting board\",\n      \"qty\": 100,\n      \"unit_price_cents\": 1001\n    },\n    {\n      \"sku\": \"TO-3369\",\n      \"desc\": \"Insulated shipping envelope\",\n      \"qty\": 5,\n      \"unit_price_cents\": 206\n    },\n    {\n      \"sku\": \"TO-2625\",\n      \"desc\": \"Pallet wrap 500 mm x 300 m\",\n      \"qty\": 5,\n      \"unit_price_cents\": 1564\n    },\n    {\n      \"sku\": \"TO-8348\",\n      \"desc\": \"Cable ties 300 mm, bag of 100\",\n      \"qty\": 5,\n      \"unit_price_cents\": 339\n    },\n    {\n      \"sku\": \"TO-7240\",\n      \"desc\": \"Bike inner tube 700x25c\",\n      \"qty\": 12,\n      \"unit_price_cents\": 599\n    },\n    {\n      \"sku\": \"\",\n      \"desc\": \"\",\n      \"qty\": 0,\n      \"unit_price_cents\": 0\n    },\n    {\n      \"sku\": \"\",\n      \"desc\": \"\",\n      \"qty\": 0,\n      \"unit_price_cents\": 0\n    },\n    {\n      \"sku\": \"\",\n      \"desc\": \"\",\n      \"qty\": 0,\n      \"unit_price_cents\": 0\n    }\n  ],\n  \"subtotal_cents\": 178202,\n  \"tax_cents\": 35640,\n  \"total_cents\": 213842\n}",
+   "latency_s": 8.508279733825475,
+   "prompt_tokens": 1837,
+   "completion_tokens": 1344,
+   "cost_usd": 0.0,
+   "finish_reason": "stop",
+   "notes": {
+    "ocr_chars": 1243
+   }
+  },
+  "scan-08.png": {
+   "method": "ocr+llm",
+   "model": "glm-ocr -> qwen3:8b",
+   "invoice": {
+    "supplier": "Schwarzwald Werkzeuge AG",
+    "invoice_no": "RE-2026-5347",
+    "date": "2026-08-01",
+    "currency": "EUR",
+    "line_items": [
+     {
+      "sku": "SW-5763",
+      "desc": "Thermo-Versandtasche",
+      "qty": 24,
+      "unit_price_cents": 9200
+     },
+     {
+      "sku": "SW-3681",
+      "desc": "Kugelschreiber, Packung à 50",
+      "qty": 36,
+      "unit_price_cents": 62400
+     },
+     {
+      "sku": "SW-2474",
+      "desc": "Notizbuch A5, 80 Blatt",
+      "qty": 12,
+      "unit_price_cents": 20600
+     },
+     {
+      "sku": "SW-3695",
+      "desc": "Klebeband 50 mm x 66 m",
+      "qty": 48,
+      "unit_price_cents": 17600
+     },
+     {
+      "sku": "SW-3228",
+      "desc": "Thermo-Versandtasche",
+      "qty": 48,
+      "unit_price_cents": 14400
+     },
+     {
+      "sku": "SW-4217",
+      "desc": "Edelstahl-Trinkflasche 750 ml",
+      "qty": 100,
+      "unit_price_cents": 107800
+     }
+    ],
+    "subtotal_cents": 150304,
+    "tax_cents": 28558,
+    "total_cents": 178862
+   },
+   "error": null,
+   "raw": "{\n  \"supplier\": \"Schwarzwald Werkzeuge AG\",\n  \"invoice_no\": \"RE-2026-5347\",\n  \"date\": \"2026-08-01\",\n  \"currency\": \"EUR\",\n  \"line_items\": [\n    {\n      \"sku\": \"SW-5763\",\n      \"desc\": \"Thermo-Versandtasche\",\n      \"qty\": 24,\n      \"unit_price_cents\": 9200\n    },\n    {\n      \"sku\": \"SW-3681\",\n      \"desc\": \"Kugelschreiber, Packung à 50\",\n      \"qty\": 36,\n      \"unit_price_cents\": 62400\n    },\n    {\n      \"sku\": \"SW-2474\",\n      \"desc\": \"Notizbuch A5, 80 Blatt\",\n      \"qty\": 12,\n      \"unit_price_cents\": 20600\n    },\n    {\n      \"sku\": \"SW-3695\",\n      \"desc\": \"Klebeband 50 mm x 66 m\",\n      \"qty\": 48,\n      \"unit_price_cents\": 17600\n    },\n    {\n      \"sku\": \"SW-3228\",\n      \"desc\": \"Thermo-Versandtasche\",\n      \"qty\": 48,\n      \"unit_price_cents\": 14400\n    },\n    {\n      \"sku\": \"SW-4217\",\n      \"desc\": \"Edelstahl-Trinkflasche 750 ml\",\n      \"qty\": 100,\n      \"unit_price_cents\": 107800\n    }\n  ],\n  \"subtotal_cents\": 150304,\n  \"tax_cents\": 28558,\n  \"total_cents\": 178862\n}",
+   "latency_s": 5.624889746773988,
+   "prompt_tokens": 1533,
+   "completion_tokens": 811,
+   "cost_usd": 0.0,
+   "finish_reason": "stop",
+   "notes": {
+    "ocr_chars": 590
+   }
+  },
+  "scan-09.png": {
+   "method": "ocr+llm",
+   "model": "glm-ocr -> qwen3:8b",
+   "invoice": {
+    "supplier": "ShopFlow Inc.",
+    "invoice_no": "",
+    "date": "",
+    "currency": "GBP",
+    "line_items": [
+     {
+      "sku": "KH-4333",
+      "desc": "Bike inner tube 700x25c",
+      "qty": 12,
+      "unit_price_cents": 462
+     },
+     {
+      "sku": "KH-5123",
+      "desc": "Wool throw blanket 130x170",
+      "qty": 48,
+      "unit_price_cents": 2763
+     },
+     {
+      "sku": "KH-2223",
+      "desc": "Camping stove, single burner",
+      "qty": 12,
+      "unit_price_cents": 2935
+     },
+     {
+      "sku": "KH-5319",
+      "desc": "Spiral notebook A5, 80 sheets",
+      "qty": 5,
+      "unit_price_cents": 241
+     },
+     {
+      "sku": "KH-3949",
+      "desc": "Ballpoint pens, box of 50",
+      "qty": 5,
+      "unit_price_cents": 864
+     }
+    ],
+    "subtotal_cents": 178913,
+    "tax_cents": 35783,
+    "total_cents": 214696
+   },
+   "error": null,
+   "raw": "{\n  \"supplier\": \"ShopFlow Inc.\",\n  \"invoice_no\": \"\",\n  \"date\": \"\",\n  \"currency\": \"GBP\",\n  \"line_items\": [\n    {\n      \"sku\": \"KH-4333\",\n      \"desc\": \"Bike inner tube 700x25c\",\n      \"qty\": 12,\n      \"unit_price_cents\": 462\n    },\n    {\n      \"sku\": \"KH-5123\",\n      \"desc\": \"Wool throw blanket 130x170\",\n      \"qty\": 48,\n      \"unit_price_cents\": 2763\n    },\n    {\n      \"sku\": \"KH-2223\",\n      \"desc\": \"Camping stove, single burner\",\n      \"qty\": 12,\n      \"unit_price_cents\": 2935\n    },\n    {\n      \"sku\": \"KH-5319\",\n      \"desc\": \"Spiral notebook A5, 80 sheets\",\n      \"qty\": 5,\n      \"unit_price_cents\": 241\n    },\n    {\n      \"sku\": \"KH-3949\",\n      \"desc\": \"Ballpoint pens, box of 50\",\n      \"qty\": 5,\n      \"unit_price_cents\": 864\n    }\n  ],\n  \"subtotal_cents\": 178913,\n  \"tax_cents\": 35783,\n  \"total_cents\": 214696\n}",
+   "latency_s": 5.063496618531644,
+   "prompt_tokens": 1619,
+   "completion_tokens": 826,
+   "cost_usd": 0.0,
+   "finish_reason": "stop",
+   "notes": {
+    "ocr_chars": 888
+   }
+  },
+  "scan-10.png": {
+   "method": "ocr+llm",
+   "model": "glm-ocr -> qwen3:8b",
+   "invoice": {
+    "supplier": "Nordlicht Verpackung GmbH",
+    "invoice_no": "RE-2026-9395",
+    "date": "2026-10-17",
+    "currency": "EUR",
+    "line_items": [
+     {
+      "sku": "NV-1847",
+      "desc": "Klebeband 50 mm x 66 m",
+      "qty": 24,
+      "unit_price_cents": 287
+     },
+     {
+      "sku": "NV-5375",
+      "desc": "Gartenhandschuhe, Größe M",
+      "qty": 1,
+      "unit_price_cents": 373
+     },
+     {
+      "sku": "NV-8490",
+      "desc": "Baumwolltasche, natur",
+      "qty": 2,
+      "unit_price_cents": 244
+     }
+    ],
+    "subtotal_cents": 7749,
+    "tax_cents": 1472,
+    "total_cents": 9221
+   },
+   "error": null,
+   "raw": "{\n  \"supplier\": \"Nordlicht Verpackung GmbH\",\n  \"invoice_no\": \"RE-2026-9395\",\n  \"date\": \"2026-10-17\",\n  \"currency\": \"EUR\",\n  \"line_items\": [\n    {\n      \"sku\": \"NV-1847\",\n      \"desc\": \"Klebeband 50 mm x 66 m\",\n      \"qty\": 24,\n      \"unit_price_cents\": 287\n    },\n    {\n      \"sku\": \"NV-5375\",\n      \"desc\": \"Gartenhandschuhe, Größe M\",\n      \"qty\": 1,\n      \"unit_price_cents\": 373\n    },\n    {\n      \"sku\": \"NV-8490\",\n      \"desc\": \"Baumwolltasche, natur\",\n      \"qty\": 2,\n      \"unit_price_cents\": 244\n    }\n  ],\n  \"subtotal_cents\": 7749,\n  \"tax_cents\": 1472,\n  \"total_cents\": 9221\n}",
+   "latency_s": 3.2462372360751033,
+   "prompt_tokens": 1405,
+   "completion_tokens": 502,
+   "cost_usd": 0.0,
+   "finish_reason": "stop",
+   "notes": {
+    "ocr_chars": 421
+   }
+  }
+ }
+}

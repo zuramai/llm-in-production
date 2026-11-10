@@ -9,10 +9,11 @@ The summary separates the four things that matter in accounts payable:
 
 from __future__ import annotations
 
+import json
 import math
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import date
 from pathlib import Path
 
@@ -41,6 +42,31 @@ class Result:
     @property
     def flagged(self) -> bool:
         return bool(self.violations)
+
+
+def extraction_to_dict(ex: Extraction) -> dict:
+    d = asdict(ex)
+    d["invoice"] = ex.invoice.model_dump() if ex.invoice else None
+    return d
+
+
+def extraction_from_dict(d: dict) -> Extraction:
+    d = dict(d)
+    inv = d.pop("invoice")
+    return Extraction(**d, invoice=Invoice.model_validate(inv) if inv else None)
+
+
+def save_run(path: Path, meta: dict, extractions: dict[str, Extraction]) -> None:
+    """Persist one eval run (raw model outputs included) so it can be re-scored for free."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    body = {"meta": meta,
+            "files": {name: extraction_to_dict(ex) for name, ex in sorted(extractions.items())}}
+    path.write_text(json.dumps(body, indent=1, ensure_ascii=False) + "\n")
+
+
+def load_run(path: Path) -> tuple[dict, dict[str, Extraction]]:
+    body = json.loads(path.read_text())
+    return body["meta"], {k: extraction_from_dict(v) for k, v in body["files"].items()}
 
 
 def judge(file: str, ex: Extraction, truth: Invoice, today: date | None = None) -> Result:

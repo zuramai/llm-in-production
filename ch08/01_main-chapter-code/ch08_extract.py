@@ -9,7 +9,9 @@ from __future__ import annotations
 
 import base64
 import io
+import os
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -87,8 +89,8 @@ def has_text_layer(text: str) -> bool:
 def image_data_url(path: Path, max_side: int | None = None) -> str:
     """Base64 data URL for an image file, optionally downscaled so its longest side <= max_side.
 
-    Local vision models have small fixed input sizes and a 4k-token Ollama context, so we send
-    them smaller pages. Hosted models get the original pixels.
+    Fewer pixels means fewer image tokens: cheaper and faster, until digits become unreadable
+    (the chapter's resolution sweep measures where that happens).
     """
     if max_side is not None:
         with Image.open(path) as im:
@@ -129,8 +131,12 @@ def repair_messages(messages: list[dict], previous_raw: str, problems: str) -> l
 
 def call_model(client: OpenAI, model: str, messages: list[dict], *, method: str,
                response_format: dict | None = STRICT_FORMAT, max_tokens: int = 4000,
+               parse: Callable[[dict], Invoice] = Invoice.model_validate,
                **kwargs) -> Extraction:
-    """One Chat Completions call -> `Extraction`. Never raises for model/validation problems."""
+    """One Chat Completions call -> `Extraction`. Never raises for model/validation problems.
+
+    `parse` turns the model's JSON object into an `Invoice` (a ValueError means it couldn't).
+    """
     ex = Extraction(method=method, model=model)
     t0 = time.perf_counter()
     try:
@@ -153,14 +159,15 @@ def call_model(client: OpenAI, model: str, messages: list[dict], *, method: str,
         cost = (getattr(resp.usage, "model_extra", None) or {}).get("cost")
         ex.cost_usd = float(cost) if cost is not None else 0.0  # Ollama: local, no cost field
     try:
-        ex.invoice = Invoice.model_validate(extract_json(ex.raw))
+        ex.invoice = parse(extract_json(ex.raw))
     except (ValueError, ValidationError) as e:
         ex.error = f"parse_error: {type(e).__name__}: {str(e)[:200]}"
     return ex
 
 
-def extract_from_text(client: OpenAI, model: str, text: str, **kw) -> Extraction:
-    return call_model(client, model, text_messages(text), method="text", **kw)
+def extract_from_text(client: OpenAI, model: str, text: str, *, system: str = SYSTEM_RULES,
+                      **kw) -> Extraction:
+    return call_model(client, model, text_messages(text, system=system), method="text", **kw)
 
 
 def extract_from_image(client: OpenAI, model: str, path: Path, *, max_side: int | None = None,
@@ -169,11 +176,13 @@ def extract_from_image(client: OpenAI, model: str, path: Path, *, max_side: int 
     return call_model(client, model, msgs, method="vision", **kw)
 
 
-def ocr_page(ollama: OpenAI, path: Path, model: str = "glm-ocr", max_side: int = 1000) -> Extraction:
+def ocr_page(ollama: OpenAI, path: Path, model: str = "glm-ocr",
+             max_side: int | None = 1000) -> Extraction:
     """Transcribe a page image with a dedicated OCR model. `raw` holds the text it read.
 
-    The page is downscaled first: at full 1240x1754 px glm-ocr returned almost nothing
-    (see the chapter), at ~1000 px it transcribes the whole page.
+    We downscale to 1000 px: on our scans glm-ocr returns the same transcript as at full
+    1240x1754 px from a third of the image tokens, and glm-ocr on Ollama is reported to fail
+    on images over 2048 px (ollama/ollama#14114).
     """
     messages = [{"role": "user", "content": [
         {"type": "text", "text": OCR_PROMPT},
@@ -183,9 +192,13 @@ def ocr_page(ollama: OpenAI, path: Path, model: str = "glm-ocr", max_side: int =
     return ex
 
 
-def extract_ocr_then_llm(ollama: OpenAI, llm: OpenAI, model: str, path: Path, **kw) -> Extraction:
-    """Two steps: OCR model reads the page, a text LLM structures what it read."""
-    ocr = ocr_page(ollama, path)
+def extract_ocr_then_llm(ollama: OpenAI, llm: OpenAI, model: str, path: Path, *,
+                         ocr: Extraction | None = None, **kw) -> Extraction:
+    """Two steps: OCR model reads the page, a text LLM structures what it read.
+
+    Pass a previous `ocr` result to reuse one transcript for several LLMs (a fair comparison).
+    """
+    ocr = ocr or ocr_page(ollama, path)
     if ocr.error:
         return ocr
     second = call_model(llm, model, text_messages(ocr.raw), method="ocr+llm", **kw)
@@ -193,3 +206,9 @@ def extract_ocr_then_llm(ollama: OpenAI, llm: OpenAI, model: str, path: Path, **
     out.method = "ocr+llm"
     out.notes["ocr_chars"] = len(ocr.raw)
     return out
+
+
+def ollama_client(timeout: float = 600) -> OpenAI:
+    """OpenAI-compatible client for the local Ollama server (OLLAMA_BASE_URL, default :11434)."""
+    base = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434/v1")
+    return OpenAI(base_url=base, api_key="ollama", timeout=timeout, max_retries=0)

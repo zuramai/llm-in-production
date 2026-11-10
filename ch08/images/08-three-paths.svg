@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 400" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#888"/>
+    </marker>
+  </defs>
+  <rect width="960" height="400" rx="14" fill="#ffffff"/>
+  <text x="480" y="32" text-anchor="middle" font-size="18" font-weight="bold" fill="#222">Three ways to turn a page into an Invoice: what the model actually sees</text>
+
+  <!-- row 1: text layer -->
+  <rect x="24" y="64" width="150" height="76" rx="8" fill="#9ec5e8" stroke="#4a7fb0"/>
+  <text x="99" y="96" text-anchor="middle" font-size="14" font-weight="bold" fill="#111">PDF with text</text>
+  <text x="99" y="116" text-anchor="middle" font-size="12" fill="#111">born digital</text>
+  <line x1="174" y1="102" x2="232" y2="102" stroke="#888" stroke-width="2" marker-end="url(#a)"/>
+  <rect x="236" y="64" width="150" height="76" rx="8" fill="#cfe3c2" stroke="#6b9a52"/>
+  <text x="311" y="96" text-anchor="middle" font-size="14" font-weight="bold" fill="#111">pypdf</text>
+  <text x="311" y="116" text-anchor="middle" font-size="12" fill="#111">extract_text(), ~5 ms</text>
+  <line x1="386" y1="102" x2="444" y2="102" stroke="#888" stroke-width="2" marker-end="url(#a)"/>
+  <rect x="448" y="58" width="250" height="88" rx="8" fill="#f4f4f4" stroke="#999"/>
+  <text x="460" y="80" font-size="12" font-family="Menlo, Consolas, monospace" fill="#222">Invoice T-63366</text>
+  <text x="460" y="98" font-size="12" font-family="Menlo, Consolas, monospace" fill="#222">Issued 10/01/2026</text>
+  <text x="460" y="116" font-size="12" font-family="Menlo, Consolas, monospace" fill="#222">SKU: PC-2313  2  £8.55</text>
+  <text x="460" y="134" font-size="11" fill="#555">exact characters, reading order may shuffle</text>
+  <line x1="698" y1="102" x2="756" y2="102" stroke="#888" stroke-width="2" marker-end="url(#a)"/>
+  <rect x="760" y="64" width="176" height="76" rx="8" fill="#a8d5a2" stroke="#4f8f47"/>
+  <text x="848" y="96" text-anchor="middle" font-size="14" font-weight="bold" fill="#111">text LLM</text>
+  <text x="848" y="116" text-anchor="middle" font-size="12" fill="#111">~800 input tokens</text>
+
+  <!-- row 2: vision -->
+  <rect x="24" y="174" width="150" height="76" rx="8" fill="#9ec5e8" stroke="#4a7fb0"/>
+  <text x="99" y="206" text-anchor="middle" font-size="14" font-weight="bold" fill="#111">Scan / photo</text>
+  <text x="99" y="226" text-anchor="middle" font-size="12" fill="#111">pixels only</text>
+  <line x1="174" y1="212" x2="232" y2="212" stroke="#888" stroke-width="2" marker-end="url(#a)"/>
+  <rect x="236" y="174" width="150" height="76" rx="8" fill="#cfe3c2" stroke="#6b9a52"/>
+  <text x="311" y="206" text-anchor="middle" font-size="14" font-weight="bold" fill="#111">resize + base64</text>
+  <text x="311" y="226" text-anchor="middle" font-size="12" fill="#111">data: URL</text>
+  <line x1="386" y1="212" x2="444" y2="212" stroke="#888" stroke-width="2" marker-end="url(#a)"/>
+  <rect x="448" y="168" width="250" height="88" rx="8" fill="#f4f4f4" stroke="#999"/>
+  <g stroke="#bbb" stroke-width="1">
+    <line x1="470" y1="176" x2="470" y2="226"/><line x1="490" y1="176" x2="490" y2="226"/>
+    <line x1="510" y1="176" x2="510" y2="226"/><line x1="530" y1="176" x2="530" y2="226"/>
+    <line x1="550" y1="176" x2="550" y2="226"/><line x1="460" y1="186" x2="560" y2="186"/>
+    <line x1="460" y1="206" x2="560" y2="206"/><line x1="460" y1="226" x2="560" y2="226"/>
+  </g>
+  <text x="572" y="196" font-size="12" fill="#222">image cut into</text>
+  <text x="572" y="214" font-size="12" fill="#222">patches → tokens</text>
+  <text x="460" y="246" font-size="11" fill="#555">model reads pixels; a 5 can become a 3</text>
+  <line x1="698" y1="212" x2="756" y2="212" stroke="#888" stroke-width="2" marker-end="url(#a)"/>
+  <rect x="760" y="174" width="176" height="76" rx="8" fill="#a8d5a2" stroke="#4f8f47"/>
+  <text x="848" y="206" text-anchor="middle" font-size="14" font-weight="bold" fill="#111">vision LLM</text>
+  <text x="848" y="226" text-anchor="middle" font-size="12" fill="#111">~3,000 input tokens</text>
+
+  <!-- row 3: OCR then LLM -->
+  <rect x="24" y="284" width="150" height="76" rx="8" fill="#9ec5e8" stroke="#4a7fb0"/>
+  <text x="99" y="316" text-anchor="middle" font-size="14" font-weight="bold" fill="#111">Scan / photo</text>
+  <text x="99" y="336" text-anchor="middle" font-size="12" fill="#111">pixels only</text>
+  <line x1="174" y1="322" x2="232" y2="322" stroke="#888" stroke-width="2" marker-end="url(#a)"/>
+  <rect x="236" y="284" width="150" height="76" rx="8" fill="#f2d06b" stroke="#a88a1f"/>
+  <text x="311" y="316" text-anchor="middle" font-size="14" font-weight="bold" fill="#111">glm-ocr (0.9B)</text>
+  <text x="311" y="336" text-anchor="middle" font-size="12" fill="#111">local, "Text Recognition:"</text>
+  <line x1="386" y1="322" x2="444" y2="322" stroke="#888" stroke-width="2" marker-end="url(#a)"/>
+  <rect x="448" y="278" width="250" height="88" rx="8" fill="#f4f4f4" stroke="#999"/>
+  <text x="460" y="300" font-size="12" font-family="Menlo, Consolas, monospace" fill="#222">| SKU | Description | Qty |</text>
+  <text x="460" y="318" font-size="12" font-family="Menlo, Consolas, monospace" fill="#222">| KH-5319 | Spiral ... | 5 |</text>
+  <text x="460" y="336" font-size="11" fill="#555">a transcript: OCR errors are baked in,</text>
+  <text x="460" y="352" font-size="11" fill="#555">the LLM never sees the page</text>
+  <line x1="698" y1="322" x2="756" y2="322" stroke="#888" stroke-width="2" marker-end="url(#a)"/>
+  <rect x="760" y="284" width="176" height="76" rx="8" fill="#a8d5a2" stroke="#4f8f47"/>
+  <text x="848" y="316" text-anchor="middle" font-size="14" font-weight="bold" fill="#111">text LLM</text>
+  <text x="848" y="336" text-anchor="middle" font-size="12" fill="#111">local or hosted</text>
+</svg>
