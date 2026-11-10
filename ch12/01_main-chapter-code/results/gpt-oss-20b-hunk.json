@@ -1,0 +1,510 @@
+{
+ "model": "gpt-oss:20b",
+ "provider": "ollama",
+ "granularity": "hunk",
+ "guidelines": true,
+ "options": {
+  "reasoning_effort": "low"
+ },
+ "runs": [
+  {
+   "buggy": {
+    "comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "high",
+      "category": "security",
+      "body": "The diff replaces the environment\u2011variable lookup for `STRIPE_API_KEY` with a hard\u2011coded secret value. This embeds a production API key directly in the source tree, exposing it to anyone with repository access and potentially leaking it when the code is pushed to public repositories. The fix is to keep using `os.environ.get(\"STRIPE_API_KEY\")` and remove the hard\u2011coded string, ensuring the key is supplied at runtime via environment variables.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 19,
+      "severity": "high",
+      "category": "concurrency",
+      "body": "The `reserve` method now reads the current `on_hand` count with `available()` and then updates the row by directly subtracting `qty`. This two\u2011step approach is not atomic; concurrent calls can read the same `on_hand` value, both think there is sufficient stock, and both succeed, causing an oversell. The original code performed the decrement in a single `UPDATE` that checked `on_hand >= %s` and verified `rowcount == 1`, which prevented this race. Restore a single, atomic update that includes the quantity check or use a transaction with row locking.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 4,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The patch removes the import of `BUSINESS_TZ` from `service/config.py`. `BUSINESS_TZ` is required for all date calculations that must respect the business time zone (America/New_York). Without it, functions that compute \"today\" or other calendar periods will default to UTC or rely on the system timezone, leading to incorrect query results and potentially returning the wrong orders or stock levels for the support dashboard. The fix is to re\u2011import `BUSINESS_TZ` (and any other timezone\u2011related utilities) and ensure all date\u2011related logic uses it.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "high",
+      "category": "security",
+      "body": "`find_orders_by_status` now builds the SQL query by interpolating the `status` value directly into the string.  This exposes the function to SQL injection if `status` comes from an untrusted source.  The original parameterised query prevented this.  Fix by using a placeholder and passing `status` as a bound parameter again.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 34,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The pagination offset calculation was changed from `(page - 1) * PAGE_SIZE` to `page * PAGE_SIZE`.  As a result, page\u202f1 returns an empty set and each subsequent page is shifted by one page, effectively skipping the first page of results.  Restore the correct formula.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "`orders_placed_today` now uses `datetime.utcnow()` instead of converting to the business time zone (`America/New_York`).  This means the count will include orders from a different calendar day when the business is off\u2011hour.  Use the original zone\u2011aware calculation.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The call to `notify.send_receipt(order_id)` is missing `await`. If `send_receipt` is an async function, this creates an unawaited coroutine that will never be executed, so receipts are never sent and any errors inside it are suppressed. The fix is to add `await` before the call: `await notify.send_receipt(order_id)`.",
+      "confidence": 0.95
+     }
+    ],
+    "raw_comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "high",
+      "category": "security",
+      "body": "The diff replaces the environment\u2011variable lookup for `STRIPE_API_KEY` with a hard\u2011coded secret value. This embeds a production API key directly in the source tree, exposing it to anyone with repository access and potentially leaking it when the code is pushed to public repositories. The fix is to keep using `os.environ.get(\"STRIPE_API_KEY\")` and remove the hard\u2011coded string, ensuring the key is supplied at runtime via environment variables.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 19,
+      "severity": "high",
+      "category": "concurrency",
+      "body": "The `reserve` method now reads the current `on_hand` count with `available()` and then updates the row by directly subtracting `qty`. This two\u2011step approach is not atomic; concurrent calls can read the same `on_hand` value, both think there is sufficient stock, and both succeed, causing an oversell. The original code performed the decrement in a single `UPDATE` that checked `on_hand >= %s` and verified `rowcount == 1`, which prevented this race. Restore a single, atomic update that includes the quantity check or use a transaction with row locking.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 4,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The patch removes the import of `BUSINESS_TZ` from `service/config.py`. `BUSINESS_TZ` is required for all date calculations that must respect the business time zone (America/New_York). Without it, functions that compute \"today\" or other calendar periods will default to UTC or rely on the system timezone, leading to incorrect query results and potentially returning the wrong orders or stock levels for the support dashboard. The fix is to re\u2011import `BUSINESS_TZ` (and any other timezone\u2011related utilities) and ensure all date\u2011related logic uses it.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "high",
+      "category": "security",
+      "body": "`find_orders_by_status` now builds the SQL query by interpolating the `status` value directly into the string.  This exposes the function to SQL injection if `status` comes from an untrusted source.  The original parameterised query prevented this.  Fix by using a placeholder and passing `status` as a bound parameter again.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 34,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The pagination offset calculation was changed from `(page - 1) * PAGE_SIZE` to `page * PAGE_SIZE`.  As a result, page\u202f1 returns an empty set and each subsequent page is shifted by one page, effectively skipping the first page of results.  Restore the correct formula.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "`orders_placed_today` now uses `datetime.utcnow()` instead of converting to the business time zone (`America/New_York`).  This means the count will include orders from a different calendar day when the business is off\u2011hour.  Use the original zone\u2011aware calculation.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The call to `notify.send_receipt(order_id)` is missing `await`. If `send_receipt` is an async function, this creates an unawaited coroutine that will never be executed, so receipts are never sent and any errors inside it are suppressed. The fix is to add `await` before the call: `await notify.send_receipt(order_id)`.",
+      "confidence": 0.95
+     }
+    ],
+    "raw_count": 7,
+    "n_units": 9,
+    "latency_ms": 51061,
+    "usage": {
+     "prompt_tokens": 6040,
+     "completion_tokens": 1393,
+     "cost_usd": 0.0
+    },
+    "errors": []
+   },
+   "clean": {
+    "comments": [
+     {
+      "path": "service/inventory.py",
+      "line": 28,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The new default argument uses the name `LOW_STOCK_THRESHOLD`, but this identifier is not defined or imported in the module. When `low_stock()` is called without an explicit threshold, Python will raise a `NameError`, breaking the function. Define the constant in this module or import it from the appropriate configuration file before using it.",
+      "confidence": 0.95
+     }
+    ],
+    "raw_comments": [
+     {
+      "path": "service/inventory.py",
+      "line": 28,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The new default argument uses the name `LOW_STOCK_THRESHOLD`, but this identifier is not defined or imported in the module. When `low_stock()` is called without an explicit threshold, Python will raise a `NameError`, breaking the function. Define the constant in this module or import it from the appropriate configuration file before using it.",
+      "confidence": 0.95
+     }
+    ],
+    "raw_count": 1,
+    "n_units": 8,
+    "latency_ms": 18743,
+    "usage": {
+     "prompt_tokens": 4520,
+     "completion_tokens": 510,
+     "cost_usd": 0.0
+    },
+    "errors": []
+   }
+  },
+  {
+   "buggy": {
+    "comments": [
+     {
+      "path": "service/config.py",
+      "line": 12,
+      "severity": "high",
+      "category": "security",
+      "body": "The Stripe API key is hard\u2011coded in the source instead of being read from an environment variable. This exposes a secret credential in the repository, allowing anyone with access to the code to use the Stripe account. Replace the hard\u2011coded value with `os.environ.get(\"STRIPE_API_KEY\")` or a similar environment\u2011based approach.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 19,
+      "severity": "high",
+      "category": "concurrency",
+      "body": "The new implementation first reads `available()` and then performs an unconditional UPDATE using the read value. This is not atomic: two concurrent calls can both see sufficient stock and each subtract `qty`, resulting in a negative or oversold inventory. The original code used a conditional UPDATE that only succeeded when `on_hand >= qty` and returned `rowcount == 1`. The new code also ignores the rowcount, always returning `True` even if no row was updated. This introduces a correctness and concurrency bug that can lead to inventory corruption.\n\nFix: Revert to the original conditional UPDATE, or use a single SQL statement that performs the check and decrement atomically (e.g., `UPDATE inventory SET on_hand = on_hand - %s WHERE product_id = %s AND warehouse = %s AND on_hand >= %s` and return `cur.rowcount == 1`).",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "high",
+      "category": "security",
+      "body": "The query for `find_orders_by_status` interpolates the status value directly into the SQL string (`...status = '{status}' ...`). This makes the function vulnerable to SQL injection if a malicious status value is supplied. Use a parameterised query instead (`WHERE status = %s`).",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 34,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The pagination logic is incorrect: `offset = page * PAGE_SIZE` skips the first page and over\u2011shifts the offset. It should be `offset = (page - 1) * PAGE_SIZE` to return the correct slice of orders.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "high",
+      "category": "correctness",
+      "body": "`orders_placed_today` uses `datetime.utcnow()` which ignores the business time zone (`America/New_York`). This will count orders from the wrong day during daylight\u2011saving transitions. It should use `datetime.now(ZoneInfo(BUSINESS_TZ))` instead.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 56,
+      "severity": "medium",
+      "category": "performance",
+      "body": "`customer_totals` runs a separate query for each customer ID, which is O(n) database round\u2011trips and defeats the original single\u2011query intent. This can severely impact performance for large lists of customer IDs.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 70,
+      "severity": "low",
+      "category": "correctness",
+      "body": "`format_money` divides by 100 and formats with `f\"${cents / 100:,.2f}\"`. For large integer values the division produces a float which can lose precision; using integer arithmetic or `Decimal` would avoid rounding errors.",
+      "confidence": 0.8
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The refactor replaced the awaited call to `notify.send_receipt(order_id)` with a plain, non\u2011awaited call. If `notify.send_receipt` is an async coroutine (as implied by the original `await`), omitting `await` will schedule the coroutine but never execute it, meaning the receipt will not be sent. This leads to inconsistent side\u2011effects and potential data loss. The fix is to add `await` before the call, i.e. `await notify.send_receipt(order_id)`.",
+      "confidence": 0.95
+     }
+    ],
+    "raw_comments": [
+     {
+      "path": "service/config.py",
+      "line": 12,
+      "severity": "high",
+      "category": "security",
+      "body": "The Stripe API key is hard\u2011coded in the source instead of being read from an environment variable. This exposes a secret credential in the repository, allowing anyone with access to the code to use the Stripe account. Replace the hard\u2011coded value with `os.environ.get(\"STRIPE_API_KEY\")` or a similar environment\u2011based approach.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 19,
+      "severity": "high",
+      "category": "concurrency",
+      "body": "The new implementation first reads `available()` and then performs an unconditional UPDATE using the read value. This is not atomic: two concurrent calls can both see sufficient stock and each subtract `qty`, resulting in a negative or oversold inventory. The original code used a conditional UPDATE that only succeeded when `on_hand >= qty` and returned `rowcount == 1`. The new code also ignores the rowcount, always returning `True` even if no row was updated. This introduces a correctness and concurrency bug that can lead to inventory corruption.\n\nFix: Revert to the original conditional UPDATE, or use a single SQL statement that performs the check and decrement atomically (e.g., `UPDATE inventory SET on_hand = on_hand - %s WHERE product_id = %s AND warehouse = %s AND on_hand >= %s` and return `cur.rowcount == 1`).",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "high",
+      "category": "security",
+      "body": "The query for `find_orders_by_status` interpolates the status value directly into the SQL string (`...status = '{status}' ...`). This makes the function vulnerable to SQL injection if a malicious status value is supplied. Use a parameterised query instead (`WHERE status = %s`).",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 34,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The pagination logic is incorrect: `offset = page * PAGE_SIZE` skips the first page and over\u2011shifts the offset. It should be `offset = (page - 1) * PAGE_SIZE` to return the correct slice of orders.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "high",
+      "category": "correctness",
+      "body": "`orders_placed_today` uses `datetime.utcnow()` which ignores the business time zone (`America/New_York`). This will count orders from the wrong day during daylight\u2011saving transitions. It should use `datetime.now(ZoneInfo(BUSINESS_TZ))` instead.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 56,
+      "severity": "medium",
+      "category": "performance",
+      "body": "`customer_totals` runs a separate query for each customer ID, which is O(n) database round\u2011trips and defeats the original single\u2011query intent. This can severely impact performance for large lists of customer IDs.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 70,
+      "severity": "low",
+      "category": "correctness",
+      "body": "`format_money` divides by 100 and formats with `f\"${cents / 100:,.2f}\"`. For large integer values the division produces a float which can lose precision; using integer arithmetic or `Decimal` would avoid rounding errors.",
+      "confidence": 0.8
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The refactor replaced the awaited call to `notify.send_receipt(order_id)` with a plain, non\u2011awaited call. If `notify.send_receipt` is an async coroutine (as implied by the original `await`), omitting `await` will schedule the coroutine but never execute it, meaning the receipt will not be sent. This leads to inconsistent side\u2011effects and potential data loss. The fix is to add `await` before the call, i.e. `await notify.send_receipt(order_id)`.",
+      "confidence": 0.95
+     }
+    ],
+    "raw_count": 8,
+    "n_units": 9,
+    "latency_ms": 46933,
+    "usage": {
+     "prompt_tokens": 6040,
+     "completion_tokens": 1439,
+     "cost_usd": 0.0
+    },
+    "errors": []
+   },
+   "clean": {
+    "comments": [
+     {
+      "path": "service/inventory.py",
+      "line": 28,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The new default value `LOW_STOCK_THRESHOLD` is referenced but never imported or defined in this module. When `low_stock()` is called without an explicit threshold, Python will raise a `NameError`, breaking the service. Import the constant from the appropriate config module or provide a fallback default.",
+      "confidence": 0.9
+     }
+    ],
+    "raw_comments": [
+     {
+      "path": "service/inventory.py",
+      "line": 28,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The new default value `LOW_STOCK_THRESHOLD` is referenced but never imported or defined in this module. When `low_stock()` is called without an explicit threshold, Python will raise a `NameError`, breaking the service. Import the constant from the appropriate config module or provide a fallback default.",
+      "confidence": 0.9
+     }
+    ],
+    "raw_count": 1,
+    "n_units": 8,
+    "latency_ms": 18224,
+    "usage": {
+     "prompt_tokens": 4520,
+     "completion_tokens": 496,
+     "cost_usd": 0.0
+    },
+    "errors": [
+     "['README.md']: UnitFailed: unparseable output: ValidationError: 1 validation error for ReviewResult\n  Invalid JSON: expected ident at line 1 column 2 [type=json_invalid, input_value='No d",
+     "['service/db.py']: UnitFailed: unparseable output: ValidationError: 1 validation error for ReviewResult\n  Input should be an object [type=model_type, input_value=[], input_type=list]\n    For "
+    ]
+   }
+  },
+  {
+   "buggy": {
+    "comments": [
+     {
+      "path": "service/config.py",
+      "line": 12,
+      "severity": "high",
+      "category": "security",
+      "body": "The Stripe API key is hard\u2011coded in the source instead of being read from an environment variable. This exposes a secret in the repository, potentially allowing attackers to use the key if the repository is accessed. The key should be loaded via `os.environ.get(\"STRIPE_API_KEY\")` and never committed in plain text.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 19,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The new implementation performs a separate SELECT to read the current `on_hand` value before the UPDATE, breaking the atomicity of the reservation. Two concurrent calls can both read the same `on_hand` and both succeed, resulting in negative inventory. The original code performed the UPDATE with a `WHERE on_hand >= %s` guard and checked `rowcount`, which prevented this race condition. Re\u2011introduce the conditional UPDATE (or use a transaction with SELECT \u2026 FOR UPDATE) to preserve correctness.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "high",
+      "category": "security",
+      "body": "`find_orders_by_status` interpolates the status directly into the SQL string, making the query vulnerable to SQL injection. An attacker could inject arbitrary SQL by supplying a malicious status value. The fix is to use a parameterised query: `WHERE status = %s` with `(status,)` as the parameter tuple.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 34,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "`page_of_orders` incorrectly calculates the offset. The offset should be `(page - 1) * PAGE_SIZE` to return the first page when `page == 1`. The current formula skips the first page and shifts all pages by one, causing missing or duplicated results.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "high",
+      "category": "correctness",
+      "body": "`orders_placed_today` uses `datetime.utcnow()` and resets the hour, minute, second, microsecond to zero. This uses UTC rather than the business time zone (`America/New_York`). As a result, orders placed in the early morning of the business day may be incorrectly counted as part of the previous or next day. The query should use the business time zone (`ZoneInfo(BUSINESS_TZ)`).",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 54,
+      "severity": "medium",
+      "category": "performance",
+      "body": "`customer_totals` executes one query per customer inside a loop. This can lead to O(n) round\u2011trips to the database and is highly inefficient for large customer lists. The original single\u2011query approach (`WHERE customer_id = ANY(%s) GROUP BY customer_id`) is preferable. Re\u2011enable that single query implementation and remove the per\u2011customer loop.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 67,
+      "severity": "low",
+      "category": "correctness",
+      "body": "`describe_order` does not handle the case where `get_order(order_id)` returns `None`. Accessing `order['id']` will raise a `TypeError`. Add a guard to return an informative message or raise a custom exception.",
+      "confidence": 0.8
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The receipt notification is sent with a plain call to `notify.send_receipt(order_id)` instead of an awaited coroutine. If `notify.send_receipt` is async, this will create an unawaited coroutine object that never runs, potentially leaving receipts unsent and leaking resources. The fix is to `await notify.send_receipt(order_id)` just like the gateway call above.",
+      "confidence": 0.95
+     }
+    ],
+    "raw_comments": [
+     {
+      "path": "service/config.py",
+      "line": 12,
+      "severity": "high",
+      "category": "security",
+      "body": "The Stripe API key is hard\u2011coded in the source instead of being read from an environment variable. This exposes a secret in the repository, potentially allowing attackers to use the key if the repository is accessed. The key should be loaded via `os.environ.get(\"STRIPE_API_KEY\")` and never committed in plain text.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 19,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The new implementation performs a separate SELECT to read the current `on_hand` value before the UPDATE, breaking the atomicity of the reservation. Two concurrent calls can both read the same `on_hand` and both succeed, resulting in negative inventory. The original code performed the UPDATE with a `WHERE on_hand >= %s` guard and checked `rowcount`, which prevented this race condition. Re\u2011introduce the conditional UPDATE (or use a transaction with SELECT \u2026 FOR UPDATE) to preserve correctness.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "high",
+      "category": "security",
+      "body": "`find_orders_by_status` interpolates the status directly into the SQL string, making the query vulnerable to SQL injection. An attacker could inject arbitrary SQL by supplying a malicious status value. The fix is to use a parameterised query: `WHERE status = %s` with `(status,)` as the parameter tuple.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 34,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "`page_of_orders` incorrectly calculates the offset. The offset should be `(page - 1) * PAGE_SIZE` to return the first page when `page == 1`. The current formula skips the first page and shifts all pages by one, causing missing or duplicated results.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "high",
+      "category": "correctness",
+      "body": "`orders_placed_today` uses `datetime.utcnow()` and resets the hour, minute, second, microsecond to zero. This uses UTC rather than the business time zone (`America/New_York`). As a result, orders placed in the early morning of the business day may be incorrectly counted as part of the previous or next day. The query should use the business time zone (`ZoneInfo(BUSINESS_TZ)`).",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 54,
+      "severity": "medium",
+      "category": "performance",
+      "body": "`customer_totals` executes one query per customer inside a loop. This can lead to O(n) round\u2011trips to the database and is highly inefficient for large customer lists. The original single\u2011query approach (`WHERE customer_id = ANY(%s) GROUP BY customer_id`) is preferable. Re\u2011enable that single query implementation and remove the per\u2011customer loop.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 67,
+      "severity": "low",
+      "category": "correctness",
+      "body": "`describe_order` does not handle the case where `get_order(order_id)` returns `None`. Accessing `order['id']` will raise a `TypeError`. Add a guard to return an informative message or raise a custom exception.",
+      "confidence": 0.8
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The receipt notification is sent with a plain call to `notify.send_receipt(order_id)` instead of an awaited coroutine. If `notify.send_receipt` is async, this will create an unawaited coroutine object that never runs, potentially leaving receipts unsent and leaking resources. The fix is to `await notify.send_receipt(order_id)` just like the gateway call above.",
+      "confidence": 0.95
+     }
+    ],
+    "raw_count": 8,
+    "n_units": 9,
+    "latency_ms": 42519,
+    "usage": {
+     "prompt_tokens": 6040,
+     "completion_tokens": 1303,
+     "cost_usd": 0.0
+    },
+    "errors": []
+   },
+   "clean": {
+    "comments": [],
+    "raw_comments": [],
+    "raw_count": 0,
+    "n_units": 8,
+    "latency_ms": 17061,
+    "usage": {
+     "prompt_tokens": 4520,
+     "completion_tokens": 453,
+     "cost_usd": 0.0
+    },
+    "errors": [
+     "['README.md']: UnitFailed: unparseable output: ValidationError: 1 validation error for ReviewResult\n  Invalid JSON: expected ident at line 1 column 2 [type=json_invalid, input_value='No d"
+    ]
+   }
+  }
+ ]
+}

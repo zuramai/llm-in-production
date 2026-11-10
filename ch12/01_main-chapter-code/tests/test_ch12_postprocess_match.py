@@ -7,7 +7,7 @@ from pydantic import ValidationError
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from ch12_review.diff import DiffLine, FileDiff, Hunk
-from ch12_review.evaluate import score_pr, score_run_file
+from ch12_review.evaluate import line_offsets, score_pr, score_run_file
 from ch12_review.match import match_comments
 from ch12_review.postprocess import dedupe, filter_comments, map_to_diff
 from ch12_review.reviewer import parse_result
@@ -138,6 +138,16 @@ def test_empty_inputs_do_not_divide_by_zero():
     m = match_comments([], BUGS)
     assert m.recall == 0.0 and m.precision == 0.0 and m.missed == ["sqli", "race"]
     assert match_comments([], []).recall == 0.0
+
+
+def test_line_offsets_are_signed_distances_to_the_bug_region():
+    race = {"id": "race", "file": "b.py", "line": 24, "start": 19, "end": 24,
+            "categories": ["concurrency"]}
+    comments = [c(path="a.py", line=21, category="security"),   # 6 above sqli (line 27)
+                c(path="b.py", line=22, category="concurrency"),  # inside the race region
+                c(path="b.py", line=40, category="concurrency")]  # 16 below: too far to pair
+    assert line_offsets(comments, [BUGS[0], race], window=10) == {"sqli": -6, "race": 0}
+    assert line_offsets([c(path="a.py", line=29, category="security")], BUGS) == {"sqli": 2}
 
 
 # ------------------------------------------------------------------ scoring over thresholds

@@ -40,19 +40,26 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--model", required=True)
     ap.add_argument("--provider", choices=["hosted", "ollama"], default="hosted")
-    ap.add_argument("--granularity", choices=["hunk", "file", "diff"], default="hunk")
+    ap.add_argument("--granularity", choices=["raw", "hunk", "file", "diff"], default="hunk",
+                    help="raw = naive v0: unnumbered git diff, naive prompt, one call")
     ap.add_argument("--no-guidelines", action="store_true", help="omit the repo conventions")
     ap.add_argument("--runs", type=int, default=3)
     ap.add_argument("--min-confidence", type=float, default=0.6, help="for the printed summary")
     ap.add_argument("--out-dir", default=str(HERE / "results"))
+    ap.add_argument("--timeout", type=float, default=120,
+                    help="per-call timeout in seconds (raise it for CPU-only local models)")
+    ap.add_argument("--reasoning-effort", default=None,
+                    help="override reasoning_effort (e.g. none, low) for reasoning models")
     args = ap.parse_args()
 
     ensure_repo()
     gt = load_ground_truth(GT)
     diffs = {"buggy": git_diff(str(REPO), gt["base"], gt["buggy_head"]),
              "clean": git_diff(str(REPO), gt["base"], gt["clean_head"])}
-    client = make_client(args.provider)
+    client = make_client(args.provider, timeout=args.timeout)
     options = model_options(args.model, args.provider)
+    if args.reasoning_effort:
+        options = {**options, "reasoning_effort": args.reasoning_effort}
     workers = 1 if args.provider == "ollama" else 4
 
     runs = []
@@ -62,18 +69,20 @@ def main() -> int:
             r = review_diff(text, client=client, model=args.model, granularity=args.granularity,
                             guidelines=not args.no_guidelines, options=options, workers=workers)
             entry[name] = {"comments": [c.model_dump() for c in r.comments],
+                           "raw_comments": [c.model_dump() for c in r.raw],
                            "raw_count": r.raw_count, "n_units": r.n_units,
                            "latency_ms": r.latency_ms, "usage": r.usage, "errors": r.errors}
             print(f"run {i + 1} {name}: {r.raw_count} raw -> {len(r.comments)} deduped, "
                   f"{r.latency_ms} ms, ${r.usage['cost_usd']:.5f}, errors={len(r.errors)}")
         runs.append(entry)
 
-    tag = f"{slug(args.model)}-{args.granularity}" + ("-noguide" if args.no_guidelines else "")
+    tag = (f"{slug(args.model)}-{args.granularity}" + ("-noguide" if args.no_guidelines else "")
+           + (f"-effort-{args.reasoning_effort}" if args.reasoning_effort else ""))
     out = Path(args.out_dir) / f"{tag}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps({
         "model": args.model, "provider": args.provider, "granularity": args.granularity,
-        "guidelines": not args.no_guidelines, "runs": runs,
+        "guidelines": not args.no_guidelines, "options": options, "runs": runs,
     }, indent=1))
     s = score_run_file(runs, gt, min_confidence=args.min_confidence)
     total_cost = sum(e[k]["usage"]["cost_usd"] for e in runs for k in e)

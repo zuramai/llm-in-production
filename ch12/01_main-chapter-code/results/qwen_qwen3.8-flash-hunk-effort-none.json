@@ -1,0 +1,517 @@
+{
+ "model": "qwen/qwen3.8-flash",
+ "provider": "hosted",
+ "granularity": "hunk",
+ "guidelines": true,
+ "options": {
+  "reasoning_effort": "none"
+ },
+ "runs": [
+  {
+   "buggy": {
+    "comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "critical",
+      "category": "security",
+      "body": "The Stripe API key is hardcoded in the source code instead of being read from an environment variable. This violates the team's convention that secrets must come from environment variables and exposes sensitive credentials to anyone with access to the repository.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 24,
+      "severity": "critical",
+      "category": "concurrency",
+      "body": "The change introduces a race condition by reading `on_hand` outside the transaction and then performing an unconditional update. If two requests reserve stock concurrently, both may read the same initial value (e.g., 10), calculate the new value as 8 (for qty=2), and write 8 to the database, resulting in only one reservation being recorded instead of two (lost update). The original code used a conditional UPDATE (`WHERE on_hand >= %s`) which ensured atomicity; this should be restored.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 27,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The function now returns `True` unconditionally after the update, regardless of whether any rows were actually modified. While the check `if on_hand < qty` prevents negative stock based on stale data, it does not prevent the lost update issue described above. More importantly, if the row was deleted between the read and the write, or if the update failed for other reasons, the caller incorrectly believes the reservation succeeded. The return value should depend on `cur.rowcount == 1`.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "critical",
+      "category": "security",
+      "body": "The change introduces a SQL injection vulnerability by using an f-string to interpolate the `status` parameter directly into the query string. An attacker can manipulate the `status` input to execute arbitrary SQL commands. The fix is to revert to using parameterized queries with `%s` placeholders.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 34,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The offset calculation for pagination is incorrect. Since `page` is 1-based, the first page should have an offset of 0 (`(page - 1) * PAGE_SIZE`). The current implementation `page * PAGE_SIZE` skips the first page entirely and returns empty results for page 1 if there are fewer than `PAGE_SIZE` items, or shifts all pages by one.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "high",
+      "category": "correctness",
+      "body": "Using `datetime.utcnow()` violates the repo convention that 'Today' must be defined in the business time zone (America/New_York). This will calculate the start of the day based on UTC midnight, which is inconsistent with how other parts of the system likely define 'today', leading to incorrect counts near the start/end of the local business day.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 56,
+      "severity": "medium",
+      "category": "performance",
+      "body": "Replacing the single batched query with a loop that executes one query per customer ID results in N+1 queries. This causes significant performance degradation and increased database load when processing lists of customers. The previous approach using `ANY(%s)` and `GROUP BY` was more efficient.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 67,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "`describe_order` calls `get_order`, which may return `None` if the order does not exist. Accessing `order['id']` without checking for `None` will raise a `TypeError` at runtime. The function should handle the case where the order is not found.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The `await` keyword was removed from `notify.send_receipt(order_id)`. If `send_receipt` is an async coroutine (which is standard for notification services in Python), calling it without `await` creates a coroutine object that is never executed and generates a 'coroutine was never awaited' warning/error. The receipt will not be sent.",
+      "confidence": 0.95
+     }
+    ],
+    "raw_comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "critical",
+      "category": "security",
+      "body": "The Stripe API key is hardcoded in the source code instead of being read from an environment variable. This violates the team's convention that secrets must come from environment variables and exposes sensitive credentials to anyone with access to the repository.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 24,
+      "severity": "critical",
+      "category": "concurrency",
+      "body": "The change introduces a race condition by reading `on_hand` outside the transaction and then performing an unconditional update. If two requests reserve stock concurrently, both may read the same initial value (e.g., 10), calculate the new value as 8 (for qty=2), and write 8 to the database, resulting in only one reservation being recorded instead of two (lost update). The original code used a conditional UPDATE (`WHERE on_hand >= %s`) which ensured atomicity; this should be restored.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 27,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The function now returns `True` unconditionally after the update, regardless of whether any rows were actually modified. While the check `if on_hand < qty` prevents negative stock based on stale data, it does not prevent the lost update issue described above. More importantly, if the row was deleted between the read and the write, or if the update failed for other reasons, the caller incorrectly believes the reservation succeeded. The return value should depend on `cur.rowcount == 1`.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "critical",
+      "category": "security",
+      "body": "The change introduces a SQL injection vulnerability by using an f-string to interpolate the `status` parameter directly into the query string. An attacker can manipulate the `status` input to execute arbitrary SQL commands. The fix is to revert to using parameterized queries with `%s` placeholders.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 34,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The offset calculation for pagination is incorrect. Since `page` is 1-based, the first page should have an offset of 0 (`(page - 1) * PAGE_SIZE`). The current implementation `page * PAGE_SIZE` skips the first page entirely and returns empty results for page 1 if there are fewer than `PAGE_SIZE` items, or shifts all pages by one.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "high",
+      "category": "correctness",
+      "body": "Using `datetime.utcnow()` violates the repo convention that 'Today' must be defined in the business time zone (America/New_York). This will calculate the start of the day based on UTC midnight, which is inconsistent with how other parts of the system likely define 'today', leading to incorrect counts near the start/end of the local business day.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 56,
+      "severity": "medium",
+      "category": "performance",
+      "body": "Replacing the single batched query with a loop that executes one query per customer ID results in N+1 queries. This causes significant performance degradation and increased database load when processing lists of customers. The previous approach using `ANY(%s)` and `GROUP BY` was more efficient.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 67,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "`describe_order` calls `get_order`, which may return `None` if the order does not exist. Accessing `order['id']` without checking for `None` will raise a `TypeError` at runtime. The function should handle the case where the order is not found.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The `await` keyword was removed from `notify.send_receipt(order_id)`. If `send_receipt` is an async coroutine (which is standard for notification services in Python), calling it without `await` creates a coroutine object that is never executed and generates a 'coroutine was never awaited' warning/error. The receipt will not be sent.",
+      "confidence": 0.95
+     }
+    ],
+    "raw_count": 9,
+    "n_units": 9,
+    "latency_ms": 6781,
+    "usage": {
+     "prompt_tokens": 5859,
+     "completion_tokens": 1206,
+     "cost_usd": 0.0012055420000000002
+    },
+    "errors": []
+   },
+   "clean": {
+    "comments": [],
+    "raw_comments": [],
+    "raw_count": 0,
+    "n_units": 8,
+    "latency_ms": 1895,
+    "usage": {
+     "prompt_tokens": 4261,
+     "completion_tokens": 48,
+     "cost_usd": 0.00031867
+    },
+    "errors": []
+   }
+  },
+  {
+   "buggy": {
+    "comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "critical",
+      "category": "security",
+      "body": "The Stripe API key is hardcoded in the source code instead of being retrieved from an environment variable. This violates the repository convention that secrets must come from environment variables and exposes a production credential to anyone with access to the codebase or version control history.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 24,
+      "severity": "critical",
+      "category": "concurrency",
+      "body": "The update logic is no longer atomic. The code reads `on_hand` into a Python variable and then writes that calculated value back to the database (`SET on_hand = %s`). This creates a race condition (TOCTOU): if two requests read the same stock level concurrently, both will calculate the new stock based on the initial read and overwrite each other's updates, leading to lost reservations and overselling.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "critical",
+      "category": "security",
+      "body": "The `find_orders_by_status` function introduces a SQL injection vulnerability by using an f-string to interpolate the `status` parameter directly into the query string instead of using parameterized placeholders (`%s`). An attacker could manipulate the `status` input to execute arbitrary SQL commands. The fix is to revert to using `%s` placeholders and passing `status` as part of the tuple argument to `conn.execute`.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 34,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The pagination logic in `page_of_orders` is broken because `offset` is calculated as `page * PAGE_SIZE`. Since `page` is documented as 1-based, this causes page 1 to skip the first `PAGE_SIZE` items (effectively showing results for page 2). The correct calculation for 1-based pagination is `(page - 1) * PAGE_SIZE`, which was present in the removed line.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The `orders_placed_today` function now uses `datetime.utcnow()` to determine the start of the day, violating the repo convention that 'Today' refers to the calendar day in the business time zone (`America/New_York`). This will return incorrect counts during hours when UTC and the business timezone differ (e.g., late evening/early morning NY time). It should use `datetime.now(ZoneInfo(BUSINESS_TZ))` as per the previous implementation.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 56,
+      "severity": "medium",
+      "category": "performance",
+      "body": "The `customer_totals` function has been refactored from a single batched query to a loop that executes one SQL query per customer ID. This introduces an N+1 query problem, causing significant performance degradation and increased database load when `customer_ids` contains many entries. The original approach using `ANY(%s)` and `GROUP BY` should be restored.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 67,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The `describe_order` function calls `get_order(order_id)` but does not check if the result is `None`. If the order does not exist, `get_order` returns `None`, and accessing `order['id']` will raise an `AttributeError`. A null check or error handling should be added before formatting the string.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The `await` keyword was removed from the call to `notify.send_receipt`. Since `send_receipt` is likely an async function (given the previous usage and the async context of `capture`), calling it without `await` creates a coroutine object that is never executed. This means receipts will silently fail to send.",
+      "confidence": 0.95
+     }
+    ],
+    "raw_comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "critical",
+      "category": "security",
+      "body": "The Stripe API key is hardcoded in the source code instead of being retrieved from an environment variable. This violates the repository convention that secrets must come from environment variables and exposes a production credential to anyone with access to the codebase or version control history.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 24,
+      "severity": "critical",
+      "category": "concurrency",
+      "body": "The update logic is no longer atomic. The code reads `on_hand` into a Python variable and then writes that calculated value back to the database (`SET on_hand = %s`). This creates a race condition (TOCTOU): if two requests read the same stock level concurrently, both will calculate the new stock based on the initial read and overwrite each other's updates, leading to lost reservations and overselling.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "critical",
+      "category": "security",
+      "body": "The `find_orders_by_status` function introduces a SQL injection vulnerability by using an f-string to interpolate the `status` parameter directly into the query string instead of using parameterized placeholders (`%s`). An attacker could manipulate the `status` input to execute arbitrary SQL commands. The fix is to revert to using `%s` placeholders and passing `status` as part of the tuple argument to `conn.execute`.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 34,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The pagination logic in `page_of_orders` is broken because `offset` is calculated as `page * PAGE_SIZE`. Since `page` is documented as 1-based, this causes page 1 to skip the first `PAGE_SIZE` items (effectively showing results for page 2). The correct calculation for 1-based pagination is `(page - 1) * PAGE_SIZE`, which was present in the removed line.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The `orders_placed_today` function now uses `datetime.utcnow()` to determine the start of the day, violating the repo convention that 'Today' refers to the calendar day in the business time zone (`America/New_York`). This will return incorrect counts during hours when UTC and the business timezone differ (e.g., late evening/early morning NY time). It should use `datetime.now(ZoneInfo(BUSINESS_TZ))` as per the previous implementation.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 56,
+      "severity": "medium",
+      "category": "performance",
+      "body": "The `customer_totals` function has been refactored from a single batched query to a loop that executes one SQL query per customer ID. This introduces an N+1 query problem, causing significant performance degradation and increased database load when `customer_ids` contains many entries. The original approach using `ANY(%s)` and `GROUP BY` should be restored.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 67,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The `describe_order` function calls `get_order(order_id)` but does not check if the result is `None`. If the order does not exist, `get_order` returns `None`, and accessing `order['id']` will raise an `AttributeError`. A null check or error handling should be added before formatting the string.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The `await` keyword was removed from the call to `notify.send_receipt`. Since `send_receipt` is likely an async function (given the previous usage and the async context of `capture`), calling it without `await` creates a coroutine object that is never executed. This means receipts will silently fail to send.",
+      "confidence": 0.95
+     }
+    ],
+    "raw_count": 8,
+    "n_units": 9,
+    "latency_ms": 8647,
+    "usage": {
+     "prompt_tokens": 5859,
+     "completion_tokens": 1095,
+     "cost_usd": 0.000810332
+    },
+    "errors": []
+   },
+   "clean": {
+    "comments": [],
+    "raw_comments": [],
+    "raw_count": 0,
+    "n_units": 8,
+    "latency_ms": 1354,
+    "usage": {
+     "prompt_tokens": 4261,
+     "completion_tokens": 52,
+     "cost_usd": 0.000217638
+    },
+    "errors": []
+   }
+  },
+  {
+   "buggy": {
+    "comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "critical",
+      "category": "security",
+      "body": "The Stripe API key is hardcoded in the source code instead of being retrieved from environment variables. This violates the security convention that secrets must come from environment variables and exposes sensitive credentials to anyone with access to the repository or build artifacts.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 19,
+      "severity": "critical",
+      "category": "concurrency",
+      "body": "The `reserve` function introduces a Time-of-Check to Time-of-Use (TOCTOU) race condition. It reads the current stock (`available`) and then performs an unconditional update (`SET on_hand = %s`) based on that stale value. Concurrent requests can both read the same high stock level, pass the check, and then overwrite each other's decrements, resulting in lost updates and overselling inventory.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 24,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The UPDATE query removes the atomic guard `AND on_hand >= %s` present in the previous implementation. Combined with the non-atomic read in line 19, this allows `on_hand` to become negative if multiple reservations occur simultaneously or if the state changes between the check and the update.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "critical",
+      "category": "security",
+      "body": "The `status` parameter is interpolated directly into the SQL string using an f-string instead of a parameterized query placeholder. This creates a SQL injection vulnerability where malicious input could alter the query structure or extract data. The fix is to revert to using `%s` placeholders and passing `(status,)` as the second argument to `conn.execute`.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 34,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The offset calculation was changed from `(page - 1) * PAGE_SIZE` to `page * PAGE_SIZE`. Since `page` is documented as 1-based, this skips the first page of results entirely (e.g., page 1 returns items starting at index `PAGE_SIZE`). The fix is to restore the subtraction: `offset = (page - 1) * PAGE_SIZE`.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The code uses `datetime.utcnow()` to determine 'today', but the repo conventions specify that calendar periods must be based on the business time zone (`America/New_York`). Using UTC will incorrectly count orders placed between midnight UTC and midnight ET, leading to inaccurate daily totals. The fix is to use `datetime.now(ZoneInfo(BUSINESS_TZ))` as shown in the removed lines.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 56,
+      "severity": "medium",
+      "category": "performance",
+      "body": "The function now executes one database query per customer ID inside a loop (N+1 queries), whereas the previous implementation used a single query with `ANY(%s)` and `GROUP BY`. This causes significant performance degradation and increased database load for large lists of customers. The fix is to revert to the single batched query approach.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 67,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "`get_order(order_id)` can return `None` if the order does not exist. Accessing `order['id']` immediately after will raise a `TypeError` (subscripting None) or crash the application. The fix is to check if `order` is `None` before formatting the string, or handle the missing case appropriately.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The `await` keyword was removed from the call to `notify.send_receipt(order_id)`. Since `send_receipt` is likely an async function (given the previous usage and typical patterns in such services), calling it without `await` creates a coroutine object that is never executed. This means receipts will silently fail to send.",
+      "confidence": 0.95
+     }
+    ],
+    "raw_comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "critical",
+      "category": "security",
+      "body": "The Stripe API key is hardcoded in the source code instead of being retrieved from environment variables. This violates the security convention that secrets must come from environment variables and exposes sensitive credentials to anyone with access to the repository or build artifacts.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 19,
+      "severity": "critical",
+      "category": "concurrency",
+      "body": "The `reserve` function introduces a Time-of-Check to Time-of-Use (TOCTOU) race condition. It reads the current stock (`available`) and then performs an unconditional update (`SET on_hand = %s`) based on that stale value. Concurrent requests can both read the same high stock level, pass the check, and then overwrite each other's decrements, resulting in lost updates and overselling inventory.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 24,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The UPDATE query removes the atomic guard `AND on_hand >= %s` present in the previous implementation. Combined with the non-atomic read in line 19, this allows `on_hand` to become negative if multiple reservations occur simultaneously or if the state changes between the check and the update.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "critical",
+      "category": "security",
+      "body": "The `status` parameter is interpolated directly into the SQL string using an f-string instead of a parameterized query placeholder. This creates a SQL injection vulnerability where malicious input could alter the query structure or extract data. The fix is to revert to using `%s` placeholders and passing `(status,)` as the second argument to `conn.execute`.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 34,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The offset calculation was changed from `(page - 1) * PAGE_SIZE` to `page * PAGE_SIZE`. Since `page` is documented as 1-based, this skips the first page of results entirely (e.g., page 1 returns items starting at index `PAGE_SIZE`). The fix is to restore the subtraction: `offset = (page - 1) * PAGE_SIZE`.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The code uses `datetime.utcnow()` to determine 'today', but the repo conventions specify that calendar periods must be based on the business time zone (`America/New_York`). Using UTC will incorrectly count orders placed between midnight UTC and midnight ET, leading to inaccurate daily totals. The fix is to use `datetime.now(ZoneInfo(BUSINESS_TZ))` as shown in the removed lines.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 56,
+      "severity": "medium",
+      "category": "performance",
+      "body": "The function now executes one database query per customer ID inside a loop (N+1 queries), whereas the previous implementation used a single query with `ANY(%s)` and `GROUP BY`. This causes significant performance degradation and increased database load for large lists of customers. The fix is to revert to the single batched query approach.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 67,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "`get_order(order_id)` can return `None` if the order does not exist. Accessing `order['id']` immediately after will raise a `TypeError` (subscripting None) or crash the application. The fix is to check if `order` is `None` before formatting the string, or handle the missing case appropriately.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The `await` keyword was removed from the call to `notify.send_receipt(order_id)`. Since `send_receipt` is likely an async function (given the previous usage and typical patterns in such services), calling it without `await` creates a coroutine object that is never executed. This means receipts will silently fail to send.",
+      "confidence": 0.95
+     }
+    ],
+    "raw_count": 9,
+    "n_units": 9,
+    "latency_ms": 8406,
+    "usage": {
+     "prompt_tokens": 5859,
+     "completion_tokens": 1211,
+     "cost_usd": 0.0008648519999999999
+    },
+    "errors": []
+   },
+   "clean": {
+    "comments": [],
+    "raw_comments": [],
+    "raw_count": 0,
+    "n_units": 8,
+    "latency_ms": 1522,
+    "usage": {
+     "prompt_tokens": 4261,
+     "completion_tokens": 48,
+     "cost_usd": 0.00021575800000000003
+    },
+    "errors": []
+   }
+  }
+ ]
+}

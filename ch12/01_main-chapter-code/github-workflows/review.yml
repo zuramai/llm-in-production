@@ -31,11 +31,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4   # in production, pin actions to a commit SHA
+      - uses: actions/checkout@v7   # in production, pin actions to a commit SHA
         with:
           fetch-depth: 0   # we need the merge base to compute the PR diff
+          persist-credentials: false   # the review step never needs to push
 
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v10
 
       - name: Review the diff
         env:

@@ -52,8 +52,9 @@ def post_review(repo: str, pr_number: int, payload: dict, token: str) -> dict:
     import httpx  # imported lazily: dry runs and tests need no HTTP stack
 
     url = f"{API}/repos/{repo}/pulls/{pr_number}/reviews"
+    # 2026-03-10 is the current REST version; its breaking changes don't touch reviews.
     headers = {"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json",
-               "X-GitHub-Api-Version": "2022-11-28"}
+               "X-GitHub-Api-Version": "2026-03-10"}
     r = httpx.post(url, json=payload, headers=headers, timeout=30)
     if r.status_code == 422 and payload.get("comments"):
         folded = "\n".join(f"- `{c['path']}:{c['line']}` {c['body']}" for c in payload["comments"])

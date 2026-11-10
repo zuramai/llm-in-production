@@ -1,0 +1,182 @@
+{
+ "model": "anthropic/claude-sonnet-5.5",
+ "provider": "hosted",
+ "granularity": "hunk",
+ "guidelines": true,
+ "runs": [
+  {
+   "buggy": {
+    "comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "critical",
+      "category": "security",
+      "body": "The Stripe API key is hardcoded in source, so it is committed to version control and exposed to anyone with repo access, and it cannot be rotated per environment. Read it from the environment again (`os.environ[\"STRIPE_API_KEY\"]`) and revoke and rotate the leaked key.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 19,
+      "severity": "high",
+      "category": "concurrency",
+      "body": "Check-then-act race: stock is read outside the UPDATE, then written as an absolute value (`on_hand - qty`). Two concurrent reserves of the last units both read the same `on_hand`, both pass the check, and the second write overwrites the first, so stock is oversold and decrements are lost. Restore the atomic `UPDATE ... SET on_hand = on_hand - %s WHERE ... AND on_hand >= %s` and return `cur.rowcount == 1`.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 24,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The absolute write `SET on_hand = %s` using a stale value clobbers concurrent updates (restocks, other reservations). Use a relative decrement guarded by `on_hand >= qty` in the SQL, and do not ignore whether the row was updated (the new code returns True even if rowcount is 0).",
+      "confidence": 0.85
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "critical",
+      "category": "security",
+      "body": "The `status` value is interpolated straight into the SQL string with an f-string, which allows SQL injection. For example, `status=\"x' OR '1'='1\"` returns every order, and a crafted value can run arbitrary SQL. Restore the parameterised query: `WHERE status = %s` with `(status,)`.",
+      "confidence": 0.97
+     },
+     {
+      "path": "service/orders.py",
+      "line": 34,
+      "severity": "high",
+      "category": "correctness",
+      "body": "`page` is documented as 1-based, but the offset is now `page * PAGE_SIZE`. Page 1 skips the first PAGE_SIZE rows, so the newest orders are never returned and the last page is lost. Use `(page - 1) * PAGE_SIZE`.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "\"Today\" is now computed from the UTC calendar day instead of the business time zone (America/New_York). Between roughly 7-8 PM ET and midnight ET the count resets early and excludes orders placed earlier that business day. `utcnow()` also returns a naive datetime, so it is compared against `placed_at` without a time zone. Restore `datetime.now(ZoneInfo(BUSINESS_TZ))` truncated to midnight.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 56,
+      "severity": "medium",
+      "category": "performance",
+      "body": "`customer_totals` now runs one query per customer id (N+1) instead of a single grouped query, so latency grows linearly with the list size. Restore the single `GROUP BY customer_id ... WHERE customer_id = ANY(%s)` query and default missing customers to 0.",
+      "confidence": 0.85
+     },
+     {
+      "path": "service/orders.py",
+      "line": 67,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "`get_order` returns `None` for a nonexistent order id, so `order['id']` raises `TypeError: 'NoneType' object is not subscriptable`. Handle the `None` case, for example by returning a fallback string or raising a clear not-found error.",
+      "confidence": 0.85
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "high",
+      "category": "correctness",
+      "body": "`notify.send_receipt` was previously awaited, so it is a coroutine function. Calling it without `await` only creates a coroutine object that never runs, so no receipt is sent after a successful capture, and Python emits a 'coroutine was never awaited' warning. Restore `await notify.send_receipt(order_id)`, or wrap it in `asyncio.create_task` and keep a reference to the task if fire-and-forget is intended.",
+      "confidence": 0.88
+     }
+    ],
+    "raw_comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "critical",
+      "category": "security",
+      "body": "The Stripe API key is hardcoded in source, so it is committed to version control and exposed to anyone with repo access, and it cannot be rotated per environment. Read it from the environment again (`os.environ[\"STRIPE_API_KEY\"]`) and revoke and rotate the leaked key.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 19,
+      "severity": "high",
+      "category": "concurrency",
+      "body": "Check-then-act race: stock is read outside the UPDATE, then written as an absolute value (`on_hand - qty`). Two concurrent reserves of the last units both read the same `on_hand`, both pass the check, and the second write overwrites the first, so stock is oversold and decrements are lost. Restore the atomic `UPDATE ... SET on_hand = on_hand - %s WHERE ... AND on_hand >= %s` and return `cur.rowcount == 1`.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 24,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The absolute write `SET on_hand = %s` using a stale value clobbers concurrent updates (restocks, other reservations). Use a relative decrement guarded by `on_hand >= qty` in the SQL, and do not ignore whether the row was updated (the new code returns True even if rowcount is 0).",
+      "confidence": 0.85
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "critical",
+      "category": "security",
+      "body": "The `status` value is interpolated straight into the SQL string with an f-string, which allows SQL injection. For example, `status=\"x' OR '1'='1\"` returns every order, and a crafted value can run arbitrary SQL. Restore the parameterised query: `WHERE status = %s` with `(status,)`.",
+      "confidence": 0.97
+     },
+     {
+      "path": "service/orders.py",
+      "line": 34,
+      "severity": "high",
+      "category": "correctness",
+      "body": "`page` is documented as 1-based, but the offset is now `page * PAGE_SIZE`. Page 1 skips the first PAGE_SIZE rows, so the newest orders are never returned and the last page is lost. Use `(page - 1) * PAGE_SIZE`.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "\"Today\" is now computed from the UTC calendar day instead of the business time zone (America/New_York). Between roughly 7-8 PM ET and midnight ET the count resets early and excludes orders placed earlier that business day. `utcnow()` also returns a naive datetime, so it is compared against `placed_at` without a time zone. Restore `datetime.now(ZoneInfo(BUSINESS_TZ))` truncated to midnight.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 56,
+      "severity": "medium",
+      "category": "performance",
+      "body": "`customer_totals` now runs one query per customer id (N+1) instead of a single grouped query, so latency grows linearly with the list size. Restore the single `GROUP BY customer_id ... WHERE customer_id = ANY(%s)` query and default missing customers to 0.",
+      "confidence": 0.85
+     },
+     {
+      "path": "service/orders.py",
+      "line": 67,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "`get_order` returns `None` for a nonexistent order id, so `order['id']` raises `TypeError: 'NoneType' object is not subscriptable`. Handle the `None` case, for example by returning a fallback string or raising a clear not-found error.",
+      "confidence": 0.85
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "high",
+      "category": "correctness",
+      "body": "`notify.send_receipt` was previously awaited, so it is a coroutine function. Calling it without `await` only creates a coroutine object that never runs, so no receipt is sent after a successful capture, and Python emits a 'coroutine was never awaited' warning. Restore `await notify.send_receipt(order_id)`, or wrap it in `asyncio.create_task` and keep a reference to the task if fire-and-forget is intended.",
+      "confidence": 0.88
+     }
+    ],
+    "raw_count": 9,
+    "n_units": 9,
+    "latency_ms": 7182,
+    "usage": {
+     "prompt_tokens": 13507,
+     "completion_tokens": 1756,
+     "cost_usd": 0.04457400000000001
+    },
+    "errors": []
+   },
+   "clean": {
+    "comments": [],
+    "raw_comments": [],
+    "raw_count": 0,
+    "n_units": 8,
+    "latency_ms": 3023,
+    "usage": {
+     "prompt_tokens": 10750,
+     "completion_tokens": 80,
+     "cost_usd": 0.022299999999999997
+    },
+    "errors": []
+   }
+  }
+ ]
+}

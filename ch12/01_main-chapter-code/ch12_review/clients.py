@@ -35,7 +35,13 @@ def default_model() -> str:
 
 
 def model_options(model: str, provider: str) -> dict:
-    """Per-model request options. Qwen3 on Ollama must not 'think' for minutes."""
+    """Per-model request options. Local reasoning models must not 'think' for minutes.
+
+    qwen3 on Ollama honours reasoning_effort="none". gpt-oss can't switch reasoning off; "low"
+    is its smallest budget, and its thinking tokens count against MAX_TOKENS.
+    """
     if provider == "ollama" and model.startswith("qwen3"):
         return {"reasoning_effort": "none"}
+    if provider == "ollama" and model.startswith("gpt-oss"):
+        return {"reasoning_effort": "low"}
     return {}

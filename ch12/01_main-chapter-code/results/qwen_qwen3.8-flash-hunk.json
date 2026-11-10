@@ -1,0 +1,223 @@
+{
+ "model": "qwen/qwen3.8-flash",
+ "provider": "hosted",
+ "granularity": "hunk",
+ "guidelines": true,
+ "options": {},
+ "runs": [
+  {
+   "buggy": {
+    "comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "critical",
+      "category": "security",
+      "body": "The added line hardcodes a Stripe API key directly in source code, violating the convention that secrets come from environment variables. This makes the credential vulnerable to leakage through source control, logs, backups, or accidental sharing. Restore the previous behavior by reading `STRIPE_API_KEY` from the environment, and rotate the exposed key.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "high",
+      "category": "correctness",
+      "body": "`notify.send_receipt(order_id)` is no longer awaited, even though the previous code did. Since it is an async call, this creates a coroutine object but never executes it, so receipts are silently not sent. Restore `await notify.send_receipt(order_id)`.",
+      "confidence": 0.99
+     }
+    ],
+    "raw_comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "critical",
+      "category": "security",
+      "body": "The added line hardcodes a Stripe API key directly in source code, violating the convention that secrets come from environment variables. This makes the credential vulnerable to leakage through source control, logs, backups, or accidental sharing. Restore the previous behavior by reading `STRIPE_API_KEY` from the environment, and rotate the exposed key.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "high",
+      "category": "correctness",
+      "body": "`notify.send_receipt(order_id)` is no longer awaited, even though the previous code did. Since it is an async call, this creates a coroutine object but never executes it, so receipts are silently not sent. Restore `await notify.send_receipt(order_id)`.",
+      "confidence": 0.99
+     }
+    ],
+    "raw_count": 2,
+    "n_units": 9,
+    "latency_ms": 34463,
+    "usage": {
+     "prompt_tokens": 6183,
+     "completion_tokens": 9112,
+     "cost_usd": 0.0044897059999999996
+    },
+    "errors": [
+     "['service/inventory.py']: UnitFailed: output truncated (finish_reason=length)",
+     "['service/orders.py']: UnitFailed: output truncated (finish_reason=length)"
+    ]
+   },
+   "clean": {
+    "comments": [],
+    "raw_comments": [],
+    "raw_count": 0,
+    "n_units": 8,
+    "latency_ms": 29561,
+    "usage": {
+     "prompt_tokens": 4549,
+     "completion_tokens": 8262,
+     "cost_usd": 0.00405093
+    },
+    "errors": [
+     "['service/orders.py']: UnitFailed: output truncated (finish_reason=length)"
+    ]
+   }
+  },
+  {
+   "buggy": {
+    "comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "critical",
+      "category": "security",
+      "body": "A Stripe API key is hard-coded in source code, violating the convention that secrets come from environment variables. This exposes the secret to anyone with repository or artifact access and persists it in git history; load it from os.environ instead, e.g. os.environ[\"STRIPE_API_KEY\"], and rotate the leaked key.",
+      "confidence": 0.98
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The previous `await notify.send_receipt(order_id)` was replaced with a bare `notify.send_receipt(order_id)`. If `send_receipt` is asynchronous, this only creates a coroutine and discards it, so receipts are not sent after successful captures. Restore the `await`.",
+      "confidence": 0.95
+     }
+    ],
+    "raw_comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "critical",
+      "category": "security",
+      "body": "A Stripe API key is hard-coded in source code, violating the convention that secrets come from environment variables. This exposes the secret to anyone with repository or artifact access and persists it in git history; load it from os.environ instead, e.g. os.environ[\"STRIPE_API_KEY\"], and rotate the leaked key.",
+      "confidence": 0.98
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The previous `await notify.send_receipt(order_id)` was replaced with a bare `notify.send_receipt(order_id)`. If `send_receipt` is asynchronous, this only creates a coroutine and discards it, so receipts are not sent after successful captures. Restore the `await`.",
+      "confidence": 0.95
+     }
+    ],
+    "raw_count": 2,
+    "n_units": 9,
+    "latency_ms": 32266,
+    "usage": {
+     "prompt_tokens": 6183,
+     "completion_tokens": 9089,
+     "cost_usd": 0.0044788960000000004
+    },
+    "errors": [
+     "['service/inventory.py']: UnitFailed: output truncated (finish_reason=length)",
+     "['service/orders.py']: UnitFailed: output truncated (finish_reason=length)"
+    ]
+   },
+   "clean": {
+    "comments": [],
+    "raw_comments": [],
+    "raw_count": 0,
+    "n_units": 8,
+    "latency_ms": 22563,
+    "usage": {
+     "prompt_tokens": 4549,
+     "completion_tokens": 5166,
+     "cost_usd": 0.00259581
+    },
+    "errors": []
+   }
+  },
+  {
+   "buggy": {
+    "comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "critical",
+      "category": "security",
+      "body": "A Stripe API key is hardcoded in source code, violating the secret-handling convention and exposing a credential that can be abused to access payment APIs. Restore the environment-based lookup and rotate the key immediately, treating it as compromised if it has already been committed. Purging history alone is insufficient; rotation is required.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 24,
+      "severity": "critical",
+      "category": "concurrency",
+      "body": "reserve() now performs a non-atomic read-modify-write: it reads available() outside the UPDATE and writes a computed on_hand value. Concurrent reservations can both read the same stock and overwrite each other or oversell inventory. Restore the atomic conditional update and return cur.rowcount == 1.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The original code awaited `notify.send_receipt(order_id)`, but the added call omits `await`. If `send_receipt` is async, this creates a coroutine that is never executed, so receipts are not sent and may trigger an un-awaited coroutine warning. Restore `await notify.send_receipt(order_id)` or explicitly schedule the coroutine correctly.",
+      "confidence": 0.95
+     }
+    ],
+    "raw_comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "critical",
+      "category": "security",
+      "body": "A Stripe API key is hardcoded in source code, violating the secret-handling convention and exposing a credential that can be abused to access payment APIs. Restore the environment-based lookup and rotate the key immediately, treating it as compromised if it has already been committed. Purging history alone is insufficient; rotation is required.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 24,
+      "severity": "critical",
+      "category": "concurrency",
+      "body": "reserve() now performs a non-atomic read-modify-write: it reads available() outside the UPDATE and writes a computed on_hand value. Concurrent reservations can both read the same stock and overwrite each other or oversell inventory. Restore the atomic conditional update and return cur.rowcount == 1.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The original code awaited `notify.send_receipt(order_id)`, but the added call omits `await`. If `send_receipt` is async, this creates a coroutine that is never executed, so receipts are not sent and may trigger an un-awaited coroutine warning. Restore `await notify.send_receipt(order_id)` or explicitly schedule the coroutine correctly.",
+      "confidence": 0.95
+     }
+    ],
+    "raw_count": 3,
+    "n_units": 9,
+    "latency_ms": 32651,
+    "usage": {
+     "prompt_tokens": 6183,
+     "completion_tokens": 8043,
+     "cost_usd": 0.003987276
+    },
+    "errors": [
+     "['service/orders.py']: UnitFailed: output truncated (finish_reason=length)"
+    ]
+   },
+   "clean": {
+    "comments": [],
+    "raw_comments": [],
+    "raw_count": 0,
+    "n_units": 8,
+    "latency_ms": 28282,
+    "usage": {
+     "prompt_tokens": 4549,
+     "completion_tokens": 6329,
+     "cost_usd": 0.0031424200000000004
+    },
+    "errors": [
+     "['service/orders.py']: UnitFailed: output truncated (finish_reason=length)"
+    ]
+   }
+  }
+ ]
+}

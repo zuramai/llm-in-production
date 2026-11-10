@@ -1,0 +1,466 @@
+{
+ "model": "openai/gpt-6-luna",
+ "provider": "hosted",
+ "granularity": "raw",
+ "guidelines": true,
+ "runs": [
+  {
+   "buggy": {
+    "comments": [
+     {
+      "path": "service/config.py",
+      "line": 10,
+      "severity": "high",
+      "category": "security",
+      "body": "This hardcodes the Stripe API key and bypasses the `STRIPE_API_KEY` environment variable. If this is a real credential, it is exposed in source control; even if it is a placeholder, the application can no longer be configured with the deployment's key. Read the key from the environment and rotate any exposed credential.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 23,
+      "severity": "high",
+      "category": "concurrency",
+      "body": "The stock check and update are separate operations, and this update writes a previously read value without a conditional stock check. Concurrent reservations can both see the same stock and both return `True`, allowing overselling. Keep the decrement atomic (for example, `UPDATE ... SET on_hand = on_hand - %s ... AND on_hand >= %s`) and use the affected-row count.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/orders.py",
+      "line": 24,
+      "severity": "high",
+      "category": "security",
+      "body": "Interpolating `status` into SQL allows SQL injection if the value can be influenced by a caller. Pass it as a query parameter, as the previous implementation did.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/orders.py",
+      "line": 30,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "With 1-based pages, page 1 should have offset 0. This skips the first `PAGE_SIZE` orders on the first page; use `(page - 1) * PAGE_SIZE`.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 39,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "This replaces the configured business-timezone boundary with UTC midnight, so orders near midnight can be counted on the wrong business day. Compute the start of day in `BUSINESS_TZ` as before.",
+      "confidence": 0.97
+     },
+     {
+      "path": "service/orders.py",
+      "line": 51,
+      "severity": "medium",
+      "category": "performance",
+      "body": "This now performs one database query per customer ID instead of one grouped query. For larger customer lists this adds substantial round trips; retain a single grouped query and fill in zero totals for customers with no orders.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/orders.py",
+      "line": 60,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "`get_order` returns `None` for an unknown ID, so this access raises a `TypeError` for missing orders. Handle the `None` case or define and enforce that this function only accepts existing order IDs.",
+      "confidence": 0.94
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "high",
+      "category": "correctness",
+      "body": "`send_receipt` is async but is called without `await`, so the coroutine is never executed and no receipt is sent. Await it (or schedule it explicitly if it should run in the background).",
+      "confidence": 1.0
+     }
+    ],
+    "raw_comments": [
+     {
+      "path": "service/config.py",
+      "line": 10,
+      "severity": "high",
+      "category": "security",
+      "body": "This hardcodes the Stripe API key and bypasses the `STRIPE_API_KEY` environment variable. If this is a real credential, it is exposed in source control; even if it is a placeholder, the application can no longer be configured with the deployment's key. Read the key from the environment and rotate any exposed credential.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 23,
+      "severity": "high",
+      "category": "concurrency",
+      "body": "The stock check and update are separate operations, and this update writes a previously read value without a conditional stock check. Concurrent reservations can both see the same stock and both return `True`, allowing overselling. Keep the decrement atomic (for example, `UPDATE ... SET on_hand = on_hand - %s ... AND on_hand >= %s`) and use the affected-row count.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/orders.py",
+      "line": 24,
+      "severity": "high",
+      "category": "security",
+      "body": "Interpolating `status` into SQL allows SQL injection if the value can be influenced by a caller. Pass it as a query parameter, as the previous implementation did.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/orders.py",
+      "line": 30,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "With 1-based pages, page 1 should have offset 0. This skips the first `PAGE_SIZE` orders on the first page; use `(page - 1) * PAGE_SIZE`.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 39,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "This replaces the configured business-timezone boundary with UTC midnight, so orders near midnight can be counted on the wrong business day. Compute the start of day in `BUSINESS_TZ` as before.",
+      "confidence": 0.97
+     },
+     {
+      "path": "service/orders.py",
+      "line": 51,
+      "severity": "medium",
+      "category": "performance",
+      "body": "This now performs one database query per customer ID instead of one grouped query. For larger customer lists this adds substantial round trips; retain a single grouped query and fill in zero totals for customers with no orders.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "high",
+      "category": "correctness",
+      "body": "`send_receipt` is async but is called without `await`, so the coroutine is never executed and no receipt is sent. Await it (or schedule it explicitly if it should run in the background).",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 60,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "`get_order` returns `None` for an unknown ID, so this access raises a `TypeError` for missing orders. Handle the `None` case or define and enforce that this function only accepts existing order IDs.",
+      "confidence": 0.94
+     }
+    ],
+    "raw_count": 8,
+    "n_units": 1,
+    "latency_ms": 25123,
+    "usage": {
+     "prompt_tokens": 2151,
+     "completion_tokens": 2233,
+     "cost_usd": 0.0013853
+    },
+    "errors": []
+   },
+   "clean": {
+    "comments": [],
+    "raw_comments": [],
+    "raw_count": 0,
+    "n_units": 1,
+    "latency_ms": 6565,
+    "usage": {
+     "prompt_tokens": 1267,
+     "completion_tokens": 301,
+     "cost_usd": 0.0003088
+    },
+    "errors": []
+   }
+  },
+  {
+   "buggy": {
+    "comments": [
+     {
+      "path": "service/config.py",
+      "line": 11,
+      "severity": "high",
+      "category": "security",
+      "body": "This hard-codes the Stripe API key and stops reading `STRIPE_API_KEY` from the environment. If this is a real credential, it is exposed in source control; even if it is a placeholder, deployments can no longer supply their key through the documented configuration. Load it from the environment and rotate any exposed credential.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 21,
+      "severity": "high",
+      "category": "concurrency",
+      "body": "The stock check happens on a separate connection, then this unconditional update writes a value derived from the earlier read. Two concurrent reservations can both succeed while decrementing stock only once, allowing more units to be reserved than are available. Keep the conditional decrement atomic (or lock the row in a transaction).",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/orders.py",
+      "line": 24,
+      "severity": "high",
+      "category": "security",
+      "body": "Interpolating `status` into SQL lets callers inject SQL through this argument. Pass it as a query parameter, as the previous implementation did.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 31,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The page offset is now `page * PAGE_SIZE`, so page 1 starts at row 20 and skips the first 20 orders. For a 1-based page number, use `(page - 1) * PAGE_SIZE`.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 40,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "This changes the definition of \u201ctoday\u201d from the configured business timezone to UTC. Orders near the business-day boundary will be counted on the wrong day. Preserve the business-timezone cutoff.",
+      "confidence": 0.97
+     },
+     {
+      "path": "service/orders.py",
+      "line": 56,
+      "severity": "medium",
+      "category": "performance",
+      "body": "This now executes one query per customer instead of a single grouped query. With a large `customer_ids` list this causes an N+1 query regression; keep the aggregate query and construct the result from its rows.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 68,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "`get_order` can return `None`, but this function immediately subscripts its result. Calling `describe_order` for an unknown ID raises `TypeError` instead of handling the missing order; define and implement the missing-order behavior.",
+      "confidence": 0.98
+     },
+     {
+      "path": "service/payments.py",
+      "line": 16,
+      "severity": "high",
+      "category": "correctness",
+      "body": "`send_receipt` is async, but this call is not awaited. The coroutine will not run, so successful captures will not send receipts (and may emit an unawaited-coroutine warning). Await it as before.",
+      "confidence": 1.0
+     }
+    ],
+    "raw_comments": [
+     {
+      "path": "service/config.py",
+      "line": 11,
+      "severity": "high",
+      "category": "security",
+      "body": "This hard-codes the Stripe API key and stops reading `STRIPE_API_KEY` from the environment. If this is a real credential, it is exposed in source control; even if it is a placeholder, deployments can no longer supply their key through the documented configuration. Load it from the environment and rotate any exposed credential.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 21,
+      "severity": "high",
+      "category": "concurrency",
+      "body": "The stock check happens on a separate connection, then this unconditional update writes a value derived from the earlier read. Two concurrent reservations can both succeed while decrementing stock only once, allowing more units to be reserved than are available. Keep the conditional decrement atomic (or lock the row in a transaction).",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/orders.py",
+      "line": 24,
+      "severity": "high",
+      "category": "security",
+      "body": "Interpolating `status` into SQL lets callers inject SQL through this argument. Pass it as a query parameter, as the previous implementation did.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 31,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The page offset is now `page * PAGE_SIZE`, so page 1 starts at row 20 and skips the first 20 orders. For a 1-based page number, use `(page - 1) * PAGE_SIZE`.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 40,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "This changes the definition of \u201ctoday\u201d from the configured business timezone to UTC. Orders near the business-day boundary will be counted on the wrong day. Preserve the business-timezone cutoff.",
+      "confidence": 0.97
+     },
+     {
+      "path": "service/orders.py",
+      "line": 56,
+      "severity": "medium",
+      "category": "performance",
+      "body": "This now executes one query per customer instead of a single grouped query. With a large `customer_ids` list this causes an N+1 query regression; keep the aggregate query and construct the result from its rows.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 68,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "`get_order` can return `None`, but this function immediately subscripts its result. Calling `describe_order` for an unknown ID raises `TypeError` instead of handling the missing order; define and implement the missing-order behavior.",
+      "confidence": 0.98
+     },
+     {
+      "path": "service/payments.py",
+      "line": 16,
+      "severity": "high",
+      "category": "correctness",
+      "body": "`send_receipt` is async, but this call is not awaited. The coroutine will not run, so successful captures will not send receipts (and may emit an unawaited-coroutine warning). Await it as before.",
+      "confidence": 1.0
+     }
+    ],
+    "raw_count": 8,
+    "n_units": 1,
+    "latency_ms": 21917,
+    "usage": {
+     "prompt_tokens": 2151,
+     "completion_tokens": 1801,
+     "cost_usd": 0.00092228
+    },
+    "errors": []
+   },
+   "clean": {
+    "comments": [],
+    "raw_comments": [],
+    "raw_count": 0,
+    "n_units": 1,
+    "latency_ms": 7253,
+    "usage": {
+     "prompt_tokens": 1267,
+     "completion_tokens": 360,
+     "cost_usd": 0.00019294
+    },
+    "errors": []
+   }
+  },
+  {
+   "buggy": {
+    "comments": [
+     {
+      "path": "service/config.py",
+      "line": 11,
+      "severity": "high",
+      "category": "security",
+      "body": "This replaces environment-based configuration with a hard-coded credential-like value. If it is a real key, it is now exposed in the repository; either way, deployments can no longer supply their configured Stripe key. Read the key from the environment and rotate it if it is live.",
+      "confidence": 0.98
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 21,
+      "severity": "high",
+      "category": "concurrency",
+      "body": "The stock check happens before this unconditional update, so concurrent reservations can both pass the check and overwrite each other's stock change. Keep the availability condition in the UPDATE (and check its row count) so the reservation is atomic.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/orders.py",
+      "line": 24,
+      "severity": "high",
+      "category": "security",
+      "body": "Interpolating `status` into SQL allows a caller-controlled value to alter the query. Pass it as a SQL parameter, as the previous implementation did.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 30,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The docstring says pages are 1-based, but this offset makes page 1 skip the first `PAGE_SIZE` orders. Use `(page - 1) * PAGE_SIZE`.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 39,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "This changes the definition of \u201ctoday\u201d from the configured business timezone to UTC midnight. Orders around the business-day boundary will be counted incorrectly; retain the business-timezone calculation.",
+      "confidence": 0.98
+     },
+     {
+      "path": "service/orders.py",
+      "line": 51,
+      "severity": "medium",
+      "category": "performance",
+      "body": "This now runs one database query per customer ID, replacing the previous single grouped query. For a large customer list this creates many round trips; use a grouped query to fetch the totals in one call.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/payments.py",
+      "line": 14,
+      "severity": "high",
+      "category": "correctness",
+      "body": "`send_receipt` is asynchronous, but this call does not await it. The coroutine will not run, so successful captures will not send receipts. Restore the `await`.",
+      "confidence": 1.0
+     }
+    ],
+    "raw_comments": [
+     {
+      "path": "service/config.py",
+      "line": 11,
+      "severity": "high",
+      "category": "security",
+      "body": "This replaces environment-based configuration with a hard-coded credential-like value. If it is a real key, it is now exposed in the repository; either way, deployments can no longer supply their configured Stripe key. Read the key from the environment and rotate it if it is live.",
+      "confidence": 0.98
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 21,
+      "severity": "high",
+      "category": "concurrency",
+      "body": "The stock check happens before this unconditional update, so concurrent reservations can both pass the check and overwrite each other's stock change. Keep the availability condition in the UPDATE (and check its row count) so the reservation is atomic.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/orders.py",
+      "line": 24,
+      "severity": "high",
+      "category": "security",
+      "body": "Interpolating `status` into SQL allows a caller-controlled value to alter the query. Pass it as a SQL parameter, as the previous implementation did.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 30,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The docstring says pages are 1-based, but this offset makes page 1 skip the first `PAGE_SIZE` orders. Use `(page - 1) * PAGE_SIZE`.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 39,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "This changes the definition of \u201ctoday\u201d from the configured business timezone to UTC midnight. Orders around the business-day boundary will be counted incorrectly; retain the business-timezone calculation.",
+      "confidence": 0.98
+     },
+     {
+      "path": "service/orders.py",
+      "line": 51,
+      "severity": "medium",
+      "category": "performance",
+      "body": "This now runs one database query per customer ID, replacing the previous single grouped query. For a large customer list this creates many round trips; use a grouped query to fetch the totals in one call.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/payments.py",
+      "line": 14,
+      "severity": "high",
+      "category": "correctness",
+      "body": "`send_receipt` is asynchronous, but this call does not await it. The coroutine will not run, so successful captures will not send receipts. Restore the `await`.",
+      "confidence": 1.0
+     }
+    ],
+    "raw_count": 7,
+    "n_units": 1,
+    "latency_ms": 25415,
+    "usage": {
+     "prompt_tokens": 2151,
+     "completion_tokens": 2455,
+     "cost_usd": 0.00124928
+    },
+    "errors": []
+   },
+   "clean": {
+    "comments": [],
+    "raw_comments": [],
+    "raw_count": 0,
+    "n_units": 1,
+    "latency_ms": 9500,
+    "usage": {
+     "prompt_tokens": 1267,
+     "completion_tokens": 530,
+     "cost_usd": 0.00027794
+    },
+    "errors": []
+   }
+  }
+ ]
+}

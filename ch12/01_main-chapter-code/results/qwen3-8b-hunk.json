@@ -1,0 +1,715 @@
+{
+ "model": "qwen3:8b",
+ "provider": "ollama",
+ "granularity": "hunk",
+ "guidelines": true,
+ "options": {
+  "reasoning_effort": "none"
+ },
+ "runs": [
+  {
+   "buggy": {
+    "comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "critical",
+      "category": "security",
+      "body": "The STRIPE_API_KEY is hardcoded in the diff, which exposes a critical security risk by leaking a sensitive API key. This should be retrieved from environment variables instead.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 24,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The `reserve` function now updates inventory without checking if the row exists, which can lead to updating non-existent records. This can cause incorrect inventory levels and data corruption. Use a `WHERE` clause that ensures the row exists before updating.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 30,
+      "severity": "medium",
+      "category": "maintainability",
+      "body": "The `low_stock` function now uses a hardcoded threshold value `LOW_STOCK_THRESHOLD` instead of the parameter `threshold`. This makes the function less flexible and harder to maintain. The parameter should be used instead.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "high",
+      "category": "security",
+      "body": "The SQL query is constructed using string interpolation, which introduces a SQL injection vulnerability. The `status` parameter is directly embedded into the query string, allowing an attacker to inject malicious SQL code.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "Using `datetime.utcnow()` instead of the business time zone (`BUSINESS_TZ`) for calculating `start` will lead to incorrect results for time-based queries, as the service requires all time calculations to be in America/New_York.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 56,
+      "severity": "medium",
+      "category": "performance",
+      "body": "The refactored `customer_totals` function now makes a separate database query for each customer ID, which is significantly less efficient than the original single query with `ANY(%s)`. This could lead to performance issues when handling large customer lists.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The `notify.send_receipt(order_id)` call is duplicated and may be redundant. The original line was removed but then re-added, which could lead to confusion or unintended behavior. Ensure that the notification logic is consistent and intentional.",
+      "confidence": 0.95
+     },
+     {
+      "path": "tests/test_orders.py",
+      "line": 7,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The test assumes a specific formatting behavior for `format_money` that may not be implemented correctly. The test should verify the actual implementation logic, including proper handling of thousands separators and decimal points.",
+      "confidence": 0.9
+     }
+    ],
+    "raw_comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "critical",
+      "category": "security",
+      "body": "The STRIPE_API_KEY is hardcoded in the diff, which exposes a critical security risk by leaking a sensitive API key. This should be retrieved from environment variables instead.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 24,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The `reserve` function now updates inventory without checking if the row exists, which can lead to updating non-existent records. This can cause incorrect inventory levels and data corruption. Use a `WHERE` clause that ensures the row exists before updating.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 30,
+      "severity": "medium",
+      "category": "maintainability",
+      "body": "The `low_stock` function now uses a hardcoded threshold value `LOW_STOCK_THRESHOLD` instead of the parameter `threshold`. This makes the function less flexible and harder to maintain. The parameter should be used instead.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "high",
+      "category": "security",
+      "body": "The SQL query is constructed using string interpolation, which introduces a SQL injection vulnerability. The `status` parameter is directly embedded into the query string, allowing an attacker to inject malicious SQL code.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "Using `datetime.utcnow()` instead of the business time zone (`BUSINESS_TZ`) for calculating `start` will lead to incorrect results for time-based queries, as the service requires all time calculations to be in America/New_York.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 56,
+      "severity": "medium",
+      "category": "performance",
+      "body": "The refactored `customer_totals` function now makes a separate database query for each customer ID, which is significantly less efficient than the original single query with `ANY(%s)`. This could lead to performance issues when handling large customer lists.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/payments.py",
+      "line": 15,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The `notify.send_receipt(order_id)` call is duplicated and may be redundant. The original line was removed but then re-added, which could lead to confusion or unintended behavior. Ensure that the notification logic is consistent and intentional.",
+      "confidence": 0.95
+     },
+     {
+      "path": "tests/test_orders.py",
+      "line": 7,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The test assumes a specific formatting behavior for `format_money` that may not be implemented correctly. The test should verify the actual implementation logic, including proper handling of thousands separators and decimal points.",
+      "confidence": 0.9
+     }
+    ],
+    "raw_count": 8,
+    "n_units": 9,
+    "latency_ms": 33074,
+    "usage": {
+     "prompt_tokens": 5644,
+     "completion_tokens": 820,
+     "cost_usd": 0.0
+    },
+    "errors": []
+   },
+   "clean": {
+    "comments": [
+     {
+      "path": "service/inventory.py",
+      "line": 11,
+      "severity": "medium",
+      "category": "security",
+      "body": "The SQL query uses string interpolation instead of parameterized queries, which exposes the application to SQL injection attacks. The parameters should be passed using the psycopg2 `%s` placeholder mechanism.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 28,
+      "severity": "medium",
+      "category": "security",
+      "body": "The constant `LOW_STOCK_THRESHOLD` is used directly, which may expose sensitive configuration values in the code. Secrets and configuration values should never be hardcoded but instead retrieved from environment variables.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 18,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The `_row_to_order` function returns a dictionary with `total_cents` as an integer, but the database query returns it as a Python `int` which is correct. However, the function is named `_row_to_order` implying it converts a database row to an order, but it does not handle potential missing fields or invalid data. This could lead to runtime errors if the row structure changes or fields are missing.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 68,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The format_money function is incorrectly using a division operation on cents which can result in floating point inaccuracies. This can lead to incorrect currency formatting and potential financial errors. The fix is to use integer division and proper formatting to avoid floating point issues.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/payments.py",
+      "line": 16,
+      "severity": "critical",
+      "category": "correctness",
+      "body": "The line `return True` is incorrectly formatted with a slash and no space, which will cause a syntax error. This will prevent the function from being executed properly.",
+      "confidence": 0.95
+     }
+    ],
+    "raw_comments": [
+     {
+      "path": "service/inventory.py",
+      "line": 11,
+      "severity": "medium",
+      "category": "security",
+      "body": "The SQL query uses string interpolation instead of parameterized queries, which exposes the application to SQL injection attacks. The parameters should be passed using the psycopg2 `%s` placeholder mechanism.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 28,
+      "severity": "medium",
+      "category": "security",
+      "body": "The constant `LOW_STOCK_THRESHOLD` is used directly, which may expose sensitive configuration values in the code. Secrets and configuration values should never be hardcoded but instead retrieved from environment variables.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 18,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The `_row_to_order` function returns a dictionary with `total_cents` as an integer, but the database query returns it as a Python `int` which is correct. However, the function is named `_row_to_order` implying it converts a database row to an order, but it does not handle potential missing fields or invalid data. This could lead to runtime errors if the row structure changes or fields are missing.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 68,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The format_money function is incorrectly using a division operation on cents which can result in floating point inaccuracies. This can lead to incorrect currency formatting and potential financial errors. The fix is to use integer division and proper formatting to avoid floating point issues.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/payments.py",
+      "line": 16,
+      "severity": "critical",
+      "category": "correctness",
+      "body": "The line `return True` is incorrectly formatted with a slash and no space, which will cause a syntax error. This will prevent the function from being executed properly.",
+      "confidence": 0.95
+     }
+    ],
+    "raw_count": 5,
+    "n_units": 8,
+    "latency_ms": 19300,
+    "usage": {
+     "prompt_tokens": 4119,
+     "completion_tokens": 560,
+     "cost_usd": 0.0
+    },
+    "errors": []
+   }
+  },
+  {
+   "buggy": {
+    "comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "critical",
+      "category": "security",
+      "body": "The STRIPE_API_KEY is hardcoded in the diff, which exposes a critical security vulnerability. This key should never be stored in source code and must be retrieved from environment variables.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 11,
+      "severity": "medium",
+      "category": "security",
+      "body": "The SQL query uses string formatting directly, which is vulnerable to SQL injection attacks. Parameterized queries should be used instead.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 24,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The `reserve` function is vulnerable to race conditions. The `on_hand` value is read before the update, which can lead to incorrect stock deductions if multiple requests occur concurrently. The update should be atomic to ensure correctness under concurrent access.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 30,
+      "severity": "medium",
+      "category": "maintainability",
+      "body": "The `low_stock` function now uses a hardcoded threshold value `LOW_STOCK_THRESHOLD` instead of the parameter `threshold`. This change makes the function less flexible and harder to maintain. It should use the parameter instead of the constant.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "high",
+      "category": "security",
+      "body": "The query is vulnerable to SQL injection because it directly interpolates the `status` variable into the SQL string. This allows an attacker to inject malicious SQL code.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "Using `datetime.utcnow()` instead of the business time zone (`America/New_York`) will lead to incorrect results for time-based queries, as the service expects local time for calendar periods.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 56,
+      "severity": "medium",
+      "category": "performance",
+      "body": "The refactored code makes a separate database query for each customer ID, which is inefficient. The original code used a single query with `ANY()` to get totals for all customers at once, which is much faster.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/payments.py",
+      "line": 16,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The line `return True` is incomplete and will raise a syntax error. It should be `return True` with a proper newline or continuation character.",
+      "confidence": 0.99
+     }
+    ],
+    "raw_comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "critical",
+      "category": "security",
+      "body": "The STRIPE_API_KEY is hardcoded in the diff, which exposes a critical security vulnerability. This key should never be stored in source code and must be retrieved from environment variables.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 11,
+      "severity": "medium",
+      "category": "security",
+      "body": "The SQL query uses string formatting directly, which is vulnerable to SQL injection attacks. Parameterized queries should be used instead.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 24,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The `reserve` function is vulnerable to race conditions. The `on_hand` value is read before the update, which can lead to incorrect stock deductions if multiple requests occur concurrently. The update should be atomic to ensure correctness under concurrent access.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 30,
+      "severity": "medium",
+      "category": "maintainability",
+      "body": "The `low_stock` function now uses a hardcoded threshold value `LOW_STOCK_THRESHOLD` instead of the parameter `threshold`. This change makes the function less flexible and harder to maintain. It should use the parameter instead of the constant.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "high",
+      "category": "security",
+      "body": "The query is vulnerable to SQL injection because it directly interpolates the `status` variable into the SQL string. This allows an attacker to inject malicious SQL code.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "Using `datetime.utcnow()` instead of the business time zone (`America/New_York`) will lead to incorrect results for time-based queries, as the service expects local time for calendar periods.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 56,
+      "severity": "medium",
+      "category": "performance",
+      "body": "The refactored code makes a separate database query for each customer ID, which is inefficient. The original code used a single query with `ANY()` to get totals for all customers at once, which is much faster.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/payments.py",
+      "line": 16,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The line `return True` is incomplete and will raise a syntax error. It should be `return True` with a proper newline or continuation character.",
+      "confidence": 0.99
+     }
+    ],
+    "raw_count": 8,
+    "n_units": 9,
+    "latency_ms": 27734,
+    "usage": {
+     "prompt_tokens": 5644,
+     "completion_tokens": 775,
+     "cost_usd": 0.0
+    },
+    "errors": []
+   },
+   "clean": {
+    "comments": [
+     {
+      "path": "service/inventory.py",
+      "line": 28,
+      "severity": "medium",
+      "category": "maintainability",
+      "body": "The constant `LOW_STOCK_THRESHOLD` is used instead of the parameter `threshold`, which makes the function less flexible and harder to test. This change breaks the ability to pass a custom threshold value.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 18,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The function `get_order` returns the raw database row directly without proper validation, which could expose sensitive data or incorrect types. It should validate and sanitize the row before returning it as an order.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 21,
+      "severity": "low",
+      "category": "maintainability",
+      "body": "The helper function `_row_to_order` is not documented, making it harder to understand its purpose and usage for future maintainers.",
+      "confidence": 0.8
+     },
+     {
+      "path": "service/orders.py",
+      "line": 68,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The division of cents by 100 could result in a float with more than two decimal places due to floating-point precision errors, leading to incorrect money formatting. The correct approach is to use integer division and string formatting to ensure exact currency representation.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/payments.py",
+      "line": 16,
+      "severity": "critical",
+      "category": "correctness",
+      "body": "The line `return True` is incorrectly formatted with a slash and no space, which is a syntax error and will cause the code to fail to run. The correct line should be `return True`.",
+      "confidence": 0.99
+     }
+    ],
+    "raw_comments": [
+     {
+      "path": "service/inventory.py",
+      "line": 28,
+      "severity": "medium",
+      "category": "maintainability",
+      "body": "The constant `LOW_STOCK_THRESHOLD` is used instead of the parameter `threshold`, which makes the function less flexible and harder to test. This change breaks the ability to pass a custom threshold value.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 18,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The function `get_order` returns the raw database row directly without proper validation, which could expose sensitive data or incorrect types. It should validate and sanitize the row before returning it as an order.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 21,
+      "severity": "low",
+      "category": "maintainability",
+      "body": "The helper function `_row_to_order` is not documented, making it harder to understand its purpose and usage for future maintainers.",
+      "confidence": 0.8
+     },
+     {
+      "path": "service/orders.py",
+      "line": 68,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The division of cents by 100 could result in a float with more than two decimal places due to floating-point precision errors, leading to incorrect money formatting. The correct approach is to use integer division and string formatting to ensure exact currency representation.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/payments.py",
+      "line": 16,
+      "severity": "critical",
+      "category": "correctness",
+      "body": "The line `return True` is incorrectly formatted with a slash and no space, which is a syntax error and will cause the code to fail to run. The correct line should be `return True`.",
+      "confidence": 0.99
+     }
+    ],
+    "raw_count": 5,
+    "n_units": 8,
+    "latency_ms": 17835,
+    "usage": {
+     "prompt_tokens": 4119,
+     "completion_tokens": 515,
+     "cost_usd": 0.0
+    },
+    "errors": []
+   }
+  },
+  {
+   "buggy": {
+    "comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "critical",
+      "category": "security",
+      "body": "The STRIPE_API_KEY is hardcoded in the diff, which exposes a critical security vulnerability. This key should never be hardcoded and must be retrieved from environment variables.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 11,
+      "severity": "medium",
+      "category": "security",
+      "body": "The SQL query uses string interpolation instead of parameterized queries, which exposes the application to SQL injection attacks. The parameters should be passed using the psycopg2 `%s` placeholder mechanism.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 24,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The `reserve` function is vulnerable to race conditions. The `on_hand` value is read before the update, which may be outdated by the time the update is executed. This can lead to over-reservation and incorrect stock levels under concurrent requests.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 30,
+      "severity": "medium",
+      "category": "maintainability",
+      "body": "The `low_stock` function now uses `LOW_STOCK_THRESHOLD` directly, which may not be defined in the current scope. This could lead to a `NameError` if `LOW_STOCK_THRESHOLD` is not properly imported or defined.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "high",
+      "category": "security",
+      "body": "The SQL query is constructed using string interpolation, which introduces a SQL injection vulnerability. The `status` parameter is directly inserted into the query without proper sanitization.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "Using `datetime.utcnow()` instead of the business time zone (`America/New_York`) for calculating orders placed today will lead to incorrect results. The code should use the `ZoneInfo` and `datetime.now()` with the correct timezone.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 56,
+      "severity": "medium",
+      "category": "performance",
+      "body": "The updated code makes an individual query for each customer ID, which is inefficient. The original approach used a single query with `ANY(%s)` to fetch all totals at once, which is much faster for large customer lists.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/payments.py",
+      "line": 16,
+      "severity": "critical",
+      "category": "correctness",
+      "body": "The line `return True` is incomplete and will raise a syntax error. This is a critical bug that prevents the function from working correctly.",
+      "confidence": 1.0
+     }
+    ],
+    "raw_comments": [
+     {
+      "path": "service/config.py",
+      "line": 13,
+      "severity": "critical",
+      "category": "security",
+      "body": "The STRIPE_API_KEY is hardcoded in the diff, which exposes a critical security vulnerability. This key should never be hardcoded and must be retrieved from environment variables.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 11,
+      "severity": "medium",
+      "category": "security",
+      "body": "The SQL query uses string interpolation instead of parameterized queries, which exposes the application to SQL injection attacks. The parameters should be passed using the psycopg2 `%s` placeholder mechanism.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 24,
+      "severity": "high",
+      "category": "correctness",
+      "body": "The `reserve` function is vulnerable to race conditions. The `on_hand` value is read before the update, which may be outdated by the time the update is executed. This can lead to over-reservation and incorrect stock levels under concurrent requests.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/inventory.py",
+      "line": 30,
+      "severity": "medium",
+      "category": "maintainability",
+      "body": "The `low_stock` function now uses `LOW_STOCK_THRESHOLD` directly, which may not be defined in the current scope. This could lead to a `NameError` if `LOW_STOCK_THRESHOLD` is not properly imported or defined.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 27,
+      "severity": "high",
+      "category": "security",
+      "body": "The SQL query is constructed using string interpolation, which introduces a SQL injection vulnerability. The `status` parameter is directly inserted into the query without proper sanitization.",
+      "confidence": 0.99
+     },
+     {
+      "path": "service/orders.py",
+      "line": 44,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "Using `datetime.utcnow()` instead of the business time zone (`America/New_York`) for calculating orders placed today will lead to incorrect results. The code should use the `ZoneInfo` and `datetime.now()` with the correct timezone.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/orders.py",
+      "line": 56,
+      "severity": "medium",
+      "category": "performance",
+      "body": "The updated code makes an individual query for each customer ID, which is inefficient. The original approach used a single query with `ANY(%s)` to fetch all totals at once, which is much faster for large customer lists.",
+      "confidence": 1.0
+     },
+     {
+      "path": "service/payments.py",
+      "line": 16,
+      "severity": "critical",
+      "category": "correctness",
+      "body": "The line `return True` is incomplete and will raise a syntax error. This is a critical bug that prevents the function from working correctly.",
+      "confidence": 1.0
+     }
+    ],
+    "raw_count": 8,
+    "n_units": 9,
+    "latency_ms": 28439,
+    "usage": {
+     "prompt_tokens": 5644,
+     "completion_tokens": 796,
+     "cost_usd": 0.0
+    },
+    "errors": []
+   },
+   "clean": {
+    "comments": [
+     {
+      "path": "service/inventory.py",
+      "line": 28,
+      "severity": "medium",
+      "category": "maintainability",
+      "body": "The constant `LOW_STOCK_THRESHOLD` is used but not defined in the provided code. This will cause a `NameError` unless the constant is defined elsewhere in the module. Define the constant or use the threshold parameter directly.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 18,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The function `get_order` returns the raw database row directly without proper validation or conversion, which could lead to incorrect data structures being used downstream. The added `_row_to_order` function is correct, but it should be used consistently.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 68,
+      "severity": "high",
+      "category": "security",
+      "body": "The division of cents by 100 could result in a floating-point number with more than two decimal places, which could lead to incorrect money formatting and potential financial errors. Money should be handled as integer cents to avoid such issues.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/payments.py",
+      "line": 16,
+      "severity": "critical",
+      "category": "correctness",
+      "body": "The line `return True` is incorrectly formatted with a slash and no space, which is a syntax error and will prevent the code from running. The correct line should be `return True`.",
+      "confidence": 0.95
+     }
+    ],
+    "raw_comments": [
+     {
+      "path": "service/inventory.py",
+      "line": 28,
+      "severity": "medium",
+      "category": "maintainability",
+      "body": "The constant `LOW_STOCK_THRESHOLD` is used but not defined in the provided code. This will cause a `NameError` unless the constant is defined elsewhere in the module. Define the constant or use the threshold parameter directly.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 18,
+      "severity": "medium",
+      "category": "correctness",
+      "body": "The function `get_order` returns the raw database row directly without proper validation or conversion, which could lead to incorrect data structures being used downstream. The added `_row_to_order` function is correct, but it should be used consistently.",
+      "confidence": 0.9
+     },
+     {
+      "path": "service/orders.py",
+      "line": 68,
+      "severity": "high",
+      "category": "security",
+      "body": "The division of cents by 100 could result in a floating-point number with more than two decimal places, which could lead to incorrect money formatting and potential financial errors. Money should be handled as integer cents to avoid such issues.",
+      "confidence": 0.95
+     },
+     {
+      "path": "service/payments.py",
+      "line": 16,
+      "severity": "critical",
+      "category": "correctness",
+      "body": "The line `return True` is incorrectly formatted with a slash and no space, which is a syntax error and will prevent the code from running. The correct line should be `return True`.",
+      "confidence": 0.95
+     }
+    ],
+    "raw_count": 4,
+    "n_units": 8,
+    "latency_ms": 15593,
+    "usage": {
+     "prompt_tokens": 4119,
+     "completion_tokens": 446,
+     "cost_usd": 0.0
+    },
+    "errors": []
+   }
+  }
+ ]
+}

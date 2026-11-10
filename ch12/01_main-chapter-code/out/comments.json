@@ -1,0 +1,66 @@
+[
+  {
+    "path": "service/config.py",
+    "line": 13,
+    "severity": "high",
+    "category": "correctness",
+    "body": "This replaces the environment lookup with a fixed 32-character hex string, not a Stripe API secret key, so Stripe calls will authenticate with an invalid key in every deployment and configured credentials are ignored. Load the key from the environment and fail clearly if it is missing; do not embed credentials in source code.",
+    "confidence": 0.99
+  },
+  {
+    "path": "service/inventory.py",
+    "line": 24,
+    "severity": "high",
+    "category": "concurrency",
+    "body": "The stock check happens before this unconditional update, so concurrent reservations can both read the same `on_hand` value and both return `True` while only one decrement is recorded. Keep the availability check and decrement atomic, for example with a conditional `UPDATE ... SET on_hand = on_hand - %s WHERE ... AND on_hand >= %s`, and use its row count to determine success.",
+    "confidence": 0.99
+  },
+  {
+    "path": "service/orders.py",
+    "line": 27,
+    "severity": "high",
+    "category": "security",
+    "body": "Interpolating `status` directly into the SQL lets an input such as `' OR 1=1 --` alter the query and potentially expose orders with other statuses. Use a `%s` placeholder and pass `status` as a query parameter.",
+    "confidence": 1.0
+  },
+  {
+    "path": "service/orders.py",
+    "line": 34,
+    "severity": "medium",
+    "category": "correctness",
+    "body": "`page` is documented as 1-based, but this offset makes page 1 skip the first `PAGE_SIZE` orders. Restore the `(page - 1) * PAGE_SIZE` offset so the first page starts at the newest order.",
+    "confidence": 1.0
+  },
+  {
+    "path": "service/orders.py",
+    "line": 44,
+    "severity": "medium",
+    "category": "correctness",
+    "body": "This computes midnight in UTC rather than the business time zone, so around the start of a business-local day the count includes or omits orders from the wrong calendar day. Compute the start of day using `BUSINESS_TZ`, as the previous implementation did.",
+    "confidence": 0.99
+  },
+  {
+    "path": "service/orders.py",
+    "line": 56,
+    "severity": "medium",
+    "category": "performance",
+    "body": "This changes a single aggregate query into one database query per customer ID. For a large customer list this causes substantial database round trips; aggregate all requested IDs in one query, as before.",
+    "confidence": 0.99
+  },
+  {
+    "path": "service/orders.py",
+    "line": 67,
+    "severity": "medium",
+    "category": "correctness",
+    "body": "`get_order` returns `None` when the ID does not exist, so `describe_order` raises `TypeError` when it tries to subscript the result. Handle the missing-order case explicitly, for example by returning an appropriate not-found result or raising a deliberate exception.",
+    "confidence": 1.0
+  },
+  {
+    "path": "service/payments.py",
+    "line": 15,
+    "severity": "medium",
+    "category": "correctness",
+    "body": "`notify.send_receipt` is called without `await`, so if it is async (as the previous awaited call indicates), this only creates a coroutine; the receipt is never sent. Await the call or explicitly schedule it if sending in the background is intended.",
+    "confidence": 0.99
+  }
+]
