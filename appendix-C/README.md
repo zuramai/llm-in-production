@@ -1,6 +1,13 @@
 # Appendix C: References & further reading
 
-Every chapter ends with a `## References` list. This appendix merges them into one place: 535 citations from 22 chapters and [Appendix A](../appendix-A/README.md), deduplicated into **487 sources**, grouped by topic. Each entry says which chapters cite it, so you can jump from a source to the place where the book puts it to work.
+Throughout the book, chapters cite the docs, papers and incidents they build on. Use this appendix
+when you want to go deeper on a topic, check a fact for yourself, or find which chapter applies
+a given paper or doc.
+
+Every chapter ends with a `## References` list. This appendix merges them into one place: 535
+citations from 22 chapters and [Appendix A](../appendix-A/README.md), deduplicated into **487
+sources**, grouped by topic. Each entry says which chapters cite it. So you can jump from a
+source to the place where the book puts it to work.
 
 ## How these sources were chosen and checked
 
@@ -22,7 +29,9 @@ An entry carries the date the source was published when it has one. Living pages
 
 ## Start here
 
-The thirteen sources the book leans on most: each is cited by several chapters, or is the reference a whole section is built around. One sentence each on how the book uses it.
+If you only read a few sources, read these. They are the thirteen sources the book leans on
+most: each is cited by several chapters, or is the reference a whole section is built around.
+One sentence each on how the book uses it.
 
 1. **[Air Canada chatbot ruling (CBC)](https://www.cbc.ca/news/canada/british-columbia/air-canada-chatbot-lawsuit-1.7116416)** ([Ch 1](../ch01/README.md#references), [Ch 22](../ch22/README.md#references)). A tribunal ordered the airline to pay for its website chatbot's wrong advice, ruling that a company is responsible for everything on its website, chatbot included; the book opens with it.
 2. **[OpenAI: Structured model outputs](https://developers.openai.com/api/docs/guides/structured-outputs)** ([Ch 2](../ch02/README.md#references), [Ch 8](../ch08/README.md#references), [Ch 22 › A1](../ch22/README.md#a1-finish_reason--length-truncates-json), [Ch 22 › B3](../ch22/README.md#b3-safety-filter-empty-reply-finish_reasoncontent_filter)). The rules of strict JSON mode (every field `required`, `additionalProperties: false`, optional fields as nullable) and the reminder to check `finish_reason` before parsing.

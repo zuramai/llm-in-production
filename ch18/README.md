@@ -16,22 +16,29 @@ summarising Predibase's case study). It's a vendor's story, so treat the numbers
 The shape is typical, though: a narrow, high-volume classification task, a house taxonomy, and
 years of labelled history.
 
-Fine-tuning used to mean a cluster. In 2026 a 1.7-billion-parameter model trains on one gaming
-GPU in about a minute, and the open-source stack for it (Unsloth or Hugging Face TRL to train,
-vLLM to serve) is mature. The hard questions are now *should we?* and *how do we know it
-worked?* This chapter answers both for Chapter 2's ticket triage, with every number measured on
-one RTX 3090. The short answer surprised us: on tickets no model trained on, our fine-tuned
-models **did not beat a well-prompted gpt-6-luna on accuracy**. They won on latency (about 0.4 s
-against 2.8 s), on cost (about 28 times cheaper per ticket) and on keeping tickets on our own
-GPU. That's the case for fine-tuning this chapter can honestly make.
+Chapter 17 squeezed speed out of a model we didn't change: quantization, batching, prefix caching
+and speculative decoding. This chapter opens up the model itself. Fine-tuning used to mean a
+cluster. In 2026 a 1.7-billion-parameter model trains on one gaming GPU in about a minute. The
+open-source stack for it is mature: Unsloth or Hugging Face TRL to train, vLLM to serve. The hard
+questions are now *should we?* and *how do we know it worked?*
+
+This chapter answers both for Chapter 2's ticket triage, with every number measured on one
+RTX 3090. The short answer surprised us. On tickets no model trained on, our fine-tuned models
+**did not beat a well-prompted gpt-6-luna on accuracy**. They won on latency (about 0.4 s against
+2.8 s) and on cost (about 28 times cheaper per ticket). They also kept tickets on our own GPU.
+That's the case for fine-tuning this chapter can honestly make.
+
+The picture below shows where we end up: one base model on one vLLM server, with several small
+adapters on top.
 
 ![One base model, many adapters on one vLLM server](images/18-multi-lora.svg)
 
 ## The problem
 
-Chapter 2 built ShopFlow's ticket triage: every incoming support ticket gets a `category`, a
-`priority`, a `sentiment`, the `order_id` it mentions and a one-line `summary`, as a validated
-JSON object. On `openai/gpt-6-luna` with a strict JSON schema, the *format* problem was solved:
+Let's start with the task we want to improve. Chapter 2 built ShopFlow's ticket triage: every
+incoming support ticket gets a `category`, a `priority`, a `sentiment`, the `order_id` it
+mentions and a one-line `summary`, as a validated JSON object. On `openai/gpt-6-luna` with a
+strict JSON schema, the *format* problem was solved:
 every reply parsed. The *labels* weren't. Priority agreed with ShopFlow's own labels only about
 two times in three, and Chapter 2 traced it to policy: the support team has conventions ("a
 wrong colour is a product defect, not a shipping problem"; "a discount code that didn't apply is
@@ -43,32 +50,46 @@ The support lead now has three asks:
 > *It runs on every ticket, 24/7, so make it cheap and fast.*
 > *Customer tickets shouldn't leave our infrastructure if we can avoid it.*
 
-That's the classic fine-tuning brief: a narrow, high-volume task with a fixed output format and
-a house policy, plus 1,500 labelled examples sitting in a database table.
+That's the classic fine-tuning brief. It's a narrow, high-volume task with a fixed output format
+and a house policy, and we have 1,500 labelled examples sitting in a database table.
 
 ## Requirements
 
-| Type | Requirement | Target |
-|---|---|---|
-| Functional | Category accuracy on tickets nobody trained on | ≥ the best prompted gpt-6-luna, on unseen and on hard tickets separately |
-| Functional | Priority accuracy on tickets nobody trained on | ≥ the best prompted baseline, near the label-noise ceiling |
-| Functional | Messy tickets (sarcasm, other languages, injections) | no worse than the prompted baseline |
-| Functional | Valid `TicketTriage` JSON | 100% (Chapter 2's contract, unchanged) |
-| Non-functional | Latency per ticket | p95 < 1 s at concurrency 1 |
-| Non-functional | Cost | < gpt-6-luna's $ per 1,000 tickets |
-| Non-functional | Training | < 30 min and < 24 GB on one RTX 3090 |
-| Non-functional | Data residency | tickets processed on our own GPU |
+Before we train anything, let's turn the support lead's three asks into checks we can measure.
+First, what the model must get right:
 
-Spoiler for the [Results](#results): every non-functional row passes by a wide margin. The first
-and third functional rows don't.
+- **Match the team's categories.** On tickets nobody trained on, category accuracy must be at
+  least as good as the best prompted gpt-6-luna. We check unseen tickets and hard tickets
+  separately.
+- **Match the team's priorities.** On tickets nobody trained on, priority accuracy must be at
+  least as good as the best prompted baseline, and close to the label-noise ceiling (the best
+  score possible when some labels are random; we estimate it below).
+- **Cope with messy tickets.** On sarcasm, other languages and prompt injections, it must do no
+  worse than the prompted baseline.
+- **Keep Chapter 2's contract.** 100% of replies must be valid `TicketTriage` JSON, unchanged.
+
+Then, how well it must run:
+
+- **Answer fast.** p95 latency under 1 s per ticket at concurrency 1. p95 means 95% of tickets
+  are faster than this.
+- **Cost less.** Fewer dollars per 1,000 tickets than gpt-6-luna.
+- **Train cheaply.** Under 30 min and under 24 GB of memory on one RTX 3090.
+- **Keep data at home.** Tickets are processed on our own GPU.
+
+Spoiler for the [Results](#results): every item in the second list passes by a wide margin. The
+first and third items in the first list don't.
 
 ## The data
 
-The same `support_tickets` table as Chapter 2 ([datasets/shopflow](../datasets/shopflow/README.md)):
+With the targets set, we need tickets to train and test on. We use the same `support_tickets`
+table as Chapter 2 ([datasets/shopflow](../datasets/shopflow/README.md)):
 1,500 tickets generated from 30 seed templates, plus 60 hand-written hard ones (sarcasm, several
 issues in one ticket, Indonesian, Spanish, German, French, Portuguese and Japanese, forwarded
 threads, prompt injections, a base64 blob). Each has a gold `label_category`, `label_priority` and
 `order_id`.
+
+The diagram traces each ticket from the database to the eval. Look for where the test set
+branches off: it never reaches training.
 
 ```mermaid
 flowchart LR
@@ -98,7 +119,8 @@ uv run python ch18_prepare.py synth      # data/synthetic.jsonl for v2 ($0.06)
 ```
 
 The split files are committed in [`data/`](01_main-chapter-code/data/) (Chapter 19 reuses them).
-From the [notebook](01_main-chapter-code/ch18.ipynb):
+The [notebook](01_main-chapter-code/ch18.ipynb) counts tickets per split and category. Check that
+every split has every category:
 
 ```
 split  tickets  hard  templates seen  product_defect  shipping  refund  payment  other  account
@@ -109,11 +131,12 @@ train      844     0              30             185       185     152      138 
 
 ### The leak we shipped, and the fix
 
-The first version of this split went 1,200 / 150 / 150 by ticket id. Chapter 19 ran its dataset
-validators on our files and found that 43 test and 41 validation tickets had exact copies in
-train: templates without an order number or product name produce the same text every time, so a
-split by id leaks them. A fine-tuned model could answer those by memory, and so could our
-few-shot baseline, whose examples came from train. We fixed it before any training run:
+The counts above look balanced, but they hide a problem we only found later. The first version
+of this split went 1,200 / 150 / 150 by ticket id. Chapter 19 ran its dataset validators on our
+files and found that 43 test and 41 validation tickets had exact copies in train. Templates
+without an order number or product name produce the same text every time, so a split by id leaks
+them. A fine-tuned model could answer those by memory. So could our few-shot baseline, whose
+examples came from train. We fixed it before any training run. Here is what the fix dropped:
 
 ```
 train: 1200 rows, 364 dropped, 8 restored -> 844
@@ -131,7 +154,7 @@ test segments: {'unseen_templated': 113, 'identical_text': 37, 'hard': 60}
 
 `dedupe` drops every training row whose text (stripped, lower-cased) also appears in val or test.
 Eight templates consist *only* of identical text, so dropping them entirely would delete their
-intents from training. We keep exactly one row each, which means their 37 test tickets can never
+intents from training. We keep exactly one row each. That means their 37 test tickets can never
 be "unseen". They become a separate segment, and that defines how this chapter reports every
 number:
 
@@ -141,7 +164,7 @@ number:
 | **hard** | 60 | hand-written, never in train: traffic that doesn't look like the training data |
 | identical text | 37 | text that is in train word for word: memorisation, shown separately |
 
-Unseen and hard are the headline, always as **two separate columns**: averaging them would let a
+Unseen and hard are the headline, always as **two separate columns**. Averaging them would let a
 model hide a weak hard score behind an easy unseen one. The segment definitions live in
 `results/test_segments.json`, and Chapter 19 computes the same three.
 
@@ -154,10 +177,11 @@ model hide a weak hard score behind an easy unseen one. The segment definitions 
 
 ### Half the target comes from a teacher
 
-The table has no `sentiment` or `summary`, but Chapter 2's contract has both, and we want the
-fine-tuned model to be a drop-in replacement. So `openai/gpt-6-luna` triaged the train and val
-tickets with Chapter 2's prompt. We kept its `sentiment` and `summary` and **kept the gold routing
-labels**. One row of `train.jsonl`:
+Clean splits give us inputs, but the training targets are still incomplete. The table has no
+`sentiment` or `summary`, yet Chapter 2's contract has both, and we want the fine-tuned model to
+be a drop-in replacement. So `openai/gpt-6-luna` triaged the train and val tickets with Chapter
+2's prompt. We kept its `sentiment` and `summary` and **kept the gold routing labels**. Here is
+one row of `train.jsonl`:
 
 ```json
 {"id": 1, "subject": "Unsubscribe from marketing emails",
@@ -169,8 +193,9 @@ labels**. One row of `train.jsonl`:
 ```
 
 The teacher pass also measured something useful. On the 994 train and val tickets it agreed with
-ShopFlow's gold labels on **85.8%** of categories and **62.9%** of priorities, and it disagreed on
-whole templates at once. That's a difference in policy, not random noise:
+ShopFlow's gold labels on **85.8%** of categories and **62.9%** of priorities. It also disagreed
+on whole templates at once. That's a difference in policy, not random noise. In the output, look
+at the last column: the disagreement is often total:
 
 ```
                           template                  gold gpt-6-luna says (most often) share
@@ -185,15 +210,15 @@ Question about {product} materials    product_defect/low                    othe
 
 "Wrong colour received" is a product defect at ShopFlow, but Chapter 2's own rulebook lists
 "wrong/missing item" under shipping. The model followed the rulebook, and the rulebook was wrong.
-That's what "house policy" means, and it's exactly what fine-tuning (or showing examples) can
-teach.
+That's what "house policy" means. It's exactly what fine-tuning (or showing examples) can teach.
 
 ### The priority ceiling is an estimate
 
-Four templates draw their priority at random between two values. "Where is my order?" is `low`
-or `medium` no matter what the text says. No model can predict a coin flip, so the best
-*systematic* strategy is to learn each template's more frequent value from train. The notebook
-computes what that strategy would score, per segment:
+Some of the label noise isn't policy at all, and no model can learn it. Four templates draw their
+priority at random between two values. "Where is my order?" is `low` or `medium` no matter what
+the text says. No model can predict a coin flip. The best *systematic* strategy is to learn each
+template's more frequent value from train. The notebook computes what that strategy would score,
+per segment:
 
 ```
 templates with a random priority: ['Where is my order #{order_id}?', 'Return request for order #{ord', '{product} stopped working', 'Discount code not applied']
@@ -202,12 +227,15 @@ unseen_templated: 113 tickets, 20 from those templates, estimated priority ceili
 identical_text: 37 tickets, 0 from those templates, estimated priority ceiling 100.0%
 ```
 
-It's an estimate, not a bound. The 1.7B LoRA scored 97.3% on unseen priority, above it, because
-with only 20 coin-flip tickets a model that guesses a few of them "wrong" relative to the majority
-can land right. Read anything above about 90% on unseen priority as "learned the policy"; the
-remaining points are noise.
+It's an estimate, not a bound. The 1.7B LoRA scored 97.3% on unseen priority, above it. With
+only 20 coin-flip tickets, a model that guesses a few of them "wrong" relative to the majority
+can still land right. Read anything above about 90% on unseen priority as "learned the policy";
+the remaining points are noise.
 
 ## Concepts
+
+We now know what we want the model to learn and how we'll score it. Before training, let's be
+clear about what fine-tuning changes and which tools make it fit on one card.
 
 ### Fine-tuning changes the weights, not the prompt
 
@@ -217,7 +245,7 @@ hundred input→output pairs and nudge its weights so that, for inputs like thes
 want become the likely ones. It's the difference between handing a new support agent the
 rulebook every morning and training them for a week until they don't need it.
 
-Two consequences matter in production:
+That's why fine-tuning suits house policy. Two consequences matter in production:
 
 1. **What a fine-tune can learn is form and policy, not facts.** It learns the shape of the
    answer, the vocabulary, the labelling conventions, the tone. It's a poor way to add knowledge
@@ -227,11 +255,12 @@ Two consequences matter in production:
 
 ### LoRA: train 1% of the weights
 
-Full fine-tuning updates all 1.7 billion weights and needs memory for the weights, their
-gradients and the optimizer's two running averages per weight: roughly 16 bytes per parameter,
-about 27 GB for a 1.7B model, more than our card. *LoRA* (low-rank adaptation) freezes the
-original weights and learns a small correction next to each big matrix: two thin matrices, A and
-B, whose product has the same shape as the original. Only A and B are trained.
+Changing the weights sounds expensive, and done naively it is. Full fine-tuning updates all 1.7
+billion weights. It needs memory for the weights, their gradients and the optimizer's two running
+averages per weight. That's roughly 16 bytes per parameter, about 27 GB for a 1.7B model, more
+than our card. *LoRA* (low-rank adaptation) freezes the original weights and learns a small
+correction next to each big matrix: two thin matrices, A and B, whose product has the same shape
+as the original. Only A and B are trained.
 
 ![LoRA: a frozen weight matrix plus a trained low-rank correction](images/18-lora.svg)
 
@@ -242,12 +271,12 @@ patch on top of a release.
 
 ### QLoRA: freeze the base in 4 bits
 
-LoRA still keeps the frozen base in 16 bits. *QLoRA* stores the frozen base in 4 bits (the NF4
-format) and dequantizes each layer on the fly; the adapter itself still trains in 16 bits. It's
-the trick that made 65B models trainable on one 48 GB GPU
-([Dettmers et al., 2023](https://arxiv.org/abs/2305.14314)). The price is speed (dequantizing
-isn't free) and a mismatch: the adapter learned to correct a *4-bit* base, and if we serve it on
-the 16-bit base, it's correcting a slightly different model.
+LoRA makes training fit, but the frozen part can be stored more cheaply. LoRA still keeps the
+frozen base in 16 bits. *QLoRA* stores it in 4 bits (the NF4 format) and dequantizes each layer
+on the fly; the adapter itself still trains in 16 bits. It's the trick that made 65B models
+trainable on one 48 GB GPU ([Dettmers et al., 2023](https://arxiv.org/abs/2305.14314)). The
+price is speed (dequantizing isn't free) and a mismatch. The adapter learned to correct a
+*4-bit* base, and if we serve it on the 16-bit base, it's correcting a slightly different model.
 
 > [!NOTE]
 > **In the wild:** that mismatch bites people when they *merge*. A Hugging Face Transformers
@@ -262,8 +291,9 @@ the 16-bit base, it's correcting a slightly different model.
 
 ### What the model actually trains on
 
-A chat model doesn't see messages; it sees one string built by its *chat template*. For Qwen3 with
-thinking switched off, one training example is:
+Whichever method we pick, the model learns from text, so the exact text matters. A chat model
+doesn't see messages. It sees one string built by its *chat template*. For Qwen3 with thinking
+switched off, one training example is:
 
 ```
 <|im_start|>system
@@ -311,6 +341,9 @@ def prompt_completion(record: dict[str, Any], render: Callable[..., str],
 
 ### Prompt, RAG or fine-tune?
 
+With the mechanics clear, the remaining question is when to use them at all. The flowchart below
+is our decision path. Follow the branch for your own task:
+
 ```mermaid
 flowchart TD
     A[New LLM task] --> B{Does a strong hosted model,<br/>prompted well, meet the bar?}
@@ -336,7 +369,8 @@ shows the measurements that put it there.
 
 ## v0: the naive solution
 
-The cheapest way to keep tickets on our GPU is to skip training: serve stock Qwen3-1.7B with
+Before paying for any training, let's see how far a small local model gets on its own. The
+cheapest way to keep tickets on our GPU is to skip training: serve stock Qwen3-1.7B with
 vLLM and send it Chapter 2's prompt, unchanged. The client is Chapter 2's `triage_one`, pointed
 at a different `base_url`, with strict `json_schema` (vLLM enforces it with guided decoding) and
 Qwen3's thinking switched off:
@@ -355,7 +389,8 @@ uv run python ch18_eval.py --endpoint vllm --model Qwen/Qwen3-1.7B --prompt ch02
 
 ## Measuring v0
 
-Two baselines, same 210 tickets, same scorer (from the notebook; "identical" is the memorisation
+v0 runs, but we don't yet know how it compares with the hosted model. We ran two baselines on
+the same 210 tickets with the same scorer (from the notebook; "identical" is the memorisation
 segment):
 
 | system | category unseen / hard | priority unseen / hard | cat / pri, identical text | p50 | $ per 1k |
@@ -367,22 +402,23 @@ v0 is nine times faster and 37 times cheaper, and it's bad at exactly the thing 
 cares about: priority, at 38.1% on unseen tickets. It's also 11.7 points behind on hard
 categories. Every reply parsed (guided decoding), so the failures are all judgment.
 
-Before training anything, we gave both models the strongest prompt-only competitor: Chapter 2's
-rulebook plus one labelled training ticket per template. After the dedupe that's 22 examples,
-because the 8 identical-text templates have no row whose text isn't also in test, and we never
-show a test ticket as an example.
+A fair test needs a strong opponent, not just the default prompt. Before training anything, we
+gave both models the strongest prompt-only competitor: Chapter 2's rulebook plus one labelled
+training ticket per template. After the dedupe that's 22 examples. The 8 identical-text
+templates have no row whose text isn't also in test, and we never show a test ticket as an
+example.
 
 | system | category unseen / hard | priority unseen / hard | cat / pri, identical text | p50 | $ per 1k |
 |---|---|---|---|---|---|
 | gpt-6-luna + 22 examples | 100 / 96.7 | 93.8 / 70.0 | 100 / 54.1 | 2764 ms | 0.0744 |
 | Qwen3-1.7B + 22 examples | 99.1 / 85.0 | 92.0 / 41.7 | 89.2 / 37.8 | 299 ms | 0.0043 |
 
-Examples close almost the whole gap on unseen templated tickets, for both models: the policy is
-easier to *show* than to *describe*. They don't fix the hard tickets for the small model (41.7%
-priority). And gpt-6-luna + 22 examples is now the bar a fine-tune has to clear: 100% / 96.7%
-category, 93.8% / 70.0% priority. Note what examples cost on the identical-text segment: 54.1%
-priority, because those 8 templates have no example and the long prompt pulls the model toward
-the other templates' conventions.
+Examples close almost the whole gap on unseen templated tickets, for both models. The policy is
+easier to *show* than to *describe*. Examples don't fix the hard tickets for the small model
+(41.7% priority). And gpt-6-luna + 22 examples is now the bar a fine-tune has to clear: 100% /
+96.7% category, 93.8% / 70.0% priority. Note what examples cost on the identical-text segment:
+54.1% priority. Those 8 templates have no example, and the long prompt pulls the model toward the
+other templates' conventions.
 
 > [!IMPORTANT]
 > **Decision: compare against the best prompt, not the default one.** Beating Chapter 2's
@@ -393,12 +429,15 @@ the other templates' conventions.
 
 ## Iterating
 
-All training runs used the same recipe: rank 16 on all seven linear projections, alpha 16,
-2 epochs, learning rate 2e-4, effective batch 16 (8 × 2 gradient accumulation), 8-bit AdamW,
-loss on the answer only. `ch18_train.py` writes `results/train__<name>.json`; `run_gpu.sh train`
-runs all eight in order.
+We now have a clear bar to clear and a small model that falls short of it. Each iteration below
+starts from the weakest number of the one before. All training runs used the same recipe: rank
+16 on all seven linear projections, alpha 16, 2 epochs, learning rate 2e-4, effective batch 16
+(8 × 2 gradient accumulation), 8-bit AdamW, loss on the answer only. `ch18_train.py` writes
+`results/train__<name>.json`; `run_gpu.sh train` runs all eight in order.
 
 ### 1. A LoRA adapter on Qwen3-1.7B with Unsloth
+
+We start with the cheapest training run that could close v0's priority gap.
 
 **What's wrong:** v0 can't learn ShopFlow's priority policy from a rulebook, and the examples
 prompt is 1,900 tokens on every request.
@@ -412,7 +451,7 @@ Hugging Face PEFT + TRL, or LoRA with Unsloth, which wraps TRL with its own kern
 > (iteration 3). We'd use plain PEFT for a base model Unsloth doesn't support yet, or when a
 > trainer feature we need isn't covered by Unsloth's patches.
 
-The Unsloth path, executed on our RTX 3090 for every Unsloth run below:
+Here is the Unsloth path, executed on our RTX 3090 for every Unsloth run below:
 
 ```python
 # ch18/01_main-chapter-code/ch18_train.py
@@ -429,10 +468,11 @@ model = FastLanguageModel.get_peft_model(
 )
 ```
 
-Before training, the script decodes exactly the tokens that carry loss in the first example and
+Before training, the script decodes exactly the tokens that carry loss in the first example. It
 refuses to train if anything other than the answer and its end token is in there. We added this
 check after finding that Unsloth marks the loss with `labels = -100` while plain TRL uses a
-`completion_mask`; a check that only knew one convention would have silently passed the other.
+`completion_mask`. A check that only knew one convention would have silently passed the other.
+The output below shows only the answer and `<|im_end|>`, which is what we want:
 
 ```python
 # ch18/01_main-chapter-code/ch18_train.py
@@ -466,11 +506,11 @@ no examples):
 | **1.7B LoRA** | **100 / 78.3** | **97.3 / 48.3** | 89.2 / 86.5 | 394 ms | 0.0027 |
 | gpt-6-luna + 22 examples | 100 / 96.7 | 93.8 / 70.0 | 100 / 54.1 | 2764 ms | 0.0744 |
 
-On unseen templated tickets the adapter learned the policy: 100% category and 97.3% priority,
-level with gpt-6-luna + examples, at 7× lower latency and 28× lower cost. On the hard tickets it
-learned nothing: 78.3% category, *below* v0's 80.0%, and 48.3% priority against gpt-6-luna's
-70.0%. That's the expected shape of a fine-tune on templated data. It gets very good at the
-distribution it saw and no better at the one it didn't.
+On unseen templated tickets the adapter learned the policy: 100% category and 97.3% priority.
+That's level with gpt-6-luna + examples, at 7× lower latency and 28× lower cost. On the hard
+tickets it learned nothing: 78.3% category, *below* v0's 80.0%, and 48.3% priority against
+gpt-6-luna's 70.0%. That's the expected shape of a fine-tune on templated data. It gets very good
+at the distribution it saw and no better at the one it didn't.
 
 The notebook lists the misses. Of the 13 hard tickets the 1.7B LoRA gets wrong on category,
 three are sarcastic ("Oh fantastic, my order #2943 is 'out for delivery' for the 9th day in a
@@ -481,6 +521,9 @@ bait on priority (`urgent`).
 
 ### 2. QLoRA: the same adapter in less than half the memory
 
+Before chasing the hard tickets, we check whether training can get even cheaper, because the
+next fixes may need a bigger model.
+
 **What's wrong:** nothing yet at 1.7B, but a bigger base model or a longer context won't fit in
 bf16 on a 24 GB card with other tenants on it.
 
@@ -490,7 +533,7 @@ bf16 on a 24 GB card with other tenants on it.
 
 **Measured effect:** peak VRAM dropped from 3.61 GB to **1.65 GB**, training took 70.0 s instead
 of 66.0 s, and validation loss rose slightly (0.1091 against 0.1007). We served the QLoRA adapter
-on the **bf16** base model, the mismatch from the In-the-wild note, and it held up:
+on the **bf16** base model, which is the mismatch from the In-the-wild note. It held up:
 
 | system | category unseen / hard | priority unseen / hard | cat / pri, identical text |
 |---|---|---|---|
@@ -499,10 +542,11 @@ on the **bf16** base model, the mismatch from the In-the-wild note, and it held 
 | 4B LoRA | 100 / 83.3 | 93.8 / 36.7 | 100 / 81.1 |
 | 4B QLoRA, served on bf16 | 100 / 83.3 | 92.9 / 48.3 | 100 / 81.1 |
 
-With 60 hard tickets, one ticket is 1.7 points, so 78.3 vs 83.3 is three tickets: no ranking
+With 60 hard tickets, one ticket is 1.7 points, so 78.3 vs 83.3 is three tickets. No ranking
 between LoRA and QLoRA survives that noise. What we can say is that serving a QLoRA adapter on
 the full-precision base did not cost us accuracy on this task. That's one task and two model
-sizes, not a law. Keep the eval as a release gate (see [Production hardening](#production-hardening)).
+sizes, not a law. Keep the eval as a release gate (see
+[Production hardening](#production-hardening)).
 
 > [!IMPORTANT]
 > **Decision: train QLoRA only when bf16 doesn't fit.** It saved 2 GB at 1.7B and 5 GB at 4B,
@@ -511,6 +555,9 @@ sizes, not a law. Keep the eval as a release gate (see [Production hardening](#p
 > the 4.95 GB difference decides whether the job starts at all.
 
 ### 3. Unsloth vs plain PEFT/TRL
+
+Both runs so far used Unsloth, and we chose it on the promise of speed. That promise deserves a
+measurement too.
 
 **What's wrong:** the comparison everyone quotes ("Unsloth is 2× faster") was measured on other
 people's data. We trained the same two configurations with plain PEFT + TRL:
@@ -529,6 +576,7 @@ people's data. We trained the same two configurations with plain PEFT + TRL:
 
 Unsloth was 1.72× faster on LoRA and 1.62× on QLoRA, with 0.55–0.57 GB less memory. The LoRA
 PEFT adapter scored within noise of the Unsloth one (100 / 80.0 category, 96.5 / 46.7 priority).
+Before you quote that speed-up, read the caveat:
 
 > [!WARNING]
 > **This is not a kernel-for-kernel comparison.** Unsloth switched on *padding-free batching*
@@ -540,11 +588,14 @@ PEFT adapter scored within noise of the Unsloth one (100 / 80.0 category, 96.5 /
 > between kernels and batching. The PEFT runs also used standard gradient checkpointing, which
 > trades speed for memory.
 
-The loss curves and the cost of every run (`images/18-training.png`, from the notebook):
+The notebook plots the loss curves and the time and memory of every run
+(`images/18-training.png`):
 
 ![Training loss curves and the time and VRAM of every run](images/18-training.png)
 
 ### 4. A bigger base: Qwen3-4B
+
+The trainer choice didn't move accuracy, so the hard tickets are still the open problem.
 
 **What's wrong:** the 1.7B adapter is weak on hard tickets. Maybe it's capacity.
 
@@ -569,13 +620,16 @@ on the tickets that don't look like training data.
 
 ### 5. v2: add 290 synthetic messy tickets
 
+A bigger model didn't fix the hard tickets, so perhaps the training data is the problem.
+
 **What's wrong:** training contains no sarcasm, no foreign languages, no injections, so the
 adapters can't learn them. We can't use the 60 hard tickets (they're the exam), so we generated
 look-alikes.
 
 `ch18_prepare.py synth` asked gpt-6-luna for 300 messy tickets in 15 styles with requested
 labels. A second, independent triage pass, which never saw the requested labels, had to agree on
-the category, and every ticket was checked for word-trigram overlap with the hard test tickets:
+the category. Every ticket was also checked for word-trigram overlap with the hard test tickets.
+The low overlap below means the look-alikes don't copy the exam:
 
 ```
 300 generated, 290 kept after the QA pass; cost $0.0639
@@ -595,14 +649,13 @@ max word-trigram Jaccard to any hard test ticket: {'50%': 0.0, 'max': 0.075}
 | 4B LoRA | 100 / 83.3 | 93.8 / 36.7 | 100 / 81.1 |
 | 4B LoRA v2 (+ synthetic) | 100 / 86.7 | 92.0 / 50.0 | 89.2 / 54.1 |
 
-**Measured effect:** for the 1.7B model, nothing on hard tickets (78.3% category both times, the
-same 13 misses in number, a different 13 in content: two of the three sarcasm misses went away
-and payment vs refund confusions appeared). For the 4B, +3.4 points of hard category (two
-tickets) and +13.3 of
-hard priority. And a cost we didn't expect: identical-text priority fell from 86.5% to 48.6% on
-the 1.7B. Our reading, which we haven't tested: the eight identical-text templates have one
-training row each, and 290 synthetic tickets with their own priority conventions drown those
-single examples.
+**Measured effect:** for the 1.7B model, nothing changed on hard tickets. Category stayed at
+78.3% with the same 13 misses in number but a different 13 in content: two of the three sarcasm
+misses went away and payment vs refund confusions appeared. For the 4B, hard category rose +3.4
+points (two tickets) and hard priority +13.3. There was also a cost we didn't expect:
+identical-text priority fell from 86.5% to 48.6% on the 1.7B. Our reading, which we haven't
+tested: the eight identical-text templates have one training row each, and 290 synthetic tickets
+with their own priority conventions drown those single examples.
 
 > [!IMPORTANT]
 > **Decision: ship v1 (no synthetic data) for the 1.7B adapter.** v2 bought nothing on hard
@@ -612,6 +665,9 @@ single examples.
 > human-reviewed labels, or real production tickets once we log agent corrections.
 
 ## Production hardening
+
+We have an adapter worth shipping, along with a list of ways it failed or nearly failed. Each
+lesson from the iterations becomes a rule for running it safely:
 
 - **The template parity check is a release gate.** `prompt_completion` refuses to build a
   training example unless the training text starts with exactly the prompt vLLM will render, and
@@ -649,8 +705,9 @@ single examples.
 
 ## Serving it
 
-One vLLM process serves the base model and every adapter. Each adapter is just another model
-name on the same OpenAI-compatible API:
+Those rules assume a server that can run the adapter next to the base model. One vLLM process
+serves the base model and every adapter. Each adapter is just another model name on the same
+OpenAI-compatible API:
 
 ```bash
 # ch18/01_main-chapter-code/serve_vllm.sh (what it runs)
@@ -666,15 +723,16 @@ name on the same OpenAI-compatible API:
 > `ninja` on the `PATH`. Our host has neither on the default `PATH`, so the first request failed.
 > `serve_vllm.sh` sets `VLLM_USE_FLASHINFER_SAMPLER=0`; the PyTorch sampler is plenty fast here.
 
-From the server log (`results/vllm_Qwen3-1.7B.log`), with about 2.3 GB of the card held by
-another process:
+The server log (`results/vllm_Qwen3-1.7B.log`) shows how much room is left for the KV cache (the
+per-request memory vLLM keeps), with about 2.3 GB of the card held by another process:
 
 ```
 INFO 11-09 11:34:57 [gpu_worker.py:772] Available KV cache memory: 13.92 GiB
 INFO 11-09 11:34:57 [kv_cache_utils.py:1147] GPU KV cache size: 130,272 tokens, Maximum concurrency for 4,096 tokens per request: 31.80x
 ```
 
-Throughput with 32 requests in flight, from `results/eval_17b.log`:
+The last line says the cache holds about 32 requests of 4,096 tokens at once. Throughput with 32
+requests in flight (from `results/eval_17b.log`):
 
 ```
 vllm__Qwen_Qwen3-1.7B__ch02__c32: 210 tickets in 3.86 s (54.416/s)
@@ -684,7 +742,7 @@ vllm__q17-qlora__ft__c32: 210 tickets in 4.06 s (51.67/s)
 
 The adapter costs about 6% of throughput against the base model. That's the number behind the
 self-hosted cost column: an RTX 3090 at $0.50/h (RunPod, as of 2026-11) divided by 51 tickets/s
-is $0.0027 per 1,000 tickets. It assumes the GPU is busy; an idle 3090 waiting for tickets costs
+is $0.0027 per 1,000 tickets. It assumes the GPU is busy. An idle 3090 waiting for tickets costs
 the same $0.50/h.
 
 Every GPU step, in the order we ran it, is in [`run_gpu.sh`](01_main-chapter-code/run_gpu.sh).
@@ -701,11 +759,12 @@ UV_CACHE_DIR=$HOME/.cache/uv-cuda-ch18 uv pip install -r requirements-cuda.txt -
 
 ## Results
 
-All numbers come from `results/eval__*.json` through the
-[notebook](01_main-chapter-code/ch18.ipynb), on the same 210 tickets. Latency is p50 per ticket
-at concurrency 1 on the 173 unseen + hard tickets. Hosted cost is OpenRouter's billed
-`usage.cost`; self-hosted cost is $0.50/h divided by throughput with requests in flight
-(concurrency 32 on vLLM, 4 on Ollama).
+Now we can put every system side by side. All numbers come from `results/eval__*.json` through
+the [notebook](01_main-chapter-code/ch18.ipynb), on the same 210 tickets. Latency is p50 (the
+median) per ticket at concurrency 1 on the 173 unseen + hard tickets. Hosted cost is
+OpenRouter's billed `usage.cost`. Self-hosted cost is $0.50/h divided by throughput with requests
+in flight (concurrency 32 on vLLM, 4 on Ollama). Compare the hard columns first: that's where the
+systems differ most.
 
 | system | category unseen / hard | priority unseen / hard | cat / pri, identical text | p50 | $ per 1k |
 |---|---|---|---|---|---|
@@ -743,11 +802,14 @@ JSON despite the strict schema. Every one of them parsed on the second attempt, 
 latency includes those retries. We didn't find out why Ollama let those replies through the
 schema.
 
+The two charts show the same results visually: accuracy per segment, and hard-ticket accuracy
+against cost.
+
 ![Accuracy by segment for six systems](images/18-segments.png)
 
 ![Hard-ticket category accuracy against cost per 1,000 tickets](images/18-accuracy-vs-cost.png)
 
-Against the requirements:
+Now we check the 1.7B LoRA against the requirements we set at the start:
 
 | Requirement | Target | 1.7B LoRA | Met? |
 |---|---|---|---|
@@ -761,7 +823,8 @@ Against the requirements:
 
 So the fine-tune is the right tool for the templated 90% of traffic and the wrong one for the
 messy rest. At ShopFlow's volume the honest design is the 1.7B adapter for everything, with
-hard-looking tickets routed to gpt-6-luna + examples.
+hard-looking tickets routed to gpt-6-luna + examples. Two published studies help put this result
+in context:
 
 > [!NOTE]
 > **In the wild:** Predibase fine-tuned 310 LoRA adapters across 10 base models and 31 tasks and
@@ -778,13 +841,15 @@ hard-looking tickets routed to gpt-6-luna + examples.
 > That fits our hard-ticket numbers: the adapters changed the templated behaviour a lot and the
 > hard-ticket behaviour very little, for better and for worse.
 
-**Spend.** Every OpenRouter call in this chapter, summed from the cached replies in the notebook:
-teacher labels $0.1227, synthetic generation and QA $0.0639, the two gpt-6-luna evals $0.0199 and
-$0.0154, total **$0.2219**. The key's usage counter moved $0.2386 over the chapter, the
-difference being development calls on small subsets. Training and self-hosted evals cost GPU
+**Spend.** Every OpenRouter call in this chapter, summed from the cached replies in the
+notebook: teacher labels $0.1227, synthetic generation and QA $0.0639, the two gpt-6-luna evals
+$0.0199 and $0.0154, total **$0.2219**. The key's usage counter moved $0.2386 over the chapter,
+the difference being development calls on small subsets. Training and self-hosted evals cost GPU
 time only: 1,272 s (21 minutes) for the eight training runs, model loads included.
 
 ## Exercises
+
+The results leave several questions open. These exercises test them on your own GPU:
 
 1. Train a 1.7B LoRA with TRL's own padding-free batching (`padding_free=True` in `SFTConfig`)
    and compare its time and VRAM with `q17-lora` and `q17-lora-peft`. How much of Unsloth's 1.7×
@@ -799,6 +864,8 @@ time only: 1,272 s (21 minutes) for the eight training runs, model loads include
    rulebook, keeping the same styles. Does v2 still lose identical-text priority?
 
 ## What we learned
+
+Here is what the measurements taught us:
 
 - Fine-tuning a small model didn't beat a well-prompted gpt-6-luna on accuracy. A 1.7B LoRA
   matched it on unseen templated tickets (100% category, 97.3% priority) and fell far behind on
@@ -821,6 +888,11 @@ time only: 1,272 s (21 minutes) for the eight training runs, model loads include
   `<|im_end|>` in the loss produces a model that never stops.
 - Label-noise ceilings are estimates. Ours said 93.8% and a model scored 97.3%; treat points near
   the ceiling as noise, not progress.
+
+Everything here ran on our own GPU, which is also the part someone has to look after. Chapter 19
+asks whether we can hand the same dataset to a cloud provider and get an endpoint back instead.
+It prepares this triage data for OpenAI, Bedrock, Vertex and SageMaker, and its validators are
+the ones that found the leak we fixed above.
 
 ## References
 

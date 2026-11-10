@@ -19,6 +19,10 @@ Getting a model to say something about a diff takes ten lines of code. Getting i
 bot that posts 25 comments, or posts a correct comment three lines below the bug, gets muted
 within a week.
 
+In Chapter 11 we gave an on-call agent read-only tools and asked it for a report with evidence.
+That agent had to point at the right metric and the right log line. This chapter, the last one
+in Part III, asks the same of a reviewer: point at the right line of code, or say nothing.
+
 This chapter builds that bot for ShopFlow's order service. We plant 8 known bugs in a pull
 request, measure how the obvious version does, and fix it until it finds 8 out of 8 with zero
 false positives, for about $0.002 per pull request. Then we wire it into GitHub.
@@ -27,14 +31,15 @@ false positives, for about $0.002 per pull request. Then we wire it into GitHub.
 
 ## The problem
 
+Before we write a prompt, let's look at the team that asked for this bot and what hurt them.
 ShopFlow's backend team reviews about 40 pull requests a week. Reviews wait hours for a human,
 and the human skims. Last quarter two bugs reached production that a careful reader would have
 caught: a `datetime.utcnow()` that made the "orders today" number wrong every evening after 7 PM
 New York time, and a stock check that oversold the last unit when two customers checked out at
 once.
 
-The ask: a bot that comments on every pull request within minutes, inline, on the changed lines,
-like a colleague would:
+So the team asked for a bot that comments on every pull request within minutes. It should
+comment inline, on the changed lines, the way a colleague would:
 
 > **service/inventory.py, line 24** · high · concurrency (confidence 0.99)
 >
@@ -43,22 +48,34 @@ like a colleague would:
 
 (A real comment from the bot we build; see [Serving it](#serving-it).)
 
-It must never block a merge (it's an assistant, not a gate), and it must not cry wolf.
+Two limits matter as much as the comments. The bot must never block a merge, because it's an
+assistant, not a gate. And it must not cry wolf.
 
 ## Requirements
 
-| Type | Requirement | Target |
-|---|---|---|
-| Functional | Find the planted bugs in the sample PR | recall ≥ 85% (7 of 8) |
-| Functional | Comment on the right line | every finding within ±3 lines of the bug |
-| Functional | Stay quiet on a PR with no bugs | ≤ 0.5 false positives per clean PR |
-| Functional | Never fail the whole review because one comment is bad | 0 rejected reviews |
-| Non-functional | Latency | < 2 minutes per PR (a human takes hours) |
-| Non-functional | Cost | < $0.05 per PR |
-| Non-functional | Security | runs on same-repo PRs only; token can comment, not push |
+That wish list is still vague. Before we build anything, let's turn it into targets we can
+check. First, what the bot must do:
+
+- **Find the planted bugs.** We hide 8 bugs in a sample pull request. The bot must find at least
+  7 of them. That is a *recall* (share of real bugs found) of ≥ 85% (7 of 8).
+- **Comment on the right line.** Every finding must sit within ±3 lines of the bug it describes.
+- **Stay quiet when nothing is wrong.** On a pull request with no bugs, the bot posts ≤ 0.5
+  false positives (comments about bugs that don't exist) per clean PR on average.
+- **Never lose the whole review to one bad comment.** GitHub rejects a review if a single
+  comment points outside the diff. We want 0 rejected reviews.
+
+It also has to work as a cheap, safe service:
+
+- **Be quick.** Under 2 minutes per pull request. A human takes hours.
+- **Stay cheap.** Under $0.05 per pull request.
+- **Stay harmless.** It runs on same-repo pull requests only, and its token can comment but
+  not push.
+
+In [Results](#results) we check each of these against measured numbers.
 
 ## The data
 
+To measure recall and false positives, we need pull requests where we already know every bug.
 There's no public dataset of "PRs with known bugs" that matches our code base, so we build one.
 [`make_sample_pr.sh`](01_main-chapter-code/make_sample_pr.sh) creates a temporary git repo with a
 small ShopFlow order service (orders, inventory, payments, config) and two branches:
@@ -72,10 +89,14 @@ gitGraph
     commit id: "+ 8 planted bugs"
 ```
 
+The graph shows two pull requests that share the same harmless changes:
+
 - `main...chore/cleanup` is the **clean PR**: a README section, a docstring, an extracted helper,
   type hints, a named constant, a log line and a unit test. No behaviour changes. Every comment
   on it is a false positive.
 - `main...feature/order-fixes` is the **buggy PR**: the same 7 changes plus 8 planted bugs.
+
+The table lists the 8 bugs that the buggy PR adds on top:
 
 | id | file | what the PR did |
 |---|---|---|
@@ -93,6 +114,8 @@ in [`ground_truth.json`](01_main-chapter-code/ground_truth.json), and strips the
 committing, so the model sees no hints. Commit dates and authors are fixed, so the diff is
 byte-identical on every machine.
 
+Run the script once to build the sample repo. The output shows the size of both diffs:
+
 ```bash
 cd ch12/01_main-chapter-code && bash make_sample_pr.sh
 ```
@@ -104,11 +127,17 @@ sample repo: /home/a.saugi/llm-in-production/ch12/01_main-chapter-code/sample_re
 ground truth: /home/a.saugi/llm-in-production/ch12/01_main-chapter-code/ground_truth.json
 ```
 
+The buggy PR changes 57 lines in 7 files. That's small enough to read by hand, so we can check
+every comment the bot makes.
+
 ## Concepts
+
+We have a pull request and a list of its bugs. Before we write the bot, we need three ideas: what
+a review looks like as data, which line number a comment should use, and how we score it.
 
 ### A review is a list of structured comments
 
-A human review is prose. A bot review must be data: GitHub needs a file path and a line for every
+A human review is prose. A bot review must be data. GitHub needs a file path and a line for every
 inline comment, and we need a severity and a confidence to decide what to post. So the model
 returns exactly this shape, enforced with a strict JSON schema
 ([`schemas.py`](01_main-chapter-code/ch12_review/schemas.py)):
@@ -128,10 +157,11 @@ class ReviewComment(BaseModel):
 
 ### Three line numbers per line
 
-A *unified diff* is the text `git diff` prints: for each file, one or more *hunks*, each starting
-with a header like `@@ -29,8 +32,9 @@` (old start, old length, new start, new length), followed by
-context lines (` `), removed lines (`-`) and added lines (`+`). Every line has up to three
-numbers, and review bots mix them up constantly:
+The `line` field looks simple, but a diff gives every line more than one number. A *unified diff*
+is the text `git diff` prints: for each file, one or more *hunks*, each starting with a header like
+`@@ -29,8 +32,9 @@` (old start, old length, new start, new length), followed by context lines
+(` `), removed lines (`-`) and added lines (`+`). Every line has up to three numbers, and review
+bots mix them up constantly:
 
 ![One changed line, three different numbers](images/12-line-mapping.svg)
 
@@ -148,6 +178,7 @@ trusting prefixes.
 
 ### Recall, false positives, and why a planted-bug eval
 
+Once comments carry a file and a line, we can score them against the known bugs.
 *Recall* is the share of real bugs the bot found: 7 of 8 is 87.5%. A *false positive* is a
 posted comment that matches no real bug. We match a comment to a bug when it is in the same file,
 within ±3 lines of the bug's lines, and in one of the bug's accepted categories (a race may be
@@ -165,7 +196,8 @@ than real ones. We come back to that in [Results](#results).
 
 ## v0: the naive solution
 
-The version everyone writes first: pipe `git diff` into the model, ask for comments.
+We now know what a good comment looks like and how we'll score it. Let's start with the version
+everyone writes first: pipe `git diff` into the model and ask for comments.
 
 ```python
 # ch12/01_main-chapter-code/ch12_review/reviewer.py (excerpt)
@@ -180,7 +212,8 @@ OpenRouter, as of 2026-11).
 
 ## Measuring v0
 
-Run 1 on the buggy PR, as the model returned it (from the notebook):
+v0 answers, but we don't yet know whether it answers *well*. Here is run 1 on the buggy PR, as
+the model returned it (from the notebook). Check the line column against the bug list:
 
 | path | line | category | conf | body (start) |
 |---|---|---|---|---|
@@ -201,8 +234,8 @@ the wrong code: the SQL-injection comment on the `def` line, the off-by-one comm
 line, the timezone comment on the query parameters of the *previous* function, and the `None`
 comment inside the N+1 loop.
 
-Over the 3 runs (notebook output; the right-hand columns are each bug's line offset, comment
-line minus bug line):
+One run could be luck, so we repeated it. Here are all 3 runs (notebook output). The right-hand
+columns give each bug's line offset: comment line minus bug line.
 
 ```
      comments  bug described (±10 lines)  on the bug's lines  within ±3 lines  clean-PR comments  secret_in_code  race_condition  sql_injection  off_by_one  wrong_timezone  n_plus_one  unchecked_none  missing_await
@@ -233,11 +266,14 @@ though the comment is right.
 
 ## Iterating
 
+v0's weakness is clear: the model knows *what* is wrong but not *where*. Each step below starts
+from the problem the previous one left behind.
+
 ### 1. Hand the model line numbers instead of asking it to count
 
-The fix is not a better prompt. It's to stop asking the model to count. We print the new-file
-line number in a gutter in front of every line, leave removed lines unnumbered, and tell the
-model to copy the number printed in front of the line it means:
+The model miscounts lines, so the fix is not a better prompt. It's to stop asking the model to
+count. We print the new-file line number in a gutter in front of every line, leave removed lines
+unnumbered, and tell the model to copy the number printed in front of the line it means:
 
 ```python
 # ch12/01_main-chapter-code/ch12_review/diff.py (excerpt)
@@ -252,7 +288,8 @@ def render_hunk(hunk: Hunk) -> str:
     return "\n".join(out)
 ```
 
-What the model now sees for `payments.py` (notebook output):
+Here is what the model now sees for `payments.py` (notebook output). Look at the gutter on the
+left and the blank gutter on the removed line:
 
 ```
 @@ new lines 1-16 @@
@@ -274,8 +311,9 @@ can name the exact input that breaks". The response is constrained with
 `response_format={"type": "json_schema", ..., "strict": True}`, and `max_tokens=3000` caps every
 call.
 
-With numbered lines, we tried three ways to cut the diff into model calls, 3 runs each with
-gpt-6-luna and the team guidelines (next section) in the prompt:
+With numbered lines, we tried three ways to cut the diff into model calls. Each got 3 runs with
+gpt-6-luna and the team guidelines (next section) in the prompt. Compare the first row with the
+other three:
 
 | variant (gpt-6-luna, 3 runs) | recall | precision | FP / buggy PR | FP / clean PR | mean \|line error\| | calls / PR | latency (buggy PR) | $ / PR |
 |---|---|---|---|---|---|---|---|---|
@@ -306,6 +344,7 @@ cheapest and found everything, but in 2 of 3 runs it also flagged the clean PR's
 
 ### 2. Write the team's rules down
 
+Line numbers fixed the *where*. But the model can only judge a change against rules it knows.
 Look again at the bugs. "SQL injection" and "missing await" are universal. "Hard-coded key" is
 mostly universal. But "today means New York time" and "stock changes must be safe under
 concurrent requests" are *this team's* rules, written down nowhere a model can see. We give the
@@ -321,6 +360,8 @@ GUIDELINES = """Repo conventions (from the team's review guide):
 - Database access uses parameterised queries (psycopg `%s` placeholders).
 - Stock changes must be safe under concurrent requests."""
 ```
+
+To see what these five lines are worth, we ran the per-hunk reviewer with and without them:
 
 | variant (gpt-6-luna, per hunk, 3 runs) | recall | precision | FP / buggy PR | FP / clean PR |
 |---|---|---|---|---|
@@ -347,7 +388,9 @@ security issue 3 times out of 3.
 
 ### 3. Snap, dedupe, filter
 
-The model's comments go through three deterministic steps before anything is posted
+With numbered lines and team rules, the comments point at the right bugs. They can still be
+slightly off, repeated or too many. So they go through three deterministic steps before anything
+is posted
 ([`postprocess.py`](01_main-chapter-code/ch12_review/postprocess.py)):
 
 1. **Snap** each line onto the diff. A comment within 2 lines of a changed line moves onto it
@@ -368,7 +411,8 @@ def is_duplicate(a: ReviewComment, b: ReviewComment, line_window: int = 2,
     return a.category == b.category or _jaccard(a.body, b.body) >= text_similarity
 ```
 
-Then we swept the confidence threshold over the saved comments (no new model calls):
+The filter step depends on a confidence threshold, so we need to know where to set it. We swept
+the threshold over the saved comments (no new model calls):
 
 ![Recall vs false positives as the confidence threshold rises](images/12-threshold-sweep.png)
 
@@ -403,9 +447,10 @@ LLM grading its own comments was "nearly random".
 
 ### 4. Pick a model
 
-Same pipeline (per hunk, numbered, guidelines, confidence ≥ 0.6), different models. Prices on
-OpenRouter as of 2026-11: gpt-6-luna and claude-haiku-5.5 $0.10 / $0.50, claude-sonnet-5.5
-$2 / $10 per 1M input/output tokens.
+So far every number came from gpt-6-luna. The pipeline is now fixed, so we can ask whether a
+different model does better. We keep the same pipeline (per hunk, numbered, guidelines,
+confidence ≥ 0.6) and swap only the model. Prices on OpenRouter as of 2026-11: gpt-6-luna and
+claude-haiku-5.5 $0.10 / $0.50, claude-sonnet-5.5 $2 / $10 per 1M input/output tokens.
 
 | model (per hunk, guidelines) | runs | recall | precision | FP / buggy PR | FP / clean PR | latency (buggy PR) | $ / PR | failed calls |
 |---|---|---|---|---|---|---|---|---|
@@ -421,7 +466,12 @@ $2 / $10 per 1M input/output tokens.
 ~15 GB during this run, one call at a time (`workers=1`); treat it as an upper bound, not a
 local-vs-hosted comparison.
 
+The chart below shows, for each bug, how often each model found it. The gaps show which bugs are
+hard for which model:
+
 ![Share of runs that found each planted bug, per model](images/12-per-bug-recall.png)
+
+Here is what the table and chart say, model by model:
 
 - **gpt-6-luna found all 8 bugs in all 3 runs, with no false positives on either PR**, for
   $0.0017 per PR.
@@ -464,6 +514,9 @@ local-vs-hosted comparison.
 
 ## Production hardening
 
+The bot now passes our eval. A real repository brings new risks: bad lines, failed calls,
+hostile diffs and growing bills. Each rule below handles one of them.
+
 - **Inform, never block.** The bot posts one review with `event: "COMMENT"`. It never uses
   `REQUEST_CHANGES` and isn't a required status check. A false positive costs a reader ten
   seconds; a false positive that blocks a merge costs a release and the bot's credibility.
@@ -494,6 +547,8 @@ local-vs-hosted comparison.
   under the comment changes before merge) and 👍/👎 reactions. That data is what tunes the
   threshold and the categories later.
 
+Two stories from other teams show why noise and untrusted input deserve these rules.
+
 > [!NOTE]
 > **In the wild:** Greptile measured that only about 19% of its bot's comments were ones
 > developers cared about; 79% were "nits", technically true and unwanted. Prompting couldn't fix
@@ -513,6 +568,9 @@ local-vs-hosted comparison.
 
 
 ## Serving it
+
+The pipeline is ready and hardened. Now we run it the way a team would: first from a terminal,
+then against GitHub's API, then on every pull request.
 
 ### From the terminal
 
@@ -539,6 +597,8 @@ openai/gpt-6-luna: 8 raw -> 8 deduped -> 8 posted (9 calls, 13847 ms, $0.00189)
 7   service/payments.py    15   medium  correctness        0.99  `notify.send_receipt` is called without `await`, so if it is async (as the previous aw...
 ```
 
+The summary line counts the comments at each stage: raw, after dedupe, and posted.
+
 Eight bugs, eight comments, each on its bug's line (56 is inside the N+1 loop, one line above
 the query). This live run is separate from the eval, so its wording differs from the tables. In
 this run (2026-11-09), Luna filed the hard-coded key as `correctness` ("not a Stripe API secret
@@ -549,6 +609,7 @@ Add `--provider ollama --model qwen3:8b` (or any Ollama model) and nothing leave
 
 ### Posting to GitHub
 
+The comments are in a JSON file. The next step is to post them as one review.
 [`post_comments.py`](01_main-chapter-code/post_comments.py) turns those comments into one call
 to [Create a review for a pull request](https://docs.github.com/en/rest/pulls/reviews#create-a-review-for-a-pull-request).
 With `--dry-run` it prints the request instead of sending it, which we did execute:
@@ -579,6 +640,8 @@ POST https://api.github.com/repos/shopflow/order-service/pulls/42/reviews
     ...
 ```
 
+Note `"line"` with `"side": "RIGHT"` on each comment, and `"event": "COMMENT"` on the review.
+
 > [!IMPORTANT]
 > **Decision: `line` + `side: "RIGHT"` over the diff `position`.** `line` is the new-file line
 > number, which is what we show the model and what a human means. `position` (rows below the
@@ -589,6 +652,8 @@ POST https://api.github.com/repos/shopflow/order-service/pulls/42/reviews
 
 ### As a GitHub Action
 
+Running the bot by hand proves it works. To review every pull request, it has to run in CI.
+
 > [!CAUTION]
 > **Not executed by the author** — requires a GitHub repository with Actions enabled and an
 > `LLM_API_KEY` repository secret. Written against the GitHub Actions docs for `pull_request`
@@ -597,6 +662,8 @@ POST https://api.github.com/repos/shopflow/order-service/pulls/42/reviews
 > the pull request reviews REST API (https://docs.github.com/en/rest/pulls/reviews, API version
 > 2026-03-10), accessed 2026-11-07, and checked with a YAML parser and `python -m py_compile`.
 > `review.py` and `post_comments.py --dry-run` were executed above.
+
+The diagram shows one review from start to finish, including the 422 fallback:
 
 ```mermaid
 sequenceDiagram
@@ -620,9 +687,13 @@ sequenceDiagram
     G-->>D: inline review comments
 ```
 
-[`github-workflows/review.yml`](01_main-chapter-code/github-workflows/review.yml): copy it to
-`.github/workflows/review.yml` in the repo to review, and copy `ch12_review/`, `review.py` and
+To install it, copy
+[`github-workflows/review.yml`](01_main-chapter-code/github-workflows/review.yml) to
+`.github/workflows/review.yml` in the repo to review. Then copy `ch12_review/`, `review.py` and
 `post_comments.py` to `.github/review-bot/`.
+
+The excerpt below shows the parts that keep it safe: the trigger, the permissions and the
+same-repo check.
 
 ```yaml
 # ch12/01_main-chapter-code/github-workflows/review.yml (excerpt)
@@ -678,8 +749,10 @@ environment variables, so the bot needs nothing from the book's `llmprod` packag
 
 ## Results
 
-`ch12_eval.py` on the buggy and the clean PR, scored in the notebook (confidence ≥ 0.6, ±3
-lines, right category); hosted runs from 2026-11-07 and 2026-11-08, local runs from 2026-11-09:
+We've made one change at a time. Here is everything side by side, so we can check the
+requirements. `ch12_eval.py` ran on the buggy and the clean PR, scored in the notebook
+(confidence ≥ 0.6, ±3 lines, right category); hosted runs from 2026-11-07 and 2026-11-08, local
+runs from 2026-11-09:
 
 | model | variant | runs | recall | precision | FP / buggy PR | FP / clean PR | mean \|line error\| | calls / PR | latency (buggy PR) | $ / PR |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -744,6 +817,9 @@ notebook's live reviews: well under $0.20 in total.
 
 ## Exercises
 
+The eval is small and easy, as Results showed. These exercises grow it and probe the weak spots
+we found.
+
 1. **Plant a ninth bug** in `make_sample_pr.sh`: a `try/except Exception: pass` around the
    payment capture. Add it to the ground truth with an accepted category, regenerate, and run
    `uv run python ch12_eval.py --model openai/gpt-6-luna --runs 1`. Is "swallowed exception" a
@@ -786,6 +862,11 @@ notebook's live reviews: well under $0.20 in total.
   recall, with some false alarms caused by seeing only one hunk and 3 calls that ignored the JSON
   schema. qwen3:8b missed two bugs every time and posted 4.67 false positives per clean PR.
   "Free" still needs the same eval before you trust it.
+
+One lesson runs through this chapter: the pull request is attacker-controlled input, and our
+defense was mostly to limit what the bot can do. It can only comment. Chapter 13 starts Part IV,
+Hardening, and takes that problem head on. It attacks the text-to-SQL bot from Chapter 6 and the
+support assistant from Chapter 9 with 40 attacks, then measures five defenses.
 
 
 ## References

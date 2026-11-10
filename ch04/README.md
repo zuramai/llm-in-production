@@ -11,6 +11,12 @@ Retrieval doesn't make a model honest. It gives the model the right page to read
 retriever finds it, and *if* the model sticks to it. Both "ifs" are measurable, and this chapter
 measures them.
 
+This chapter opens Part II of the book, on data and retrieval. In the first three chapters the
+bots only knew what we put in the prompt: an FAQ, a ticket, a rubric. In Chapter 3 we built a
+regression gate and a calibrated LLM judge to tell whether an answer is good. Now the knowledge
+moves out of the prompt and into a search step, and we use that same judge to check whether the
+search helps.
+
 We build a documentation assistant for ShopFlow's 36 internal documents: policies, care guides,
 the support handbook and the incident runbooks. It answers with citations like
 `[doc:policies/refund-policy.md#2]`, says "I can't find that" when the documents don't say, and
@@ -20,7 +26,8 @@ runs entirely on one Postgres plus one small GPU model.
 
 ## The problem
 
-ShopFlow's support agents and on-call engineers keep asking the same people the same questions:
+A RAG system is only worth building if people have a real question it can answer. ShopFlow's
+support agents and on-call engineers keep asking the same people the same questions:
 
 > *Which feature flag do we flip to fail over between payment providers?*
 > *A customer wants their refund on a new card because the old one expired. What do we tell them?*
@@ -30,7 +37,8 @@ The answers are all written down, spread over 36 Markdown files nobody reads end
 type a question, get a short answer in seconds, with a link to the paragraph it came from, so the
 agent can check it before pasting it to a customer.
 
-Three things make this harder than "embed the docs, ask GPT":
+Three things make this harder than "embed the docs, ask GPT". The table lists each trap and why it
+breaks the simple approach:
 
 | Trap | Why it's hard |
 |---|---|
@@ -38,24 +46,39 @@ Three things make this harder than "embed the docs, ask GPT":
 | **Paraphrases** | "My earbuds are getting dangerously hot" shares almost no words with the care guide's "overheating" section. Word matching fails here. |
 | **Questions the docs don't answer** | "What's the support phone number?" There is none. A fluent invented number is worse than no answer. |
 
+The first trap needs exact matching, the second needs meaning, and the third needs a model that
+knows when to stop. Our design has to handle all three at once.
+
 ## Requirements
 
-| Type | Requirement | Target |
-|---|---|---|
-| Functional | Retrieve the chunk that contains the answer | evidence recall@5 ≥ 95% on the eval set |
-| Functional | Answer answerable questions correctly | ≥ 90% (LLM judge vs a human reference) |
-| Functional | Refuse questions the docs don't cover | 5/5 |
-| Functional | Every claim grounded in the retrieved text | faithfulness ≥ 95% |
-| Functional | Cite sources as `[doc:path#chunk]`, only chunks we actually retrieved | 100% of citations valid |
-| Non-functional | Retrieval latency (embed + search + rerank) | p95 < 300 ms |
-| Non-functional | Cost | < $1 per 1,000 questions |
-| Non-functional | Infrastructure | the Postgres we already run; no new vector database |
+Those three traps tell us what to test. Before we write any code, let's turn the ask into a list
+of things the assistant must do:
+
+- **Find the right passage.** The chunk that holds the answer shows up in the top 5 results. We
+  call this *evidence recall@5* and want it at 95% or higher on the eval set.
+- **Answer correctly.** At least 90% of answerable questions get a correct answer, graded by an
+  LLM judge against a human reference.
+- **Say "I can't find that".** It refuses all of the questions the docs don't cover (5/5).
+- **Stick to the text.** Every claim comes from the retrieved passages. We call this
+  *faithfulness* and want it at 95% or higher.
+- **Cite honestly.** Sources appear as `[doc:path#chunk]` and point only at chunks we actually
+  retrieved: 100% of citations valid.
+
+It also has to run like a real service:
+
+- **Search fast.** Embedding the question, searching and reranking together take under 300 ms
+  for 95% of questions (p95 < 300 ms).
+- **Stay cheap.** Under $1 per 1,000 questions.
+- **Use what we have.** It runs on the Postgres we already run, with no new vector database.
+
+At the end of the chapter we check each item against measured numbers.
 
 ## The data
 
+To meet those targets we need two things: documents to search and questions with known answers.
 The corpus is [`datasets/shopflow/docs/`](../datasets/shopflow/docs/): 36 Markdown files, about
 31,000 tokens (`o200k_base`), written in the voice of ShopFlow's teams and kept consistent with
-the FAQ and the database schema.
+the FAQ and the database schema. Here is how the files split by folder:
 
 | folder | docs | what's in it |
 |---|---|---|
@@ -82,8 +105,9 @@ A typical document, trimmed:
 Every refund goes back to the **original payment method** used for the order...
 ```
 
-Everything we store lives in one table that ch04 creates and owns. One row is one chunk of one
-document, cut by one of two chunkers:
+Each document is turned into chunks before we can search it. Everything we store lives in one
+table that ch04 creates and owns. One row is one chunk of one document, cut by one of two
+chunkers. The diagram shows the columns we will query later:
 
 ```mermaid
 erDiagram
@@ -100,17 +124,21 @@ erDiagram
     }
 ```
 
+The `embedding` column serves meaning search and the `tsv` column serves word search. One command
+fills the table:
+
 ```bash
 cd ch04/01_main-chapter-code
 uv run python ingest.py --reset      # chunk with both chunkers, embed, store (about 40 s)
 ```
 
-The eval set, [`eval/questions.yaml`](01_main-chapter-code/eval/questions.yaml), has 40
+With the documents stored, we need a way to score answers. The eval set,
+[`eval/questions.yaml`](01_main-chapter-code/eval/questions.yaml), has 40
 questions in five categories: 11 *keyword* (exact identifiers), 11 *paraphrase* (few shared
 words), 8 *direct*, 5 *multi* (two documents needed) and 5 *unanswerable*. Each answerable
 question lists **evidence slots**: the documents that state the fact, plus a regex (`verify`) the
 fact must match. A unit test checks every gold path against its regex, so the labels can't drift
-from the documents.
+from the documents. Here is one multi-document question:
 
 ```yaml
 - id: q32
@@ -132,6 +160,9 @@ evidence slots cover two. We'll come back to that.
 
 ## Concepts
 
+We now have documents, a table and a question set. Before building, we need a few ideas: what RAG
+is, how documents are cut, and the three search tools we will combine.
+
 ### Retrieval-augmented generation
 
 *RAG* means: before asking the model, search our own documents and paste the best passages into
@@ -148,8 +179,9 @@ Two things can go wrong, and we measure them separately:
 
 ### Chunks
 
-We don't retrieve whole documents; we retrieve *chunks*, passages small enough that five of them
-fit comfortably in a prompt. How we cut matters:
+Retrieval can only be as good as the units it returns, so the first choice is how to cut. We don't
+retrieve whole documents. We retrieve *chunks*: passages small enough that five of them fit easily
+in a prompt. How we cut matters, and the picture compares the two ways we try:
 
 ![Fixed windows vs heading-aware chunks](images/04-chunking.svg)
 
@@ -160,13 +192,15 @@ fit comfortably in a prompt. How we cut matters:
   Refund Timing") stored alongside. Long sections are split on paragraph boundaries. Chunks are
   self-describing but small.
 
-Both chunkers work on character offsets into the original text, so chunks are exact slices of the
-document and "no text is lost" is a unit test, not a hope.
+Both chunkers work on character offsets into the original text. So chunks are exact slices of the
+document, and "no text is lost" is a unit test, not a hope.
 
 ### Embeddings and the HNSW index
 
-An *embedding* is a list of numbers (here 768) that places a text in a "meaning space": texts
-about the same thing land close together, whatever words they use. "Earbuds getting hot" lands
+Once we have chunks, we need a way to find the ones that match a question. The first tool
+searches by meaning. An *embedding* is a list of numbers (here 768) that places a text in a
+"meaning space": texts about the same thing land close together, whatever words they use.
+"Earbuds getting hot" lands
 near "overheating while charging". We embed every chunk once at ingest and each question at query
 time, then ask Postgres for the nearest chunks by cosine distance. `nomic-embed-text` expects a
 task prefix: `search_document: ` for chunks and `search_query: ` for questions
@@ -178,18 +212,22 @@ like taking motorways first and side streets last. It's approximate: fast, but i
 
 ### Full-text search
 
-Postgres has had word search built in for twenty years. `to_tsvector('english', text)` reduces a
-text to stemmed words ("refunds" → "refund"); a `tsquery` matches them, and `ts_rank_cd` scores by
+Embeddings handle paraphrases but blur exact strings, which was our first trap. The second tool
+fixes that. Postgres has had word search built in for twenty years.
+`to_tsvector('english', text)` reduces a text to stemmed words ("refunds" → "refund"); a
+`tsquery` matches them, and `ts_rank_cd` scores by
 how many query words appear and how close together. It's blind to meaning but exact about
 strings: `payments.primary_provider` matches only documents that contain it.
 
 ### Reciprocal Rank Fusion
 
-Vector search and full-text search score on incompatible scales (a cosine of 0.71 vs a
-`ts_rank_cd` of 0.3). *Reciprocal Rank Fusion* (RRF) ignores the scores and uses only ranks: each
+We now have two ranked lists, one by meaning and one by words, and we want one. But vector search
+and full-text search score on incompatible scales (a cosine of 0.71 vs a `ts_rank_cd` of 0.3).
+*Reciprocal Rank Fusion* (RRF) ignores the scores and uses only ranks: each
 list gives a chunk $1/(k + \text{rank})$, and we add them up. With $k = 60$ (the value from the
 original paper), rank 1 is worth 0.0164 and rank 10 is worth 0.0143, so a chunk that's decent in
-*both* lists beats one that's top in only one.
+*both* lists beats one that's top in only one. The code is short; note how it skips duplicates
+within one list:
 
 ```python
 # ch04/01_main-chapter-code/ch04_rag/retrieve.py (excerpt)
@@ -209,11 +247,14 @@ def rrf(rankings: Sequence[Sequence[Hashable]], k: int = RRF_K) -> list[tuple[Ha
 
 ### Cross-encoder reranking
 
-An embedding model encodes the question and each chunk *separately*, then compares two vectors.
-A *cross-encoder* reads the question and one chunk *together* and outputs a relevance score.
+RRF only reorders what the two searches found. To judge relevance more closely, we add a third
+tool. An embedding model encodes the question and each chunk *separately*, then compares two
+vectors. A *cross-encoder* reads the question and one chunk *together* and outputs a relevance
+score.
 It's far more accurate, and far too slow to run on every chunk, so we run it only on the 30
-candidates RRF returns and keep the top 5. We use `cross-encoder/ms-marco-MiniLM-L-6-v2`, a 22M-parameter
-model trained on MS MARCO passage ranking (real Bing queries), through sentence-transformers.
+candidates RRF returns and keep the top 5. We use `cross-encoder/ms-marco-MiniLM-L-6-v2`, a
+22M-parameter model trained on MS MARCO passage ranking (real Bing queries), through
+sentence-transformers. The diagram shows the full pipeline we are aiming for, end to end:
 
 ```mermaid
 flowchart LR
@@ -228,9 +269,12 @@ flowchart LR
     L --> C{citations ⊆<br/>retrieved?}
 ```
 
+Each box is a step we will add and measure one at a time, starting from the simplest version.
+
 ## v0: the naive solution
 
-The version every tutorial builds: cut every document into 512-token windows, embed them, take
+Before we build the full pipeline, we build the simplest one and see where it breaks. This is the
+version every tutorial builds: cut every document into 512-token windows, embed them, take
 the 5 nearest chunks by cosine similarity and paste them into the prompt with "answer from the
 context, cite your sources, at most 4 sentences" (prompt v1 in
 [`answer.py`](01_main-chapter-code/ch04_rag/answer.py)).
@@ -246,8 +290,9 @@ def vector_search(conn: psycopg.Connection, query_vec, chunker: str, k: int) -> 
     return _hits(rows, "vector")
 ```
 
-Three questions, `openai/gpt-6-luna` ($0.10 / $0.50 per 1M input/output tokens on OpenRouter, as
-of 2026-11), real output from the notebook:
+Here are three questions, answered by `openai/gpt-6-luna` ($0.10 / $0.50 per 1M input/output
+tokens on OpenRouter, as of 2026-11). This is real output from the notebook. Look at the ranks and
+at the answers:
 
 ```
 Q: What pattern do ShopFlow SKUs follow?
@@ -286,7 +331,8 @@ that" instead of inventing an answer.
 
 ## Measuring v0
 
-We measure retrieval and generation separately, on the 40-question eval set.
+Three hand-picked questions show the problem but don't size it. We measure retrieval and
+generation separately, on the 40-question eval set.
 
 **Retrieval** needs no LLM. For the 35 answerable questions we compute two strictness levels:
 
@@ -307,9 +353,11 @@ def evidence_slots(q: Question, hit: Hit) -> set[int]:
     }
 ```
 
-v0 (`vector`, `fixed`) scores **94.3%** doc-level recall@5 but only **85.7%** evidence recall@5,
+Running this over all configs gives the first numbers. v0 (`vector`, `fixed`) scores **94.3%**
+doc-level recall@5 but only **85.7%** evidence recall@5,
 with evidence MRR 0.753. On paraphrased questions, its evidence recall is 72.7%. Four
-questions lose the fact entirely, and two multi-document questions lose one of their two facts:
+questions lose the fact entirely, and two multi-document questions lose one of their two facts.
+The first line is v0; the other lines are configs we build next:
 
 ```
 vector|fixed            6 misses: q03(0.0) q14(0.0) q15(0.0) q21(0.0) q33(0.5) q34(0.5)
@@ -327,7 +375,9 @@ The doc-level number is the one most tutorials report, and it flatters: on a 36-
 `returns-policy.md#0` at rank 3. That's a doc-level hit, but the window doesn't contain the
 exchange rule, and the model, reasonably, said it couldn't find it.
 
-**Generation** is graded by chapter 3's judge: `openai/gpt-6-luna` with a written rubric and a
+Retrieval tells us whether the fact reached the model. Whether the model then used it well is the
+second half. **Generation** is graded by chapter 3's judge: `openai/gpt-6-luna` with a written
+rubric and a
 reference answer, strict JSON schema, reason before verdict. In chapter 3's calibration run
 (`ch03/01_main-chapter-code/calibration/`) this setup agreed with the chapter's reference labels
 (40 answers labelled by a blind AI annotator, not by a human) at Cohen's κ = 0.75–0.82 over three
@@ -341,11 +391,18 @@ It returns two booleans per answer:
 - **faithful**: every claim is supported by the retrieved context (a refusal is faithful).
 
 v0 gets **71.4%** of the answerable questions right (25/35), refuses 5/5 unanswerable questions,
-and is faithful in 95.0% of answers. It never cites a chunk it wasn't given.
+and is faithful in 95.0% of answers. It never cites a chunk it wasn't given. So v0 is honest but
+misses too often, and the misses start in retrieval. That is where we start fixing.
 
 ## Iterating
 
+v0 left two gaps: retrieval lost the fact in four questions and half the facts in two more, and
+only 71.4% of answers were correct. We fix one weakness at a time and measure after each step.
+
 ### 1. Hybrid search: add Postgres full-text search and fuse with RRF
+
+The SKU question showed the first weakness: an exact string that a search by meaning can't pin
+down.
 
 **What's wrong.** Vector search misses exact strings and rare tokens. "What pattern do ShopFlow SKUs
 follow?" needs the chunk with `SF-<CAT>-<number>`, and no embedding has a strong opinion about
@@ -357,7 +414,8 @@ the weights need tuning per corpus. (b) Use full-text search alone: on our set, 
 questions. (c) Run both and fuse by rank (RRF).
 
 Full-text search has its own trap. The obvious function, `websearch_to_tsquery`, ANDs every
-word of the question, and a natural-language question then matches almost nothing:
+word of the question, and a natural-language question then matches almost nothing. Compare the
+two ways of building the query:
 
 ```
 websearch_to_tsquery (AND)   questions matching 0 chunks: 26/35, median matches 0
@@ -382,8 +440,8 @@ def fts_search(conn: psycopg.Connection, question: str, chunker: str, k: int) ->
     return _hits(rows, "fts")
 ```
 
-Each retriever returns its top 30; RRF fuses them. Here is what fusion does to the Loki question
-(heading chunks), from the notebook:
+With word search working, each retriever returns its top 30, and RRF fuses them. Here is what
+fusion does to the Loki question (heading chunks), from the notebook:
 
 ```
 fused vector  fts  rrf      chunk
@@ -407,7 +465,8 @@ fusion lifts it above chunks that only one retriever liked.
 **Measured effect.** On fixed chunks, evidence recall@5 went 85.7% → 90.0% and evidence MRR
 0.753 → 0.825; paraphrase recall 72.7% → 81.8%. On heading chunks, hybrid *lowered* evidence
 recall (97.1% → 94.3%): the full-text list on heading chunks is the weakest retriever we have (81.4%),
-and RRF gives a weak list the same vote as a strong one.
+and RRF gives a weak list the same vote as a strong one. Fusion helped fixed chunks but not heading
+chunks, and both lists still judge relevance from a rough distance.
 
 > [!NOTE]
 > **In the wild:** Anthropic's "Contextual Retrieval" study found that adding BM25 to embeddings
@@ -419,6 +478,8 @@ and RRF gives a weak list the same vote as a strong one.
 
 ### 2. A cross-encoder reranker, on the GPU
 
+Hybrid search found more of the right chunks, yet the order within the top 30 is still rough.
+
 **What's wrong.** RRF only reorders what the two retrievers found, and both judge relevance from
 a distance (a vector, or word overlap).
 
@@ -429,8 +490,9 @@ cross-encoder on our own hardware.
 We rerank the 30 fused candidates with `cross-encoder/ms-marco-MiniLM-L-6-v2` and keep the top
 k. The previous author of this chapter hit a wall here: on a Mac, the cross-encoder hung while
 loading, and they're not alone
-([transformers#30990](https://github.com/huggingface/transformers/issues/30990)). On the RTX 3090 server, sentence-transformers 6.2 with CUDA torch loads it in a few
-seconds. We pick the device explicitly, and (see Production hardening) survive a GPU that
+([transformers#30990](https://github.com/huggingface/transformers/issues/30990)). On the RTX
+3090 server, sentence-transformers 6.2 with CUDA torch loads it in a few seconds. We pick the
+device explicitly, and (see Production hardening) survive a GPU that
 another process has filled:
 
 ```python
@@ -461,26 +523,34 @@ another process has filled:
             return cls._ce
 ```
 
-From the notebook, scoring the same 30 (question, chunk) pairs:
+The fallback matters because the device sets the speed. From the notebook, scoring the same 30
+(question, chunk) pairs:
 
 ```
 rerank 30 pairs, shared model on cuda:0: p50 31.1 ms, p95 31.7 ms
 rerank 30 pairs, CPU (16 cores, shared host): p50 566.4 ms, p95 621.1 ms
 ```
 
+On the GPU, reranking is small next to the LLM call. On the CPU, it adds about half a second to
+every question.
+
 > [!IMPORTANT]
 > **Decision: a local cross-encoder on the GPU over a hosted rerank API or the CPU.** 30 pairs
 > take about 31 ms on the RTX 3090 and about 0.6 s on the CPU of this busy 16-core host, and
-> nothing leaves our network. On a CPU-only box, rerank fewer candidates (10-15) or call a hosted reranker; on a
-> laptop, test that the model actually loads before you design around it.
+> nothing leaves our network. On a CPU-only box, rerank fewer candidates (10-15) or call a hosted
+> reranker; on a laptop, test that the model actually loads before you design around it.
 
 **Measured effect.** On fixed chunks, evidence recall@5 rose to 97.1% (from 90.0% hybrid,
 85.7% v0) and evidence MRR to 0.891, the best of all eight configs. On heading chunks the
-reranker restored MRR (0.748 → 0.869) but not recall.
+reranker restored MRR (0.748 → 0.869) but not recall. The chart puts all eight configs side by
+side:
 
 ![Retrieval: doc-level recall, evidence recall and evidence MRR for 8 configs](images/04-retrieval.png)
 
 ### 3. Heading-aware chunks
+
+The chart shows that heading chunks were already strong with plain vector search. That suggests
+the cut itself mattered, so we look at it next.
 
 **What's wrong.** A 512-token window starts and stops wherever the token count says. The
 returns-policy window that matches "swap for a different size" begins mid-way through the refund
@@ -506,7 +576,8 @@ def heading_chunks(
 ```
 
 The heading path is embedded and indexed with the body ("ShopFlow Refund Policy > Refund
-Method\nEvery refund goes back to..."), so even a short section says what it is about.
+Method\nEvery refund goes back to..."), so even a short section says what it is about. The
+result is many more, much smaller chunks:
 
 ```
 chunker  chunks  min  mean  median  max
@@ -520,11 +591,13 @@ heading     316   16  93.3    80.5  462
 (v0's fixed windows: 85.7%), 100% on paraphrases, and the best doc-level MRR (0.986). Better
 chunks did more for retrieval than hybrid search did.
 
-**And then the answers didn't follow.** With prompt v1 and k = 5, heading chunks retrieved
-better but answered no better than fixed windows: 74.3% vs 71.4% for plain vector search, a tie for
+**And then the answers didn't follow.** Retrieval improved, so we expected better answers. With
+prompt v1 and k = 5, heading chunks retrieved better but answered no better than fixed windows:
+74.3% vs 71.4% for plain vector search, a tie for
 hybrid and for hybrid + rerank, and much worse for full-text search alone. The no-retrieval
 baseline that stuffs all 36 documents into every prompt scored 77.1%, better than any RAG config,
-at 36 times the prompt size:
+at 36 times the prompt size. The table shows every config; compare `correct_answerable` with
+`prompt_tokens`:
 
 ```
                config  correct_answerable  refused_unanswerable  false_refusal  faithful  bad_citations  uncited  latency_p50_ms  prompt_tokens  usd_per_1k
@@ -539,7 +612,8 @@ hybrid_rerank|heading                74.3                 100.0            0.0  
          whole_corpus                77.1                  80.0            2.9       NaN              0        0            1432          31887       4.008
 ```
 
-We read the nine `hybrid_rerank|heading` failures. In every one the judge's complaint was an
+Better retrieval did not mean better answers, so we read the nine `hybrid_rerank|heading`
+failures. In every one the judge's complaint was an
 **omission**: the answer said "No, don't machine-wash the yoga mat" and dropped "wipe it with mild
 soap and air dry"; it gave the express price and dropped "US addresses only". Only one of the nine
 was unfaithful. Then we checked whether the missing fact was even in the context (rank of the
@@ -564,6 +638,7 @@ when the fact *was* in the top 5 (q19's mild soap at rank 2, q35's "receive and 
 
 ### 4. Prompt v2: complete, not short
 
+The second cause, a prompt that asks for brevity, is the cheaper one to fix, so we start there.
 We kept the grounding rules and replaced the sentence budget with an explicit completeness rule:
 
 ```python
@@ -575,6 +650,8 @@ We kept the grounding rules and replaced the sentence budget with an explicit co
 5. If the context answers only part of the question, answer that part and say what is missing.
 6. No greetings and no advice the context doesn't give. Usually 2-6 sentences.""",
 ```
+
+Here is how each config moved from prompt v1 to v2:
 
 ```
                config  correct_answerable_v1  faithful_v1  correct_answerable_v2  faithful_v2  prompt_tokens
@@ -590,12 +667,14 @@ hybrid_rerank|heading                   74.3         97.5                   71.4
 
 Faithfulness went up everywhere (5 of 8 configs at 100%). Correctness rose on the fixed-chunk
 configs (hybrid + rerank: 74.3% → 80.0%) and moved by ±1 question on heading chunks. One question
-is 2.9 points here; treat differences of one or two questions as noise.
+is 2.9 points here; treat differences of one or two questions as noise. The prompt fixed part of
+the problem. The other cause, facts sitting at ranks 6-10, still needs fixing.
 
 ### 5. Read more of the small chunks (k = 10)
 
-Ten heading chunks (about 1,700 prompt tokens in total) are still smaller than five fixed windows
-(about 2,650). We gave both reranked pipelines k = 10:
+Facts at ranks 6-10 never reached the model, so the obvious fix is to send it more chunks. Small
+chunks make that affordable. Ten heading chunks (about 1,700 prompt tokens in total) are still
+smaller than five fixed windows (about 2,650). We gave both reranked pipelines k = 10:
 
 ```
                config  correct_answerable  refused_unanswerable  false_refusal  faithful  bad_citations  uncited  latency_p50_ms  prompt_tokens  usd_per_1k
@@ -613,7 +692,8 @@ hybrid_rerank|heading                85.7                 100.0            0.0  
 
 ![Answer quality, step by step](images/04-answers.png)
 
-We read the five remaining failures ourselves:
+The chart sums up the whole path from v0 to the final config. The judge still failed five
+answers, so we read the five remaining failures ourselves:
 
 | id | what the answer missed | our call |
 |---|---|---|
@@ -635,6 +715,9 @@ results, as chapter 3 recommends: a judge you overrule when convenient isn't a m
 > already wrote.
 
 ## Production hardening
+
+The pipeline now answers well on our eval set. Running it every day brings problems the eval set
+doesn't show. Here is what we found and how the code handles it.
 
 - **Filtered vector queries can silently return fewer rows.** pgvector applies `WHERE` *after*
   the HNSW scan, so "nearest 30 among `chunker = 'fixed'`" can come back short. At 395 rows
@@ -688,7 +771,11 @@ results, as chapter 3 recommends: a judge you overrule when convenient isn't a m
 - **Re-ingest is a transaction.** `ingest()` deletes and inserts one chunker's rows inside one
   transaction, so a reader never sees a half-indexed corpus. Run it from CI when `docs/` changes.
   At 36 documents it took 0.7-1.5 s per chunker with embeddings on the GPU (an earlier full run,
-  [`gpu_embeddings_run_2026-11-07.txt`](01_main-chapter-code/eval/results/gpu_embeddings_run_2026-11-07.txt)), 23 s per chunker on 2026-11-08, when Ollama was CPU-only on a loaded host, and 16-17 s in the 2026-11-09 run, where embeddings were served by a CPU-only Ollama instance (port 11435, `CUDA_VISIBLE_DEVICES` empty) while chat models ran on the GPU. A single GPU Ollama, the reader default, embeds faster (0.7-1.5 s per chunker in that earlier GPU run).
+  [`gpu_embeddings_run_2026-11-07.txt`](01_main-chapter-code/eval/results/gpu_embeddings_run_2026-11-07.txt)),
+  23 s per chunker on 2026-11-08, when Ollama was CPU-only on a loaded host, and 16-17 s in the
+  2026-11-09 run, where embeddings were served by a CPU-only Ollama instance (port 11435,
+  `CUDA_VISIBLE_DEVICES` empty) while chat models ran on the GPU. A single GPU Ollama, the reader
+  default, embeds faster (0.7-1.5 s per chunker in that earlier GPU run).
 - **Embedding prefixes must match.** `nomic-embed-text` expects `search_document:` on chunks and
   `search_query:` on questions. Changing the model or the prefix means re-embedding everything;
   store the model name with the vectors if you expect to switch.
@@ -703,12 +790,14 @@ results, as chapter 3 recommends: a judge you overrule when convenient isn't a m
 - **Documents are untrusted input too.** A runbook that says "ignore previous instructions" is a
   prompt injection waiting for a retriever. Chapter 13 covers this.
 
+Two bigger choices sit behind all of this: where the vectors live, and whether to retrieve at all.
+
 > [!IMPORTANT]
 > **Decision: pgvector in the Postgres we already run over a dedicated vector database.** One
 > database holds the chunks, the vectors, the full-text index and (in later chapters) the
 > business data. Hybrid search is one SQL query, re-ingest is one transaction, backups and access
-> control already exist. Embedding the question and both searches take about 33 ms at p50, most of it the
-> embedding call to a CPU-only Ollama on this busy host, (p50), a rounding error
+> control already exist. Embedding the question and both searches take about 33 ms at p50, most
+> of it the embedding call to a CPU-only Ollama on this busy host, (p50), a rounding error
 > next to the LLM's 1.3 s. Move to a dedicated engine when the vectors no longer fit in RAM on your
 > Postgres box, or when you need features like multi-tenant sharding that pgvector leaves to you.
 
@@ -722,7 +811,12 @@ results, as chapter 3 recommends: a judge you overrule when convenient isn't a m
 
 ## Serving it
 
+A pipeline that only runs in a notebook helps nobody at the support desk. We expose the same code
+two ways: a command-line tool and an HTTP API.
+
 ### From the terminal
+
+The quickest check is one question from the shell. Note the timings line at the end:
 
 ```bash
 cd ch04/01_main-chapter-code
@@ -743,9 +837,13 @@ Tell the customer that refunds can only be sent to the original payment method, 
 retrieval {'embed_ms': 9, 'vector_ms': 3, 'fts_ms': 5, 'rerank_ms': 159} ms | llm 2244 ms | 1808+126 tokens | $0.000081
 ```
 
+The answer cites the refund policy. The timings line shows that the LLM call, not retrieval,
+takes most of the time.
+
 ### Over HTTP
 
-[`app.py`](01_main-chapter-code/app.py) wraps the same pipeline in FastAPI. `POST /ask` takes a
+Other tools need an API, not a terminal. [`app.py`](01_main-chapter-code/app.py) wraps the same
+pipeline in FastAPI. `POST /ask` takes a
 question (and optionally `mode`, `chunker`, `k`) and returns the answer, the sources with scores
 and snippets, any invalid citations, per-stage timings and the cost.
 
@@ -796,7 +894,9 @@ caller can tell which dependency broke.
 
 ## Results
 
-Retrieval on the 35 answerable questions (no LLM involved; `eval/results/retrieval.json`):
+We have built and served the pipeline. Now we put all the numbers in one place and check them
+against the requirements. Retrieval on the 35 answerable questions (no LLM involved;
+`eval/results/retrieval.json`):
 
 | mode | chunker | doc recall@5 | doc MRR@10 | **evidence recall@5** | **evidence MRR@10** | evidence recall@5: keyword / paraphrase / multi |
 |---|---|---|---|---|---|---|
@@ -809,7 +909,8 @@ Retrieval on the 35 answerable questions (no LLM involved; `eval/results/retriev
 | hybrid + rerank | fixed | 97.1% | 0.925 | 97.1% | 0.891 | 90.9 / 100.0 / 100.0 |
 | hybrid + rerank | heading | 98.6% | 0.977 | 94.3% | 0.869 | 100.0 / 90.9 / 80.0 |
 
-Answers, graded by `openai/gpt-6-luna` with chapter 3's rubric pattern (`eval/results/answers_*.json`).
+Retrieval is only half the story. The next table covers answers, graded by `openai/gpt-6-luna`
+with chapter 3's rubric pattern (`eval/results/answers_*.json`).
 Correct is over 35 answerable questions; refused is over 5 unanswerable; faithful is over all 40.
 Latency is the LLM call only; cost is OpenRouter's `usage.cost` for generation, per 1,000
 questions; prices as of 2026-11.
@@ -864,8 +965,8 @@ What the tables say:
   100%. One question apart on correctness is within noise; the faithfulness gap is not: on q16 and
   q20 it added claims the context doesn't support (q20 applied the 30-day damaged-item remedies to
   a warranty question). Its LLM p50 was 1,091 ms on the shared RTX 3090 at $0 per call; prompt
-  tokens (1,730 vs 1,679) differ because the two models tokenize the same context differently. If you swap in a local generator, re-run the
-  faithfulness eval, not just correctness.
+  tokens (1,730 vs 1,679) differ because the two models tokenize the same context differently. If
+  you swap in a local generator, re-run the faithfulness eval, not just correctness.
 
 Run history: the committed notebook outputs are from 2026-11-09 against the ShopFlow DB reseeded
 that day (2026-11-09 seed, 30,433 orders); the docs corpus, retrieval scores and cached luna answers
@@ -881,6 +982,8 @@ uv run pytest ../../ch04          # 26 offline tests: chunkers, RRF, metrics, go
 ```
 
 ## Exercises
+
+The exercises start from the failures we left open above.
 
 1. q20 asks about "headphones"; the warranty table says "Electronics | **1 year**" and was ranked
    7th. Add the document title and section to the *content* of table rows (not just the heading
@@ -915,6 +1018,11 @@ uv run pytest ../../ch04          # 26 offline tests: chunkers, RRF, metrics, go
   nothing.
 - pgvector filters after the HNSW scan: turn on `hnsw.iterative_scan`, or a filtered query can
   return 11 rows when you asked for 30.
+
+This pipeline answers well when the answer is written in a document. Many support questions also
+need facts about one customer or one order, and those live in the database, not the docs. In
+Chapter 5 we keep this retriever as one tool and give an agent a second one for SQL. The agent
+then decides what to look up, checks whether it found enough, and cites both.
 
 ## References
 

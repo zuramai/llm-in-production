@@ -20,48 +20,73 @@ back for sycophancy ([OpenAI](https://openai.com/index/expanding-on-sycophancy/)
 change", degraded Claude's answers for weeks while their evals stayed green
 ([Anthropic](https://www.anthropic.com/engineering/a-postmortem-of-three-recent-issues)).
 
-This chapter ships two services we built earlier, Chapter 1's support chatbot and Chapter 6's
-data bot, the way a backend team ships anything: versioned images, Compose for one host,
-Kubernetes for many, a CI pipeline with an **eval gate**, and a **prompt canary** that sends a
-new system prompt to 10% of customers before everyone. We run all of it on one machine with
-kind, break the naive version on purpose, and measure each fix.
+Chapter 19 closed Part V, on models and compute, with a reminder: what you own is the
+dataset, the converter and the eval, not the model. This chapter opens Part VI, on scale,
+and moves from *which* model we run to *how* we ship the services around it. The eval
+idea comes with us: here it becomes a gate that every release has to pass.
+
+We ship two services we built earlier, Chapter 1's support chatbot and Chapter 6's data bot,
+the way a backend team ships anything. That means versioned images, Compose for one host and
+Kubernetes for many. It also means a CI pipeline with an **eval gate**, and a **prompt canary**
+that sends a new system prompt to 10% of customers before everyone gets it. We run all of it on
+one machine with kind (Kubernetes in Docker), break the naive version on purpose, and measure
+each fix.
+
+The diagram below shows what runs where: the two services, their images, and the cluster they
+end up in.
 
 ![What runs where](images/20-architecture.svg)
 
 ## The problem
 
-Both bots work on a laptop. Chapter 1's chatbot runs as one `uvicorn` process with the
-conversation history in a Python dictionary. Chapter 6's data bot answers from a terminal. The
-platform team now wants them on the company cluster, behind the same deploy pipeline as every
-other service, and the support lead wants to try a shorter, citation-style prompt without
-betting every customer on it.
+Before we deploy anything, let's look at where the two bots stand today. Both work on a laptop.
+Chapter 1's chatbot runs as one `uvicorn` process and keeps the conversation history in a
+Python dictionary. Chapter 6's data bot answers from a terminal. The platform team now wants
+both on the company cluster, behind the same deploy pipeline as every other service. The
+support lead also wants to try a shorter, citation-style prompt without betting every customer
+on it.
 
-That request hides four questions this chapter answers with measurements:
+That request hides four questions. This chapter answers each with measurements:
 
-1. **What goes in the image?** Size, start-up, what happens when the cluster has no internet.
-2. **What breaks when there are three copies instead of one?** Memory, deploys, node maintenance.
+1. **What goes in the image?** Its size, its start-up, and what happens when the cluster has
+   no internet.
+2. **What breaks when there are three copies instead of one?** Memory, deploys, node
+   maintenance.
 3. **How do we change a prompt safely?** A percentage canary, and how to decide.
 4. **What stops a bad change from shipping at all?** An eval gate in CI.
 
 ## Requirements
 
-| Type | Requirement | Target |
-|---|---|---|
-| Functional | Both services run from versioned images, on Compose and on Kubernetes | ✅ on one host and on a 3-node kind cluster |
-| Functional | A conversation keeps its history across replicas | 100% of follow-up turns see the full history |
-| Functional | A new prompt version reaches a configurable share of sessions, sticky per session, reversible | split within ±5 points of the setting; rollback is one command |
-| Functional | No image ships unless the eval gate passes | the gate blocks a known regression |
-| Non-functional | Rolling deploy under load | 0 failed requests |
-| Non-functional | Image | < 250 MB, non-root, starts with no internet access |
-| Non-functional | Scaling | 2 → up to 6 pods under load, back to 2 after |
-| Non-functional | Node maintenance | ≥ 1 chat pod serving while nodes drain |
-| Non-functional | Hosted model spend for the chapter | < $1 |
+Those four questions turn into a concrete definition of "done". First, what the deployment must
+do:
+
+- **Run anywhere from versioned images.** Both services run from versioned images, on Compose
+  and on Kubernetes. Target: ✅ on one host and on a 3-node kind cluster.
+- **Remember the conversation on any replica.** A conversation keeps its history even when the
+  next turn lands on another copy of the service. 100% of follow-up turns must see the full
+  history.
+- **Roll out a new prompt gradually.** A new prompt version reaches a configurable share of
+  sessions. Each session keeps its version (it is *sticky*), and the change is reversible. The
+  real split must stay within ±5 points of the setting, and rollback is one command.
+- **Ship nothing that fails the eval gate.** The gate must block a known regression.
+
+Then, how well it must do it:
+
+- **Deploy without dropping anyone.** A rolling deploy under load has 0 failed requests.
+- **Keep the image lean and safe.** Under 250 MB, running as a non-root user, and able to start
+  with no internet access.
+- **Scale with the load.** From 2 up to 6 pods under load, and back to 2 after.
+- **Survive node maintenance.** ≥ 1 chat pod keeps serving while nodes are drained.
+- **Stay cheap.** Hosted model spend for the whole chapter stays < $1.
+
+At the end of the chapter we check every item against measured numbers.
 
 ## The data
 
-No new business data. The deploy adds one table, for conversation history, in its own schema and
-reachable only by a least-privilege role (`ch20_app`: `SELECT, INSERT, UPDATE, DELETE` on that
-table, nothing else):
+To meet those targets we need very little new data, but we do need one place to keep
+conversations outside the pods. There is no new business data. The deploy adds one table, for
+conversation history, in its own schema. Only a least-privilege role can reach it (`ch20_app`:
+`SELECT, INSERT, UPDATE, DELETE` on that table, nothing else):
 
 ```mermaid
 erDiagram
@@ -72,9 +97,12 @@ erDiagram
     }
 ```
 
-The eval gate reuses two earlier sets, copied into this chapter: Chapter 1's six support
+The table holds state; the other input is the evals that will guard each release. The eval gate
+reuses two earlier sets, copied into this chapter: Chapter 1's six support
 questions with deterministic checks ([`eval/gate_chat.yaml`](01_main-chapter-code/eval/gate_chat.yaml))
 and 22 of Chapter 6's data questions with gold SQL ([`eval/gate_sqlbot.yaml`](01_main-chapter-code/eval/gate_sqlbot.yaml)).
+
+To get the database up and run the whole chapter end to end:
 
 ```bash
 docker compose -f datasets/shopflow/docker-compose.yml up -d   # ShopFlow Postgres on :5433
@@ -82,11 +110,13 @@ cd ch20/01_main-chapter-code
 uv run jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=1800 ch20.ipynb
 ```
 
-The notebook creates the `ch20` schema and role itself (`ch20_ops.setup_db()`, idempotent).
+The notebook creates the `ch20` schema and role itself (`ch20_ops.setup_db()`, idempotent). The
+notebook also drives the cluster, so we need a few command-line tools first.
 
 ### Tools
 
-Docker (with Compose v2) plus three static binaries. No root needed: they go in `~/.local/bin`.
+We need Docker (with Compose v2) plus three static binaries: kind, kubectl and Helm. No root is
+needed, because they go in `~/.local/bin`.
 
 ```bash
 mkdir -p ~/.local/bin
@@ -101,6 +131,9 @@ On macOS, `brew install kind kubectl helm` does the same. Check the kubectl down
 
 ## Concepts
 
+With the tools in place, a few ideas make the rest of the chapter easier to follow. We start
+with the thing we ship, the image, and work outwards to the cluster and the release process.
+
 ### An image is a frozen environment; a multi-stage build keeps only what runs
 
 A **container image** is a file system snapshot plus a start command: Python, our dependencies,
@@ -108,13 +141,14 @@ our code. It's the unit we test, ship and roll back, like a compiled binary. A *
 build** uses one stage (with compilers, `uv`, caches) to *produce* the environment and a second,
 clean stage that *copies in* only the result. Build tools never reach production.
 
-Layer order matters as much as stages. Docker caches each instruction; the first changed one
+Layer order matters as much as stages. Docker caches each instruction, and the first changed one
 invalidates everything after it. Dependencies change weekly and code changes hourly, so
 dependencies go first.
 
 ### Configuration lives outside the image
 
-The same image must run in CI, staging and production, so anything that differs between them
+An image is frozen, but the places it runs are not. The same image must run in CI, staging and
+production, so anything that differs between them
 (model name, prompt version, canary percentage, database address, API keys) comes from
 **environment variables**. Each service reads exactly the variables it needs at start-up
 (`services/*/ch20_*/settings.py`) and refuses to start on a bad value. On Kubernetes, plain
@@ -129,8 +163,10 @@ settings come from a **ConfigMap** and credentials from a **Secret**.
 
 ### Kubernetes in seven objects
 
-Kubernetes is a control loop: we declare the state we want in YAML, and controllers keep
-nudging the cluster towards it. These are the seven objects this chapter uses:
+Once images and settings are in place, something has to run them on many machines and keep
+them running. Kubernetes is a control loop: we declare the state we want in YAML, and
+controllers keep nudging the cluster towards it. The table lists the objects this chapter uses;
+read the right-hand column if the names are new:
 
 | Object | What it does | Analogy |
 |---|---|---|
@@ -157,10 +193,13 @@ that's minutes, and getting it wrong is a classic:
 
 ### What happens when a pod is replaced
 
-Every deploy replaces pods. Two things then happen *in parallel*, and that's the trap: the
+Probes tell Kubernetes when a pod can take traffic. The riskiest moment for that is a deploy,
+because every deploy replaces pods. Two things then happen *in parallel*, and that's the trap: the
 kubelet sends the container `SIGTERM`, and the endpoint controller removes the pod from the
 Service. Until every node's kube-proxy has caught up, new connections still arrive at a pod that
 is shutting down, and streams that are mid-answer are cut when the process exits.
+
+The diagram traces one old pod through a deploy. Watch the two parallel branches in the middle:
 
 ```mermaid
 sequenceDiagram
@@ -192,7 +231,9 @@ need a `sleep` binary or a shell for it.
 
 ### Shipping a prompt: canary, and the gate before it
 
-A prompt is code that no compiler checks. We treat a prompt change like a risky deploy:
+Everything so far is about shipping code safely. But in an LLM service the behavior also lives
+in the prompt, and a prompt is code that no compiler checks. So we treat a prompt change like a
+risky deploy:
 
 - **Eval gate** (in CI): before an image ships, run the eval set against the *running* services,
   started from the candidate image. Fail the pipeline below a bar.
@@ -202,6 +243,9 @@ A prompt is code that no compiler checks. We treat a prompt change like a risky 
 An eval gate catches what you thought to test. A canary catches what you didn't, at a bounded
 blast radius. Anthropic's postmortem names both halves: their evals "simply didn't capture the
 degradation users were reporting", and they deploy to small canary groups first.
+
+The flowchart below shows the full path a change takes, from pull request to 100% of traffic.
+Each diamond and double box is a point where it can be stopped:
 
 ```mermaid
 flowchart LR
@@ -217,8 +261,9 @@ flowchart LR
 
 ## v0: the naive solution
 
-The first deployment most of us write has two files. A Dockerfile that copies the repository
-and `pip install`s whatever is current:
+With the concepts in hand, let's first deploy the bots the way most of us would on a first try,
+so we can see what breaks. The first deployment most of us write has two files. The first is a
+Dockerfile that copies the repository and `pip install`s whatever is current:
 
 ```dockerfile
 # ch20/01_main-chapter-code/services/chat/Dockerfile.naive
@@ -242,13 +287,14 @@ the canary analysis needs later.
 
 ## Measuring v0
 
-We measure with a **fake LLM**, a 60-line OpenAI-compatible server
+v0 answers a `curl`, but that tells us little about how it behaves under real traffic and real
+deploys. So we measure it. We use a **fake LLM**, a 60-line OpenAI-compatible server
 ([`services/fakellm`](01_main-chapter-code/services/fakellm/ch20_fakellm.py)) deployed in the
-cluster. It streams 40 words in about 2.3 s and starts every answer with how many user messages
+cluster. It streams 40 words in about 2.3 s. It starts every answer with how many user messages
 it received, so a client can check whether the service sent the whole conversation. Load tests
 against it cost nothing and don't depend on a provider's latency.
 
-Four measurements, all in the notebook.
+We take four measurements, all in the notebook.
 
 **The image.** The naive image is 1,206 MB and runs as root. After a one-line code change it
 rebuilt in 69.7 s, because `COPY . .` comes before `pip install` and invalidates it; that
@@ -310,10 +356,13 @@ failure can take most of the capacity with it.
 
 ## Iterating
 
+Each of the four measurements found a real problem. We fix them one at a time, starting with
+the image, because every later fix ships inside it.
+
 ### 1. A multi-stage image that starts offline
 
-What's wrong: the naive image is 1.2 GB, runs as root, reinstalls every dependency on each
-code change, floats on unpinned versions and can't start without the internet.
+What's wrong: the naive image is 1.2 GB and runs as root. It reinstalls every dependency on
+each code change, floats on unpinned versions and can't start without the internet.
 
 Options: slim base + `pip install -r requirements.txt` (simple, unpinned transitive deps);
 multi-stage with `uv sync --locked` (pinned, small); distroless/Chainguard bases (smaller still,
@@ -382,8 +431,9 @@ tagged `1.0.0`, never `latest`.
 
 ### 2. Sessions in Postgres, not in the pod
 
-What's wrong: the bot forgot 19 of 30 conversations on the second turn, because each replica
-keeps its own history in memory.
+The image is now small and starts offline, but it still keeps conversations in memory. What's
+wrong: the bot forgot 19 of 30 conversations on the second turn, because each replica keeps its
+own history in memory.
 
 Options: sticky sessions at the load balancer (session affinity: cheap, but a restart or a
 scale-down still loses the history, and load spreads unevenly); Redis (fast, one more stateful
@@ -440,8 +490,9 @@ connections per turn; a connection pool is the obvious next step at higher traff
 
 ### 3. Probes and graceful shutdown
 
-What's wrong: 136 of 879 requests (15.5%) failed during one rolling restart, 32 of them cut
-mid-answer, and the rollout reported success before the new pods could serve.
+Conversations now survive any replica, so the next weakness is the deploy itself. What's wrong:
+136 of 879 requests (15.5%) failed during one rolling restart, 32 of them cut mid-answer, and
+the rollout reported success before the new pods could serve.
 
 The fix is four settings in [`k8s/base/chat.yaml`](01_main-chapter-code/k8s/base/chat.yaml):
 
@@ -531,8 +582,9 @@ store has nothing to serve, but recovery takes seconds, not a restart storm.
 
 ### 4. Autoscaling and disruption budgets
 
-What's wrong: v0 has a fixed replica count. Three pods idle at night and saturate at peak, and
-a node upgrade evicts every pod on the node at once.
+Deploys no longer drop requests, but the number of pods is still fixed by hand. What's wrong: v0
+has a fixed replica count. Three pods idle at night and saturate at peak, and a node upgrade
+evicts every pod on the node at once.
 
 The HPA targets 60% of the chat container's 100m CPU request, between 2 and 6 pods
 ([`k8s/base/chat-scaling.yaml`](01_main-chapter-code/k8s/base/chat-scaling.yaml)). We shortened
@@ -609,8 +661,9 @@ drain hang, so a unit test checks `minAvailable` is below the HPA's `minReplicas
 
 ### 5. An eval gate in front of every image
 
-What's wrong: nothing above checks whether the service still *answers well*. A prompt edit, a
-model bump or a "harmless" cleanup of the semantic context ships as easily as a typo fix.
+The service now survives deploys, load and node drains. What's wrong: nothing above checks
+whether the service still *answers well*. A prompt edit, a model bump or a "harmless" cleanup of
+the semantic context ships as easily as a typo fix.
 
 The gate ([`ch20_eval_gate.py`](01_main-chapter-code/ch20_eval_gate.py)) runs against the
 services *as deployed*, the Compose `prod` profile started from the candidate images, so it
@@ -704,10 +757,12 @@ ignores items that already fail on main.
 
 ### 6. A prompt canary
 
-What's wrong: the support lead wants prompt v2 ([`support-v2.md`](01_main-chapter-code/services/chat/ch20_chat/prompts/support-v2.md)):
-at most 2 sentences, and a `[FAQ section]` citation at the end of every answer that comes from
-the FAQ. The gate's six checks pass on it, but six questions say nothing about tone, length or
-how real customers phrase things. Shipping it to everyone is a bet.
+The gate catches what we thought to test. Some changes need real customers to judge. What's
+wrong: the support lead wants prompt v2
+([`support-v2.md`](01_main-chapter-code/services/chat/ch20_chat/prompts/support-v2.md)): at
+most 2 sentences, and a `[FAQ section]` citation at the end of every answer that comes from the
+FAQ. The gate's six checks pass on it, but six questions say nothing about tone, length or how
+real customers phrase things. Shipping it to everyone is a bet.
 
 Options: **blue/green** (run both versions, flip all traffic at once: instant rollback, but every
 customer is exposed at the flip); **shadow** (send real traffic to v2 too and discard its
@@ -817,7 +872,8 @@ the logs of the new pods, not from one request.
 
 ## Production hardening
 
-What the hardened manifests and images do beyond the measured fixes above:
+The six fixes above each answered a measured failure. The hardened manifests and images also do
+several things we didn't stage a failure for, but that a real cluster expects:
 
 - **Least privilege, per service.** The data bot gets only the read-only DSN; the chat service
   gets a role that can touch one table (`ch20.chat_sessions`). Each service declares its own
@@ -853,7 +909,12 @@ What the hardened manifests and images do beyond the measured fixes above:
 
 ## Serving it
 
+With the hardened images and manifests ready, here is how to run them yourself, from one host
+up to a full pipeline.
+
 ### On one host: Compose
+
+Compose is the quickest way to run both services together on a single machine:
 
 ```bash
 cd ch20/01_main-chapter-code
@@ -881,6 +942,9 @@ latency, usage and the pod name. The chat API is Chapter 1's (`POST /chat`, SSE)
 
 ### On Kubernetes: kind
 
+Compose covers one host. To see replicas, probes and the canary at work, we need a cluster, and
+kind gives us one inside Docker:
+
 ```bash
 kind create cluster --name ch20 --config ch20/01_main-chapter-code/k8s/kind-config.yaml
 kind load docker-image --name ch20 shopflow-chat:1.0.0 shopflow-sqlbot:1.0.0 shopflow-fakellm:1.0.0
@@ -898,9 +962,11 @@ http://localhost:8420 (kind maps the NodePorts to the host).
 
 ### The CI/CD pipeline
 
+So far we have run each step by hand. In a team, a pipeline runs them in order on every change.
 [`github-workflows/deploy.yml`](01_main-chapter-code/github-workflows/deploy.yml) wires the
 pieces together. It lives in the chapter folder, not in this repository's `.github/`, because it
-deploys to clusters we don't have; copy it into your own repository's `.github/workflows/`.
+deploys to clusters we don't have. Copy it into your own repository's `.github/workflows/`. The
+table shows each job and what stops it:
 
 | Job | What it does | Gate |
 |---|---|---|
@@ -987,6 +1053,9 @@ spec:
 
 ## Results
 
+Time to go back to the Requirements list. The table puts each target next to what we measured,
+with v0's numbers where we have them:
+
 | Requirement | Target | Measured |
 |---|---|---|
 | Images on Compose and Kubernetes | both | ✅ Compose `prod` healthy in 5.8 s; 3-node kind cluster ready in 62 s |
@@ -1000,6 +1069,9 @@ spec:
 | Hosted spend | < $1 | $0.053 for the final notebook run (sum of `usage.cost`) |
 
 ## Exercises
+
+These exercises push on the parts of the chapter where our choices were simplest: the shutdown
+sleep, the CPU signal, the gate and the canary verdict.
 
 1. Remove the `preStop` sleep from `k8s/base/chat.yaml` (keep everything else) and rerun the
    rolling-restart cell. How many requests fail now, and which `status` do they have? Then set
@@ -1033,6 +1105,11 @@ spec:
   comparison with main catch regressions that an average hides.
 - Treat a prompt like a release: version it, canary it on a sticky hash of the session,
   analyse the canary from per-request logs, and keep rollback one command away.
+
+We now ship the bots like any other service, and a deploy no longer costs us a single request.
+But every load test here used at most 40 concurrent streams against a fake model. Chapter 21 asks
+what happens at a million monthly users: it load-tests the Chapter 1 API, finds where it breaks,
+and adds rate limits, failover and job queues to fix each bottleneck.
 
 ## References
 

@@ -14,22 +14,30 @@ connection pooler, proxy, and query"
 ([OpenAI](https://openai.com/index/scaling-postgresql/), January 2026). Boring tools, applied in
 the right order, after measuring.
 
-That's the spirit of this chapter. ShopFlow's support bot from Chapter 1 works for one person
-clicking around. Marketing now wants it on every product page, in the app and in the order
-confirmation emails: about a million monthly users. Before anyone says "Kubernetes" or "Kafka",
-we do the napkin math, load-test the Chapter 1 API against a fake LLM, find out exactly where it
-breaks, and fix each bottleneck with the smallest tool that works.
+That's the spirit of this chapter. In Chapter 20 we packaged ShopFlow's chat API into containers
+and rolled it out on Kubernetes, with eval gates and canaries. A deploy that works for a handful
+of pods doesn't tell us what happens when real traffic arrives, though. That's the question for
+this chapter, the second in Part VI on scale.
+
+ShopFlow's support bot from Chapter 1 works for one person clicking around. Marketing now wants
+it on every product page, in the app and in the order confirmation emails: about a million
+monthly users. Before anyone says "Kubernetes" or "Kafka", we do the napkin math. Then we
+load-test the Chapter 1 API against a fake LLM, find out exactly where it breaks, and fix each
+bottleneck with the smallest tool that works.
+
+The diagram below shows the architecture we end up with.
 
 ![Architecture we end up with](images/21-architecture.svg)
 
 ## The problem
 
-The Chapter 1 API is about 90 lines of FastAPI. It streams answers over Server-Sent Events, keeps
-conversations in an in-process dictionary, and calls the model with the synchronous OpenAI client
-from a worker thread. That last choice came with a promise in Chapter 1's decision box: "Chapter 21
-load-tests this and switches to `AsyncOpenAI`." Time to pay up.
+Before we scale anything, let's look at what we're scaling. The Chapter 1 API is about 90 lines
+of FastAPI. It streams answers over Server-Sent Events, keeps conversations in an in-process
+dictionary, and calls the model with the synchronous OpenAI client from a worker thread. That
+last choice came with a promise in Chapter 1's decision box: "Chapter 21 load-tests this and
+switches to `AsyncOpenAI`." Time to pay up.
 
-Four questions decide whether it survives a million users:
+Whether it survives a million users comes down to four questions:
 
 1. **How much traffic is a million users, really?** Requests per second at the busiest minute,
    tokens per day, dollars per day, and the rate limits we must buy from the provider.
@@ -42,20 +50,30 @@ Four questions decide whether it survives a million users:
 
 ## Requirements
 
-| Type | Requirement | Target |
-|---|---|---|
-| Functional | Same chat behavior as Chapter 1 (streaming, memory, FAQ grounding) | unchanged |
-| Functional | Survive a primary-provider outage | 0 failed chats while a second provider is up |
-| Functional | Async jobs run exactly once to completion, even if a worker dies | 0 jobs lost, 0 run twice concurrently |
-| Non-functional | Throughput per API process | ≥ 90% of the closed-loop ideal at 300 concurrent users |
-| Non-functional | Added latency under load | TTFT p95 within 10% of the model's own TTFT |
-| Non-functional | Health checks under load | `/healthz` p95 < 100 ms (or the load balancer kills healthy pods) |
-| Non-functional | Rate limits | stay under the provider's limit instead of bouncing off it |
-| Non-functional | Cost | known in $/day before launch |
+Those four questions turn into a concrete list. First, what the system must do:
+
+- **Chat exactly like Chapter 1.** Streaming, memory and FAQ grounding stay unchanged.
+- **Survive a primary-provider outage.** As long as a second provider is up, 0 chats fail.
+- **Run background jobs exactly once.** Each async job runs to completion even if a worker dies.
+  We expect 0 jobs lost and 0 jobs running twice at the same time.
+
+Then, how well it must do it under load:
+
+- **Use the hardware well.** One API process delivers at least 90% of the closed-loop ideal
+  throughput at 300 concurrent users. The closed-loop ideal is what users would get if the
+  server added no waiting at all; we define it in the load-test section.
+- **Add almost no latency.** The time to first token (TTFT) at p95, meaning the value 95% of
+  requests beat, stays within 10% of the model's own TTFT.
+- **Keep health checks fast.** `/healthz` answers in under 100 ms at p95. Otherwise the load
+  balancer kills healthy pods.
+- **Respect rate limits.** We stay under the provider's limit instead of bouncing off it.
+- **Know the cost.** We know the bill in $/day before launch.
+
+At the end of the chapter we check each item against measured numbers.
 
 ## The data
 
-There's no new dataset. We reuse two things:
+Load tests need realistic traffic, but they don't need a new dataset. We reuse two things:
 
 - **ShopFlow's 180 days of orders** (`orders.placed_at`, [schema](../datasets/shopflow/schema.sql))
   to find the shape of a day: when do customers show up? Chat traffic follows shopping traffic.
@@ -63,8 +81,9 @@ There's no new dataset. We reuse two things:
   [`previous_chapters.py`](01_main-chapter-code/previous_chapters.py), so the API we load-test
   is the real one.
 
-The queue lives in its own schema, `ch21`, in the same database. `ch21_jobqueue.setup()` creates it
-idempotently:
+The only new storage is the job queue we build in step 6. It lives in its own schema, `ch21`, in
+the same database, and `ch21_jobqueue.setup()` creates it idempotently (running it twice is
+safe). The diagram shows its two tables:
 
 ```mermaid
 erDiagram
@@ -88,6 +107,8 @@ erDiagram
     }
 ```
 
+To follow along, start the ShopFlow database and run the notebook:
+
 ```bash
 docker compose -f datasets/shopflow/docker-compose.yml up -d      # Postgres on :5433
 cd ch21/01_main-chapter-code
@@ -95,6 +116,10 @@ uv run jupyter nbconvert --to notebook --execute --inplace ch21.ipynb   # ~20 mi
 ```
 
 ## Concepts
+
+Before we load-test anything, we need a few ideas that explain *why* things break under load.
+All of them are about queues: how many requests wait, where they wait, and who decides when
+they may go.
 
 ### Little's law: the one formula of capacity planning
 
@@ -112,8 +137,10 @@ dashboard. *Concurrent streams* sizes the servers.
 
 ### Three queues inside one Python process
 
-A FastAPI process has three fixed-size queues between a customer and the model. Each looks
-infinite until load finds it.
+Little's law tells us how many streams are open at once. The next question is where those
+streams wait inside our server. A FastAPI process has three fixed-size queues between a customer
+and the model. Each looks infinite until load finds it. The table lists them; the last column is
+the symptom to look for in production.
 
 | Queue | What waits in it | Default size | Symptom when full |
 |---|---|---|---|
@@ -138,9 +165,11 @@ has 40 threads.
 
 ### Rate limits are token buckets
 
-Providers don't count "60 requests per minute" by resetting a counter every minute. Anthropic's
-docs: "The API uses the token bucket algorithm to do rate limiting. This means that your capacity
-is continuously replenished up to your maximum limit, rather than being reset at fixed intervals"
+The three queues above are inside our own process. The provider also limits how fast we may
+send, and it does so with rate limits. Providers don't count "60 requests per minute" by
+resetting a counter every minute. Anthropic's docs: "The API uses the token bucket algorithm to
+do rate limiting. This means that your capacity is continuously replenished up to your maximum
+limit, rather than being reset at fixed intervals"
 ([Anthropic](https://platform.claude.com/docs/en/api/rate-limits)). A **token bucket** holds up
 to *capacity* tokens and refills at a steady *rate*. Each request spends one token (or, for a TPM
 limit, one per LLM token). An empty bucket means 429.
@@ -162,6 +191,7 @@ with jitter" when there's no usable `Retry-After` header
 
 ### Retries, backoff and jitter
 
+When the bucket is empty, the usual reaction is to try again. How we try again matters a lot.
 A **retry** re-sends a failed request. **Exponential backoff** waits longer each time (0.5 s,
 1 s, 2 s, 4 s...). **Jitter** randomizes the wait, so a thousand clients that failed together
 don't retry together. Marc Brooker's AWS post is the reference: "The solution isn't to remove
@@ -178,8 +208,9 @@ the retry-storm experiment below.
 
 ### Napkin math for a million monthly users
 
+With these ideas in place, we can turn "a million users" into numbers our servers understand.
 Monthly active users (MAU) is a marketing number. Servers care about the busiest second. The
-chain is short:
+chain from one to the other is short:
 
 ```mermaid
 flowchart LR
@@ -193,12 +224,17 @@ flowchart LR
     H -->|"x price"| I["$/day"]
 ```
 
+Read the chain from left to right. Each arrow multiplies or divides by one factor, and every
+factor is either measured or a stated assumption.
+
 The peak factor isn't a guess. ShopFlow's 180 days of orders say when customers show up:
 
 ```
 orders: 30,433  busiest hour: 20:00 ET (7.7% of the day)
 peak-hour factor 1.84 x busiest-weekday factor 1.24 = 2.29
 ```
+
+So the busiest hour sees 2.29 times the average traffic. The chart shows the full daily shape.
 
 ![ShopFlow orders by hour of day, relative to the daily average](images/21-hourly-profile.png)
 
@@ -220,7 +256,8 @@ def input_tokens_per_session(system: int, user: int, output: int, turns: int) ->
     return sum(system + k * user + (k - 1) * output for k in range(1, turns + 1))
 ```
 
-Second, **latency is long**, so concurrency is high. The output, from the notebook:
+Second, **latency is long**, so concurrency is high. Here is the output from the notebook. Look
+at the last line: concurrent streams, not RPS, is what sizes the servers.
 
 ```
 daily active users                          200,000.0
@@ -237,11 +274,14 @@ design output TPM                           110,736.4
 design concurrent streams (Little)               98.8
 ```
 
-Then dollars, with OpenRouter prices as of 2026-11. The system prompt is 92% of the average
-call's input and identical every time, so it's a perfect prompt-cache candidate. gpt-6-luna bills
-cached input at 10% of the input price (Chapter 1 saw `cached_tokens` on every repeated call). We
-don't assume caching for the Claude models, because through OpenRouter that needs explicit cache
-breakpoints (Chapter 15).
+Traffic tells us how big the servers must be. Dollars tell us whether we can afford it. We use
+OpenRouter prices as of 2026-11. The system prompt is 92% of the average call's input and
+identical every time, so it's a perfect prompt-cache candidate. gpt-6-luna bills cached input at
+10% of the input price (Chapter 1 saw `cached_tokens` on every repeated call). We don't assume
+caching for the Claude models, because through OpenRouter that needs explicit cache breakpoints
+(Chapter 15).
+
+The table compares three models, plus gpt-6-luna with the prompt cache:
 
 | model | prompt cache | $/day | $/month | $/1k messages |
 |---|---|---|---|---|
@@ -250,8 +290,9 @@ breakpoints (Chapter 15).
 | anthropic/claude-sonnet-5.5 | no | 3,318.00 | 99,540 | 2.7650 |
 | openai/gpt-6-luna | yes (92% of input) | 42.35 | 1,270 | 0.0353 |
 
-A reality check against the real bill: our five calibration calls averaged **$0.000054** per
-first-turn message on gpt-6-luna, but that average hides a cold cache. The first call had 0 of
+Prompt caching cuts the gpt-6-luna bill from $165.90 to $42.35 a day. Let's check that against
+the real bill: our five calibration calls averaged **$0.000054** per first-turn message on
+gpt-6-luna, but that average hides a cold cache. The first call had 0 of
 1,160 prompt tokens cached and cost $0.000158; the other four had 1,143 cached and cost
 $0.000019–0.000026. The napkin's $0.0353 per 1,000 messages ($0.000035 each) is an average over
 all four turns of a warm-cache conversation, so later, longer turns cost a little more than the
@@ -270,12 +311,13 @@ tokens (Anthropic does: "Claude's default ITPM rate limits count only uncached i
 
 ## v0: the naive solution
 
+The napkin math gave us targets. Now we need to find out how far the existing code is from them.
 v0 is Chapter 1's API, copied to
 [`ch21_chat_api.py`](01_main-chapter-code/ch21_chat_api.py) with one change: the LLM call is
 selected by `CH21_MODE`, so the same file can run the original design and its alternatives.
 `thread` is Chapter 1 as shipped: a `def` endpoint returning a sync generator, which
 sse-starlette iterates in AnyIO's worker threads. `blocking` is what many people write first
-when they "make it async":
+when they "make it async". Here is that version:
 
 ```python
 # ch21/01_main-chapter-code/ch21_chat_api.py
@@ -290,7 +332,10 @@ elif MODE == "blocking":
         return EventSourceResponse(events())
 ```
 
-The load test needs a model that is fast, free and predictable, with the *shape* of a real one.
+This looks harmless: it is `async def`, after all. The load test will show what it costs.
+
+To run that load test, we need a model that is fast, free and predictable, with the *shape* of a
+real one.
 [`mock_llm_server.py`](01_main-chapter-code/mock_llm_server.py) is a 200-line FastAPI app that
 speaks enough of `POST /v1/chat/completions` (streaming, `stream_options.include_usage`,
 `max_tokens`) for the OpenAI SDK to accept it. Everything is configurable: time to first token,
@@ -303,6 +348,8 @@ keeps a session, asks FAQ questions with 0.5–1.5 s of think time, and reads th
 end. A streamed response isn't done when its headers arrive, so it records two custom metrics,
 `ttft` and `chat` (until the `done` event). A single `HealthProbe` user calls `/healthz` four
 times a second, like a load balancer would.
+
+The diagram shows one request's path through the test setup:
 
 ```mermaid
 sequenceDiagram
@@ -323,10 +370,13 @@ percentiles from the per-request CSV.
 
 ## Measuring v0
 
+We have three API designs and a test harness. Before we trust any number from it, the mock has to
+look like the real model.
+
 ### Calibrating the mock
 
-A mock is only useful if it behaves like the model. Five streaming calls to `openai/gpt-6-luna`
-with Chapter 1's full system prompt:
+A mock is only useful if it behaves like the model. So we made five streaming calls to
+`openai/gpt-6-luna` with Chapter 1's full system prompt:
 
 ```
                                 question  ttft_s  total_s  prompt_tokens  cached  completion_tokens  decode_tok_s  cost_usd
@@ -339,14 +389,16 @@ My payment failed but I see a charge on    0.913    1.402           1166    1143
 mock config: {'ttft_ms': 1333, 'tokens_per_s': 86, 'output_tokens': 29} | median total latency 1.55s | cost 0.000272 USD
 ```
 
-The first call took 2.6 s to the first token, on a cold prompt cache. That's real provider
-variance, and the mock doesn't reproduce it (it uses the medians). Real p95 latency will be worse
-than anything below.
+The mock takes the medians of these calls as its configuration. The first call took 2.6 s to the
+first token, on a cold prompt cache. That's real provider variance, and the mock doesn't
+reproduce it, because it uses the medians. Real p95 latency will be worse than anything below.
 
 ### The ladder
 
-Then the ladder: 25 to 300 concurrent users per mode, 30 s each. The dashed line in the chart is
-the closed-loop ideal: each user completes one chat per (1.55 s + 1 s mean think time).
+With a calibrated mock, we can push each design until it breaks. We climb a ladder: 25 to 300
+concurrent users per mode, 30 s each. The dashed line in the chart is the closed-loop ideal: each
+user completes one chat per (1.55 s + 1 s mean think time). In the table, compare `chats/s` with
+the user count, and watch the `/healthz` column.
 
 | mode | users | chats/s | TTFT p50 | TTFT p95 | chat p95 | `/healthz` p95 | streams at the mock |
 |---|---|---|---|---|---|---|---|
@@ -365,7 +417,7 @@ the closed-loop ideal: each user completes one chat per (1.55 s + 1 s mean think
 
 ![Throughput and TTFT p95 per mode as concurrent users grow](images/21-throughput-latency.png)
 
-What the numbers say:
+Here is what the numbers say:
 
 - **`blocking` serves one customer at a time.** The mock never saw more than **1** request in
   flight. Throughput is 0.6 chats/s, whatever the user count, which is 1 / 1.64 s, one answer at
@@ -395,10 +447,15 @@ What the numbers say:
 
 ## Iterating
 
+The ladder found three problems: a blocking call on the event loop, a 40-thread cap in Chapter
+1's design, and a CPU wall for a single async process. We fix them in that order. Then we turn
+to the limits a real provider brings: pool sizes, retries, rate limits and outages.
+
 ### 1. Off the event loop and onto more cores
 
-Two candidate fixes for `thread` mode: raise AnyIO's limit from 40 to 400 threads, or switch to
-`AsyncOpenAI`. And for the single-process CPU wall: run more processes (`uvicorn --workers 4`).
+`thread` mode has two candidate fixes: raise AnyIO's limit from 40 to 400 threads, or switch to
+`AsyncOpenAI`. For the single-process CPU wall, the fix is to run more processes
+(`uvicorn --workers 4`). The table compares all three at 300 users:
 
 | configuration | users | chats/s | TTFT p50 | TTFT p95 | chat p95 | `/healthz` p95 | streams at the mock |
 |---|---|---|---|---|---|---|---|
@@ -422,8 +479,10 @@ mock's own 1,333 ms (+0.6%), and health checks answer in 3 ms instead of 162 ms.
 
 ### 2. Size the connection pool on purpose
 
-`AsyncOpenAI` sends requests through an httpx connection pool. The SDK sets it to 1,000
-connections, far above httpx's own default of 100, which has tripped up many people
+Async removed the thread limit, but it didn't remove every queue. The third queue from Concepts,
+the HTTP connection pool, is still there. `AsyncOpenAI` sends requests through an httpx
+connection pool. The SDK sets it to 1,000 connections, far above httpx's own default of 100,
+which has tripped up many people
 ([encode/httpx #1171](https://github.com/encode/httpx/issues/1171): "PoolTimeout when num tasks
 in asyncio.gather() exceeds client max_connections"). We shrank it to 20 to see what a pool
 limit looks like from the outside:
@@ -434,6 +493,8 @@ limits = httpx2.Limits(max_connections=MAX_CONNECTIONS,
                        max_keepalive_connections=MAX_CONNECTIONS)
 http_client = openai.DefaultAsyncHttpxClient(limits=limits)
 ```
+
+The table compares the shrunken pool with the SDK default at 100 users:
 
 | pool size | users | chats/s | TTFT p50 | TTFT p95 | `/healthz` p95 | streams at the mock |
 |---|---|---|---|---|---|---|
@@ -470,8 +531,9 @@ _redis = aredis.Redis(connection_pool=aredis.BlockingConnectionPool.from_url(
 
 ### 3. Retries: the SDK's, and when not to rely on them
 
-With the mock returning 429 on 10% of calls, here are 100 users with SDK retries off and on (the
-default, 2):
+Pools decide how many calls we can send. The provider decides how many it accepts, and sometimes
+it says no. With the mock returning 429 on 10% of calls, here are 100 users with SDK retries off
+and on (the default, 2):
 
 | `max_retries` | chats/s | ok | failed | error rate | TTFT p50 | TTFT p95 | upstream calls |
 |---|---|---|---|---|---|---|---|
@@ -496,6 +558,8 @@ strategies:
 - `full jitter`: our `retry_async`, waits uniform in [0, 0.5 · 2ⁿ] s.
 - `client bucket`: no retries needed. Each request first takes a token from a **Redis token
   bucket at 45/s**, 90% of the provider's limit.
+
+The table shows how long each strategy took and how many calls it wasted:
 
 | strategy | time to finish all 300 | upstream calls | rejected (429) |
 |---|---|---|---|
@@ -528,8 +592,9 @@ provider will accept: 300 calls, 0 rejected, within 0.14 s of the SDK.
 
 ### 4. A Redis token bucket shared by every replica
 
-A token bucket in process memory is exact for one process. With four API processes, each one
-allows the full rate. The bucket has to live somewhere they all share, and the update has to be
+The client-side bucket won, but so far it lives in one process. A token bucket in process memory
+is exact for one process. With four API processes, each one allows the full rate. The bucket has
+to live somewhere they all share, and the update has to be
 atomic. A Lua script runs atomically inside Redis and uses Redis's clock, so app servers with
 skewed clocks still agree:
 
@@ -590,7 +655,8 @@ calls, and the customers who stayed within the limit still got a 1.3 s TTFT p95.
 
 ### 5. Fail over to another provider
 
-At a million users, a provider outage is a matter of *when*.
+Rate limiting keeps us inside the provider's limits on a normal day. It does nothing when the
+provider itself goes down, and at a million users a provider outage is a matter of *when*.
 
 > [!NOTE]
 > **In the wild:** On December 11, 2024, every OpenAI service (ChatGPT, the API, Sora) was
@@ -623,7 +689,7 @@ doesn't fail over either: that's our bug, and a second provider would reject it 
 accept it).
 
 The test: 50 users for 30 s, and from second 10 to second 20 the primary mock answers every
-request with HTTP 500.
+request with HTTP 500. The output compares a single provider with the failover chain:
 
 ```
 single provider  during outage: 30 ok, 426 failed, served by {'p0': 30}, p95 1685 ms | whole run: 271 ok / 937
@@ -640,8 +706,9 @@ primary recovered. That's the breaker doing its job, failing fast without callin
 it believes is down, until its 10 s timer allows a trial request. Without a breaker, every one of
 those requests would have waited for its own timeout and retries.
 
-With real providers, the same function and a mock primary that is down. With `CH21_RUN_LOCAL=1`
-the notebook adds a third, self-hosted provider: the first installed of `qwen3:1.7b`, `qwen3:8b`,
+The mock test proves the logic. Next we ran the same function with real providers and a mock
+primary that is down. With `CH21_RUN_LOCAL=1` the notebook adds a third, self-hosted provider:
+the first installed of `qwen3:1.7b`, `qwen3:8b`,
 `gemma3:4b` on Ollama (here qwen3:1.7b, reasoning off, 120 output tokens max, 60 s timeout, no
 retries):
 
@@ -653,6 +720,8 @@ providers: ['mock (down)', 'openrouter', 'ollama qwen3:1.7b']
 [OpenRouter down] served by ollama qwen3:1.7b in 1.98s; skipped: {'mock (down)': 'InternalServerError: 500', 'openrouter': 'APIConnectionError:'}
   -> You can return an item within 30 days of delivery.
 ```
+
+The table sums up the two scenarios:
 
 | scenario | served by | time | answer |
 |---|---|---|---|
@@ -678,10 +747,11 @@ error page, as long as the UI says so.
 
 ### 6. Async work: a Postgres queue with `FOR UPDATE SKIP LOCKED`
 
-Not everything has to happen while the customer waits. Summarizing a ticket for the human agent,
-drafting the follow-up email, and scoring yesterday's answers with an LLM judge (Chapter 3) can all
-wait seconds or minutes. Moving them off the request path flattens the peak and lets them run at
-the provider's off-peak capacity.
+The chat path now survives load, rate limits and outages. The last step makes it lighter by
+taking work out of it. Not everything has to happen while the customer waits. Summarizing a
+ticket for the human agent, drafting the follow-up email, and scoring yesterday's answers with an
+LLM judge (Chapter 3) can all wait seconds or minutes. Moving them off the request path flattens
+the peak and lets them run at the provider's off-peak capacity.
 
 The textbook answer is a message broker. At ShopFlow's scale, we already run Postgres, and
 Postgres has had a clause built for this since 9.5. The docs say skipping locked rows "can be
@@ -714,6 +784,8 @@ lease (same `locked_by` and `attempts`), so a slow worker whose job was re-claim
 overwrite the newer result. That's called *fencing*. Failures re-queue with full-jitter backoff
 until `max_attempts`.
 
+The state diagram shows every way a job can move:
+
 ```mermaid
 stateDiagram-v2
     [*] --> queued: enqueue
@@ -724,8 +796,9 @@ stateDiagram-v2
     running --> running: lease expired, re-claimed by another worker
 ```
 
-Three ways to run 8 workers over 100 "summarize ticket" jobs (about 0.3 s each against the mock),
-while a sampler counted connections sitting `idle in transaction`:
+To see why the lease matters, we ran 8 workers over 100 "summarize ticket" jobs (about 0.3 s each
+against the mock) in three ways. Meanwhile, a sampler counted connections sitting
+`idle in transaction`:
 
 | variant | jobs/s | seconds | avg claim | max idle-in-transaction | jobs run twice |
 |---|---|---|---|---|---|
@@ -740,7 +813,8 @@ holding a transaction open during the LLM call**: at most 4 of 8 connections wer
 transaction (mid-claim), against all 8 for the transactional version. At 100 workers that's the
 difference between a healthy database and one with 100 long transactions blocking vacuum.
 
-Scaling the lease worker over 300 jobs:
+The lease version is the one we keep, so the next question is how far it scales. Here it is with
+1 to 32 workers over 300 jobs:
 
 | workers | jobs/s | seconds | avg claim | jobs run twice |
 |---|---|---|---|---|
@@ -777,6 +851,9 @@ the stale worker's late `complete()` is rejected.
 
 ## Production hardening
 
+The experiments covered the big bottlenecks. A few smaller things still separate a passing load
+test from a safe launch:
+
 - **Sessions out of process.** Chapter 1's `SessionStore` is a dictionary inside one process.
   With `--workers 4`, as in our best run, a customer's second message can land on a process that
   never saw the first. The load test doesn't check answers, so it can't see this, but customers
@@ -804,6 +881,9 @@ the stale worker's late `complete()` is rejected.
   on queue length.
 
 ## Serving it
+
+To run the whole setup yourself, start Redis, two mock providers, the API and a load test. The
+last command stages an outage while the test runs:
 
 ```bash
 # Redis for the limiter
@@ -842,6 +922,8 @@ otherwise. The queue tests use the ShopFlow database and only touch the `ch21` s
 
 ## Results
 
+Now we can check the Requirements list against measured numbers:
+
 | Requirement | Target | Measured |
 |---|---|---|
 | Throughput per box at 300 users | ≥ 90% of ideal | 111.62 of 117.5 chats/s (95%), async × 4 processes |
@@ -854,10 +936,10 @@ otherwise. The queue tests use the ShopFlow database and only touch the `ch21` s
 | Async jobs | none lost, none run twice | 0 run twice across all runs; lease re-claim and fencing tested |
 | Cost known before launch | $/day | $42.35/day on gpt-6-luna with prompt caching ($165.90 without) |
 
-Sizing from the notebook: 99 design-peak streams. One async process kept TTFT p95 within 10% of
-the model's up to 157 concurrent streams on this host. At 70% of that, one process covers the
-design peak, plus one for redundancy. The 4-process run carried 230 streams, more than twice the
-design peak.
+For capacity, sizing from the notebook gives 99 design-peak streams. One async process kept TTFT
+p95 within 10% of the model's up to 157 concurrent streams on this host. At 70% of that, one
+process covers the design peak, plus one for redundancy. The 4-process run carried 230 streams,
+more than twice the design peak.
 
 Run history: these numbers are from the 2026-11-09 re-run of the whole notebook on the 2026-11-09
 ShopFlow seed (30,433 orders), with the local fallback enabled. The 2026-11-08 run, with the CPUs
@@ -871,6 +953,8 @@ at 2 processes plus one.
 > before launch, with a budget cap on the key.
 
 ## Exercises
+
+Several exercises pick up loose ends from above, such as making the limiter fail open.
 
 1. Make the Chapter 1 `/healthz` an `async def` and rerun `thread` mode at 200 users. Which
    numbers change, and which don't? What does that tell you about using `/healthz` latency as a
@@ -907,6 +991,10 @@ at 2 processes plus one.
   last resort: qwen3:1.7b answered the returns question correctly, if more tersely, in about 2 s.
 - Postgres with `FOR UPDATE SKIP LOCKED` and a lease is a real queue: 97.6 jobs/s on 32 workers,
   nothing run twice, and no transaction held open during an LLM call.
+
+All of these failures were found on purpose, with a mock, a load test and a stopwatch. Chapter
+22, the last chapter, collects the 34 most instructive failures we hit while building the book,
+each with a minimal repro and the fix we shipped.
 
 ## References
 

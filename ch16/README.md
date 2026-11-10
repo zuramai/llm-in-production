@@ -15,6 +15,10 @@ month later the serving stack they used, llm-d, shipped its 1.0 release
 ([llm-d](https://llm-d.ai/blog/llm-d-v1.0-state-of-the-art-inference-ready-for-day-2)).
 Self-hosting has stopped being a hobby.
 
+This chapter opens Part V of the book, on models and compute. In Chapter 15 we put a gateway in
+front of hosted models and gave it budgets, caches and fallbacks. One lesson there was that a
+local fallback is only as good as its spare capacity. So now we look at the GPU under it directly.
+
 Most teams don't start with 544 GPUs. They start with one card in a server room or one rented
 instance, a model that fits on it, and a question: *how many users can this thing actually
 serve, and with which software?* That's this chapter. We take one RTX 3090, one model
@@ -27,7 +31,7 @@ The reasons are worth knowing even if you never run a GPU yourself.
 
 ## The problem
 
-Three ShopFlow teams want a model they control:
+Three ShopFlow teams want a model they control, each for its own reason:
 
 - **Support** wants ticket triage on data that shouldn't leave the building: tickets carry names,
   addresses and order history.
@@ -36,29 +40,44 @@ Three ShopFlow teams want a model they control:
 - **Platform** got paged twice last quarter while a provider was rate-limiting, and wants a local
   fallback that can take real traffic. Chapter 1's fallback was one Ollama call at a time.
 
-The ops team has one server with an RTX 3090 (24 GB), which it shares with a data-science job.
-The question for this chapter: **which engine serves Qwen3-8B on that card well enough, and how
-many concurrent users is "well enough"?**
+The ops team has one server with an RTX 3090 (24 GB). It shares that server with a data-science
+job. So the question for this chapter is: **which engine serves Qwen3-8B on that card well
+enough, and how many concurrent users is "well enough"?**
 
 ## Requirements
 
-| Type | Requirement | Target |
-|---|---|---|
-| Functional | OpenAI-compatible Chat Completions with streaming, so existing code changes only `base_url` | all engines |
-| Functional | Same model everywhere; Qwen3's "thinking" switched off per request | Qwen3-8B, thinking off |
-| Non-functional | Time to first token (TTFT) at the target load | p95 < 2 s (Chapter 1's target) |
-| Non-functional | Streaming speed per user: time per output token (TPOT) | p50 < 50 ms (20+ tokens/s, faster than anyone reads) |
-| Non-functional | Concurrent streams on one GPU within both targets | ≥ 16 |
-| Non-functional | Cost per request on a rented card | below `openai/gpt-6-luna` |
-| Operational | API key, metrics, health check, restart on crash, pinned versions | all |
+Before we start any server, let's pin down what "well enough" means. First, what every engine
+must offer:
+
+- **Drop in for the hosted API.** Each engine speaks OpenAI-compatible Chat Completions with
+  streaming, so existing code changes only its `base_url`.
+- **Run the same model everywhere.** Every engine serves Qwen3-8B, with Qwen3's "thinking" mode
+  switched off per request.
+
+Then, how well one GPU must serve it:
+
+- **Start answering fast.** The time to first token (TTFT), from sending a request to seeing the
+  first word, stays under 2 seconds for 95% of requests (p95 < 2 s) at the target load. That is
+  Chapter 1's target.
+- **Stream faster than people read.** The time per output token (TPOT) stays under 50 ms for the
+  median request (p50 < 50 ms). That is 20+ tokens/s, faster than anyone reads.
+- **Serve a crowd.** One GPU handles ≥ 16 concurrent streams while meeting both targets above.
+- **Cost less than the API.** On a rented card, each request costs less than it would on
+  `openai/gpt-6-luna`.
+- **Run like a real service.** All engines get an API key, metrics, a health check, a restart on
+  crash, and pinned versions.
+
+At the end of the chapter we check each item against measured numbers. One of them will fail.
 
 ## The data
 
+To test those targets, we need load that looks like real work and that no engine can shortcut.
+
 The load comes from the 36 ShopFlow docs (`datasets/shopflow/docs/`). Every request gets a
 unique ticket number, a different 512-token window of the docs and the same instruction: write a
-400-word briefing. A unique start matters. Engines cache the KV of prompt prefixes they've
-already seen (Chapter 17), and a benchmark that repeats one prompt measures that cache, not
-the engine. From the notebook:
+400-word briefing. The unique start matters. Engines cache the KV of prompt prefixes they've
+already seen (Chapter 17). A benchmark that repeats one prompt measures that cache, not the
+engine. Here is one prompt from the notebook. Note the unique ticket number at the top:
 
 ```
 22,822 words, 31,225 o200k tokens in the corpus
@@ -74,12 +93,16 @@ for a new support agent: summarize every rule, number and exception, with exampl
 least 400 words.
 ```
 
-The servers counted about 545 prompt tokens per request with Qwen's tokenizer and chat template
-(519 for gpt-6-luna). Every request produced exactly 256 output tokens: vLLM, SGLang and
-llama-server got `ignore_eos: true`, and Ollama, which doesn't support it, simply never finished
-a 400-word briefing within 256 tokens.
+So each prompt starts differently, and no engine gets a free cache hit. The servers counted about
+545 prompt tokens per request with Qwen's tokenizer and chat template (519 for gpt-6-luna).
+Every request produced exactly 256 output tokens. vLLM, SGLang and llama-server got
+`ignore_eos: true`. Ollama doesn't support it, but it simply never finished a 400-word briefing
+within 256 tokens.
 
 ## Concepts
+
+Before we compare engines, it helps to know what an engine actually does and where its time
+and memory go. These ideas explain every number later in the chapter.
 
 ### What "serving a model" means
 
@@ -96,14 +119,15 @@ deployment decision, not a rewrite.
 
 ### Prefill and decode: two different bottlenecks
 
-Generating an answer has two phases:
+Once the engine has the weights on the GPU, every request goes through it in two phases. Each
+phase hits a different limit:
 
 1. **Prefill** reads the whole prompt in one pass. All 545 prompt tokens go through the model in
    parallel, which keeps the GPU's arithmetic units busy. Prefill is most of the **time to first
    token (TTFT)**.
 2. **Decode** produces one token per step, and every step reads *every weight* from GPU memory.
-   A little math on a lot of memory: decode is limited by **memory bandwidth**, not compute. The
-   time between tokens is the **time per output token (TPOT)**.
+   That is a little math on a lot of memory. So decode is limited by **memory bandwidth**, not
+   compute. The time between tokens is the **time per output token (TPOT)**.
 
 The napkin math for decode is one division. The RTX 3090 moves 936 GB/s. One BF16 decode step
 reads 16.4 GB, so a single request can't go faster than 16.4 / 936 ≈ 17.5 ms per token (57
@@ -111,26 +135,28 @@ tokens/s). Ollama's `qwen3:8b` is a 4-bit `Q4_K_M` file of 4.9 GB, which gives a
 5.2 ms. We measured 19.0–20.7 ms for BF16 and 7.8–8.0 ms for Q4_K_M at one request at a time,
 85–92% and 65% of the ceilings respectively.
 
-The trick that makes GPUs worth their price is **batching**. If 32 requests decode together,
-one pass over the weights serves all 32. Each request's TPOT grows a little; the server's total
-tokens per second grows a lot. Total throughput is what you pay for, so the engine that batches
-best is the cheapest per token.
+If one request can't use the whole card, we need many requests to share it. The trick that
+makes GPUs worth their price is **batching**. If 32 requests decode together, one pass over the
+weights serves all 32. Each request's TPOT grows a little, but the server's total tokens per
+second grows a lot. You pay for total throughput, so the engine that batches best is the
+cheapest per token.
 
 ### The KV cache: the memory that limits the batch
 
-While decoding, the model keeps a *key* and a *value* vector for every token it has seen, in
-every layer: the **KV cache**. It's the request's short-term memory, so the model doesn't
-re-read the prompt at each step. Its size per token follows from the model's shape, and the
-notebook computes it from Qwen3-8B's `config.json`:
+Batching sounds free, but each request in the batch needs its own memory. While decoding, the
+model keeps a *key* and a *value* vector for every token it has seen, in every layer. This is the
+**KV cache**. It's the request's short-term memory, so the model doesn't re-read the prompt at
+each step. Its size per token follows from the model's shape. The notebook computes it from
+Qwen3-8B's `config.json`; look at the last line, the cost of 32 requests:
 
 ```
 ModelShape(num_layers=36, num_kv_heads=8, head_dim=128) -> 147,456 bytes/token = 144 KiB
 one 768-token request: 108 MiB; 32 of them: 3.38 GiB
 ```
 
-On a 24 GB card already holding 16.4 GB of weights (and, on our box, someone else's 2.3 GB),
+On a 24 GB card that already holds 16.4 GB of weights (and, on our box, someone else's 2.3 GB),
 3.38 GiB is most of what's left. vLLM's startup log agrees with the napkin math to within ten
-tokens:
+tokens. Compare its "GPU KV cache size" with our own estimate in the last line:
 
 ```
 vLLM log: Model loading took 15.27 GiB memory and 10.616572 seconds
@@ -141,8 +167,9 @@ our math for 3.55 GiB: 25,850 tokens
 
 ![Where the 24 GiB went per engine](images/16-vram-budget.svg)
 
-When the KV cache is full, new requests wait. **How an engine manages KV memory decides how many
-requests it can batch, and therefore its throughput:**
+The diagram shows how little room is left after the weights. When the KV cache is full, new
+requests wait. **How an engine manages KV memory decides how many requests it can batch, and
+therefore its throughput:**
 
 - **llama.cpp** (and Ollama, which runs llama.cpp's `llama-server` underneath) allocates one
   context of `--ctx-size` tokens and, by default with an explicit `--parallel N`, splits it into
@@ -154,11 +181,14 @@ requests it can batch, and therefore its throughput:**
 
 ### Continuous batching
 
-Static batching waits for N requests, runs them together, and returns when the longest one is
-done. **Continuous batching** re-forms the batch at every step: finished requests leave, waiting
-ones join after their prefill. vLLM, SGLang and llama-server all do it. So does Ollama, but only
-up to `OLLAMA_NUM_PARALLEL` requests per model ("default 1" in the
-[FAQ](https://docs.ollama.com/faq)); the rest queue.
+Managing memory well is half the job. The other half is deciding which requests run at each
+step. Static batching waits for N requests, runs them together, and returns when the longest one
+is done. **Continuous batching** re-forms the batch at every step: finished requests leave, and
+waiting ones join after their prefill. vLLM, SGLang and llama-server all do it. So does Ollama,
+but only up to `OLLAMA_NUM_PARALLEL` requests per model ("default 1" in the
+[FAQ](https://docs.ollama.com/faq)). The rest queue.
+
+The diagram follows one burst of 32 requests through a scheduler. Watch the note at the bottom:
 
 ```mermaid
 sequenceDiagram
@@ -175,7 +205,12 @@ sequenceDiagram
     Note over S: a request that can't get KV memory waits in the queue: its TTFT grows, nobody's TPOT does
 ```
 
+The key point is that a request waiting for memory hurts its own TTFT, not the speed of the
+others.
+
 ### What we measure
+
+Those mechanics show up in four numbers. The table says what each one means to a user:
 
 | metric | definition | what the user feels |
 |---|---|---|
@@ -186,9 +221,9 @@ sequenceDiagram
 
 These match the definitions in vLLM's benchmark docs
 ([vLLM](https://docs.vllm.ai/en/latest/benchmarking/cli/)). Each concurrency level is a *closed
-loop*: exactly `c` requests in flight, a new one starts when one finishes, 32 requests per level.
-At the start of each level all `c` requests arrive together, which is a burst, the worst case
-for TTFT.
+loop*: exactly `c` requests are in flight, and a new one starts when one finishes. Each level
+sends 32 requests. At the start of each level all `c` requests arrive together. That burst is
+the worst case for TTFT.
 
 > [!IMPORTANT]
 > **Decision: our own 360-line benchmark over `vllm bench serve`** — vLLM's and SGLang's
@@ -198,7 +233,8 @@ for TTFT.
 > for `vllm bench serve` once you've picked an engine and need arrival-rate curves for capacity
 > planning.
 
-The core of the benchmark is a streamed request that timestamps the first and the last token:
+The core of the benchmark is a streamed request that timestamps the first and the last token.
+Look for where `first` and `last` are set, and where the token count comes from:
 
 ```python
 # ch16/01_main-chapter-code/ch16_bench.py (excerpt)
@@ -229,16 +265,17 @@ return RequestRecord(
 )
 ```
 
-and an `asyncio.Semaphore(concurrency)` keeps exactly `c` of them in flight. Reasoning deltas
-count as tokens (a thinking model's first token is usually reasoning), and the token count comes
-from `usage`, because vLLM packs several tokens into one chunk under load. The unit tests
-(`uv run pytest ch16`) run it against a fake streaming server to pin both behaviors down, plus
-the concurrency limit, error handling, percentiles and prompt uniqueness.
+An `asyncio.Semaphore(concurrency)` keeps exactly `c` of these requests in flight. Reasoning
+deltas count as tokens, because a thinking model's first token is usually reasoning. The token
+count comes from `usage`, because vLLM packs several tokens into one chunk under load. The unit
+tests (`uv run pytest ch16`) run it against a fake streaming server to pin both behaviors down.
+They also cover the concurrency limit, error handling, percentiles and prompt uniqueness.
 
 ## v0: Ollama, as everyone runs it
 
-Ollama is how most people first run a local model, and it's what Chapter 1 used. We start a
-private Ollama 0.40.15 on the GPU with no settings at all, and point the benchmark at it:
+With a benchmark we trust, we can start with the engine most people already have. Ollama is how
+most people first run a local model, and it's what Chapter 1 used. We start a private Ollama
+0.40.15 on the GPU with no settings at all, and point the benchmark at it:
 
 ```bash
 OLLAMA_HOST=127.0.0.1:8116 ~/.local/ollama/bin/ollama serve &
@@ -247,21 +284,24 @@ uv run python ch16/01_main-chapter-code/ch16_bench.py --base-url http://127.0.0.
   --prompt-tokens 512 --max-tokens 256 --reasoning-effort none
 ```
 
-Ollama starts a `llama-server` process per model, and its command line shows what it decided
-(`results/logs/ollama-default.runner.txt`):
+Ollama starts a `llama-server` process per model. Its command line shows what Ollama decided
+for us. Look at `-c` and `-np` (`results/logs/ollama-default.runner.txt`):
 
 ```
 .../lib/ollama/llama-server --model .../blobs/sha256-a3de86cd... --port 42057 ... -c 32768 -np 1
   --no-jinja --chat-template chatml --flash-attn auto -b 1024 -ub 1024 --context-shift --keep 4
 ```
 
-`-np 1`: one request at a time. `-c 32768`: a 32k context, because Ollama sizes the default
-context by VRAM (`"vram-based default context" total_vram="23.6 GiB" default_num_ctx=32768` in
-its log). Defaults sized for an empty card go wrong on a shared one: earlier in the week, while
-another job held 22.6 GB, the shared Ollama on this server (32k context × 4 slots) ran
-`qwen3:8b` 98% on the CPU at a fraction of a token per second.
+`-np 1` means one request at a time. `-c 32768` means a 32k context, because Ollama sizes the
+default context by VRAM (`"vram-based default context" total_vram="23.6 GiB"
+default_num_ctx=32768` in its log). Defaults sized for an empty card go wrong on a shared one.
+Earlier in the week, another job held 22.6 GB. The shared Ollama on this server (32k context × 4
+slots) then ran `qwen3:8b` 98% on the CPU, at a fraction of a token per second.
 
 ## Measuring v0
+
+Here is what those defaults give at 1 to 32 concurrent users. Watch the TTFT columns grow while
+throughput stays flat:
 
 ```
 === ollama-default
@@ -277,9 +317,9 @@ c
 
 For one user, this is excellent: 153 ms to the first token and 7.8 ms per token, 128 tokens per
 second. For two users it's already broken. Throughput is flat at 118 tokens/s whatever the load,
-TPOT never moves, and TTFT grows linearly with the queue: at 32 concurrent users the median user
-waits 34 seconds for the first word and the unlucky one 64 seconds. Every request was answered;
-none was fast. The staircase chart shows each of the 32 requests waiting its turn:
+and TPOT never moves. TTFT grows linearly with the queue. At 32 concurrent users the median user
+waits 34 seconds for the first word, and the unlucky one waits 64 seconds. Every request was
+answered, but none was fast. The staircase chart shows each of the 32 requests waiting its turn:
 
 ![TTFT of each request at concurrency 32](images/16-ttft-staircase.png)
 
@@ -294,20 +334,23 @@ none was fast. The staircase chart shows each of the 32 requests waiting its tur
 
 ## Iterating
 
+v0 serves one user beautifully and everyone else badly. Each step below starts from the weakness
+the previous one showed.
+
 ### 1. Turn on parallelism: Ollama with 32 slots, then llama-server itself
 
-**What's wrong:** one slot. **Options:** raise `OLLAMA_NUM_PARALLEL`; or run the engine
-underneath Ollama, `llama-server`, directly. The FAQ warns that memory scales with
-`OLLAMA_NUM_PARALLEL × OLLAMA_CONTEXT_LENGTH`, so 32 slots at the 32k default would need 144 GiB
-of KV cache. We set 32 slots of 2,048 tokens:
+**What's wrong:** v0 has one slot, so every other request queues. **Options:** raise
+`OLLAMA_NUM_PARALLEL`, or run the engine underneath Ollama, `llama-server`, directly. The FAQ
+warns that memory scales with `OLLAMA_NUM_PARALLEL × OLLAMA_CONTEXT_LENGTH`. So 32 slots at the
+32k default would need 144 GiB of KV cache. We set 32 slots of 2,048 tokens:
 
 ```bash
 OLLAMA_NUM_PARALLEL=32 OLLAMA_CONTEXT_LENGTH=2048 OLLAMA_HOST=127.0.0.1:8116 ollama serve
 # runner: llama-server ... -c 65536 -np 32 ...
 ```
 
-And, on the same GGUF file (Ollama's blob, used as-is), llama-server built from source with CUDA
-12.4 ([`build_llama_cpp.sh`](01_main-chapter-code/build_llama_cpp.sh)):
+We also run llama-server directly, on the same GGUF file (Ollama's blob, used as-is). We built it
+from source with CUDA 12.4 ([`build_llama_cpp.sh`](01_main-chapter-code/build_llama_cpp.sh)):
 
 ```bash
 # ch16/01_main-chapter-code/run_gpu_benchmarks.sh (excerpt)
@@ -315,6 +358,9 @@ And, on the same GGUF file (Ollama's blob, used as-is), llama-server built from 
   --n-gpu-layers 999 --ctx-size 32768 --parallel 32 ${5:-} \
   --flash-attn on --jinja --metrics
 ```
+
+The table compares the four configurations. The last column, throughput at 32 users, is the one
+to watch:
 
 | config (Q4_K_M) | c=1 TPOT | c=8 TTFT p95 | c=16 TTFT p95 | c=32 TTFT p95 | c=32 out tok/s |
 |---|---|---|---|---|---|
@@ -325,26 +371,26 @@ And, on the same GGUF file (Ollama's blob, used as-is), llama-server built from 
 
 ![Ollama default vs 32 slots vs llama-server](images/16-ollama-vs-llamacpp.png)
 
-One environment variable took Ollama from 118 to 634 tokens/s, 5.4×, and the median TTFT at
-c=32 from 34 s to 3 s. Ollama with 32 slots and llama-server with 32 slots are within 5% of each
-other, as they should be: it's the same engine. The interesting differences are elsewhere.
+One environment variable took Ollama from 118 to 634 tokens/s, 5.4×. It also cut the median TTFT
+at c=32 from 34 s to 3 s. Ollama with 32 slots and llama-server with 32 slots are within 5% of
+each other, as they should be: it's the same engine. The interesting differences are elsewhere.
 
 **The slot split bites.** With `--ctx-size 32768 --parallel 32`, llama-server gives each slot
-1,024 tokens (`n_slots = 32, n_ctx_slot = 1024, kv_unified = 'false'` in its log). A 1,061-token
-request then fails, even though the server is idle and 31 slots are empty:
+1,024 tokens (`n_slots = 32, n_ctx_slot = 1024, kv_unified = 'false'` in its log). So a
+1,061-token request fails, even though the server is idle and 31 slots are empty:
 
 ```
 BadRequestError: Error code: 400 - request (1061 tokens) exceeds the available context size (1024 tokens), try increasing it
 ```
 
 That's [llama.cpp#11681](https://github.com/ggml-org/llama.cpp/issues/11681) ("Context size
-is being divided by number of parallel inferences"). The fix is `--kv-unified`, one shared pool
+is being divided by number of parallel inferences"). The fix is `--kv-unified`: one shared pool
 for all slots (`n_ctx_slot = 32768, kv_unified = 'true'`). It also raised mid-range throughput
-(548 vs 466 tokens/s at c=16, 263 vs 242 at c=4); we didn't dig into why.
+(548 vs 466 tokens/s at c=16, 263 vs 242 at c=4). We didn't dig into why.
 
-**Ollama fails silently instead.** Ollama with 2,048-token slots accepted the same 4,234-token
-prompt, reported `prompt_tokens: 1026` and answered in 280 ms. It dropped three quarters of the
-prompt and said nothing. A fast wrong answer is worse than a 400.
+**Ollama fails silently instead.** We sent Ollama, with its 2,048-token slots, a 4,234-token
+prompt. It accepted it, reported `prompt_tokens: 1026` and answered in 280 ms. It dropped three
+quarters of the prompt and said nothing. A fast wrong answer is worse than a 400.
 
 > [!WARNING]
 > When you raise `OLLAMA_NUM_PARALLEL`, you usually lower `OLLAMA_CONTEXT_LENGTH` to fit memory,
@@ -361,16 +407,19 @@ prompt and said nothing. A fast wrong answer is worse than a 400.
 
 ### 2. vLLM: PagedAttention and full-precision weights
 
-**What's wrong:** the Q4 GGUF is a 4-bit copy. It's fast for one user, but quantization can cost
-quality (Chapter 17 measures how much), and llama.cpp's scheduler isn't built for many users.
-**Options:** vLLM or SGLang on the original BF16 weights. We start with vLLM 0.33.0, installed
-from PyPI into a chapter-local `.venv-cuda` (never the main `.venv`):
+Parallel slots fixed the queue, but both setups so far share two limits. **What's wrong:** the Q4
+GGUF is a 4-bit copy of the model. It's fast for one user, but quantization can cost quality
+(Chapter 17 measures how much). And llama.cpp's scheduler isn't built for many users.
+**Options:** vLLM or SGLang on the original BF16 weights. We start with vLLM 0.33.0. We install
+it from PyPI into a chapter-local `.venv-cuda` (never the main `.venv`):
 
 ```bash
 uv venv ch16/01_main-chapter-code/.venv-cuda --python 3.12
 uv pip install -r ch16/01_main-chapter-code/requirements-cuda.txt \
     --python ch16/01_main-chapter-code/.venv-cuda       # vllm==0.33.0
 ```
+
+The launch script looks simple, but each setting was earned:
 
 ```bash
 # ch16/01_main-chapter-code/serve_vllm.sh (excerpt)
@@ -399,14 +448,17 @@ Three lines in that script are scars from this server:
   [vllm#5274](https://github.com/vllm-project/vllm/issues/5274), where a second process on the
   GPU made one value OOM and a lower one fail with "No available memory for the cache blocks".
 
-Qwen3 thinks by default. Per the
+One more setting lives in the request, not the server. Qwen3 thinks by default. Per the
 [vLLM reasoning docs](https://docs.vllm.ai/en/latest/features/reasoning_outputs/), it's switched
-off per request with `chat_template_kwargs`, which our benchmark passes through `extra_body`
+off per request with `chat_template_kwargs`. Our benchmark passes that through `extra_body`
 (Ollama wants `reasoning_effort="none"` instead):
 
 ```python
 extra_body={"chat_template_kwargs": {"enable_thinking": False}, "ignore_eos": True}
 ```
+
+Now the fair comparison: both engines on the same BF16 weights. Watch how TPOT changes from c=1
+to c=32:
 
 | engine (same BF16 weights) | c=1 TPOT | c=8 TTFT p95 | c=16 TTFT p95 | c=32 TTFT p95 | c=32 TPOT p50 | c=32 out tok/s |
 |---|---|---|---|---|---|---|
@@ -415,11 +467,11 @@ extra_body={"chat_template_kwargs": {"enable_thinking": False}, "ignore_eos": Tr
 
 To separate the engine from the quantization, we converted the same Hugging Face checkpoint to
 a BF16 GGUF ([`convert_bf16_gguf.sh`](01_main-chapter-code/convert_bf16_gguf.sh)) and ran
-llama-server on it. With identical weights, vLLM produced 59% more tokens per second at c=32,
-and its TPOT barely moved with load (20.7 → 34.2 ms) where llama.cpp's nearly tripled (19.0 →
-53.5 ms). vLLM even beat llama-server's 4-bit model at c=32 (738 vs 670 tokens/s) while serving
+llama-server on it. With identical weights, vLLM produced 59% more tokens per second at c=32.
+Its TPOT barely moved with load (20.7 → 34.2 ms), while llama.cpp's nearly tripled (19.0 → 53.5
+ms). vLLM even beat llama-server's 4-bit model at c=32 (738 vs 670 tokens/s) while serving
 full-precision weights. For one user, the 4-bit model is still 2.6× faster per token (8.0 vs
-20.7 ms): decode reads weights, and the 4-bit weights are a third of the size.
+20.7 ms). Decode reads weights, and the 4-bit weights are a third of the size.
 
 > [!IMPORTANT]
 > **Decision: vLLM with BF16 weights for the shared ShopFlow server, llama-server Q4 for
@@ -440,9 +492,10 @@ full-precision weights. For one user, the 4-bit model is still 2.6× faster per 
 
 ### 3. SGLang, and the memory knob that decided the race
 
-SGLang runs from its official image (CUDA 13 only now; `v0.5.19-cu129` was the last CUDA 12
-tag, per the [install docs](https://docs.sglang.io/docs/get-started/install)). Our compose file mounts the
-Hugging Face cache read-only and runs offline:
+vLLM wins so far, but SGLang is the other engine built for many users, so it deserves the same
+test. SGLang runs from its official image (CUDA 13 only now; `v0.5.19-cu129` was the last CUDA 12
+tag, per the [install docs](https://docs.sglang.io/docs/get-started/install)). Our compose file
+mounts the Hugging Face cache read-only and runs offline:
 
 ```yaml
 # ch16/01_main-chapter-code/docker-compose.yml (excerpt)
@@ -464,13 +517,16 @@ command: >
 default 64 MB `/dev/shm` is a classic first-run failure
 ([sglang#4259](https://github.com/sgl-project/sglang/issues/4259)).
 
-We ran it twice, at the "safe start" of `--mem-fraction-static 0.80` and at 0.86, the same
-budget as vLLM. SGLang's log shows what the extra 6% bought:
+We ran it twice: at the "safe start" of `--mem-fraction-static 0.80`, and at 0.86, the same
+budget as vLLM. SGLang's log shows what the extra 6% bought. Compare the `#tokens` values:
 
 ```
 sglang-bf16-mem080: KV Cache is allocated. dtype: torch.bfloat16, #tokens: 10845, K size: 0.74 GB, V size: 0.74 GB
 sglang-bf16:        KV Cache is allocated. dtype: torch.bfloat16, #tokens: 20013, K size: 1.37 GB, V size: 1.37 GB
 ```
+
+Nearly double the KV cache. The table shows what that did to latency and throughput, next to
+vLLM:
 
 | engine | KV cache (tokens) | c=8 out tok/s | c=16 TTFT p95 | c=32 TTFT p95 | c=32 out tok/s |
 |---|---|---|---|---|---|
@@ -482,11 +538,11 @@ sglang-bf16:        KV Cache is allocated. dtype: torch.bfloat16, #tokens: 20013
 
 Up to 8 users, vLLM and SGLang are indistinguishable (308 vs 317 tokens/s, 21–23 ms TPOT). Past
 that, each one is exactly as good as its KV cache is large. 32 requests of ~800 tokens need
-about 25,600 tokens of cache. vLLM had 25,840 and ran all 32 at once; SGLang had 20,013 (or
-10,845) and queued the rest, which is the second step of its staircase above, at 10.6 s (or
-15.9 s). SGLang's TPOT stayed *lower* than vLLM's (28.3 vs 34.2 ms) because it was decoding a
-smaller batch. Same card, same budget, but SGLang spent about a gigabyte on CUDA graphs for
-prefill (`Capture target prefill CUDA graph end. elapsed=42.17 s, mem usage=0.83 GB`), and that
+about 25,600 tokens of cache. vLLM had 25,840 and ran all 32 at once. SGLang had 20,013 (or
+10,845) and queued the rest. That is the second step of its staircase above, at 10.6 s (or 15.9
+s). SGLang's TPOT stayed *lower* than vLLM's (28.3 vs 34.2 ms) because it was decoding a smaller
+batch. Same card, same budget. But SGLang spent about a gigabyte on CUDA graphs for prefill
+(`Capture target prefill CUDA graph end. elapsed=42.17 s, mem usage=0.83 GB`), and that
 gigabyte is 7,000 tokens of KV cache.
 
 > [!IMPORTANT]
@@ -504,8 +560,10 @@ gigabyte is 7,000 tokens of KV cache.
 
 ### 4. Prefill: the measurement Chapter 1 promised
 
-Chapter 1 found a warm Ollama answering in 0.12 s because it reused the cached FAQ prompt. Here
-every prompt is new, one request at a time, 16 output tokens:
+So far we've looked at decode under load. The other half of TTFT is prefill, and Chapter 1 left
+a question open there. Chapter 1 found a warm Ollama answering in 0.12 s because it reused the
+cached FAQ prompt. Here every prompt is new, one request at a time, with 16 output tokens. Read
+across each row to see how prompt length drives TTFT:
 
 | engine | ~280 prompt tokens | ~1,070 | ~4,234 |
 |---|---|---|---|
@@ -517,14 +575,15 @@ every prompt is new, one request at a time, 16 output tokens:
 | Ollama, 32 × 2k slots | 88 ms | 245 ms | 280 ms, **only 1,026 tokens read** |
 
 Prefill runs at 4,300–5,100 tokens/s on every engine, and the 4-bit model is *not* faster
-here: prefill is compute-bound, and dequantizing 4-bit weights costs compute. Quantization buys
+here. Prefill is compute-bound, and dequantizing 4-bit weights costs compute. Quantization buys
 decode speed, not prefill speed. A 4k-token RAG prompt costs under a second of TTFT on this
 card. A 32k one will cost several.
 
 ## Production hardening
 
-An inference server is a network service that executes untrusted input on expensive hardware.
-Treat it like a database, not like a library.
+We now know which engine to run and how to tune it. Before real traffic reaches it, we have to
+make it safe to run. An inference server is a network service that executes untrusted input on
+expensive hardware. Treat it like a database, not like a library.
 
 - **An API key is not an access policy.** We started vLLM with `VLLM_API_KEY` set and probed it:
 
@@ -595,8 +654,9 @@ Treat it like a database, not like a library.
 
 ## Serving it
 
-The chapter's code ([`01_main-chapter-code/`](01_main-chapter-code/)) runs every engine the same
-way, one at a time on the one card:
+With the engine chosen and hardened, here is how to reproduce every run. The chapter's code
+([`01_main-chapter-code/`](01_main-chapter-code/)) runs every engine the same way, one at a time
+on the one card:
 
 ```mermaid
 flowchart LR
@@ -608,6 +668,8 @@ flowchart LR
     V & S --> H[(HF cache<br/>Qwen3-8B BF16)]
     L --> GG[(GGUF: Ollama blob<br/>or converted BF16)]
 ```
+
+The commands below build, pull and benchmark everything, then refresh the notebook:
 
 ```bash
 cd ch16/01_main-chapter-code
@@ -626,11 +688,12 @@ The thinking switch above is the one change the code itself needs.
 
 ### Beyond one GPU: llm-d on Kubernetes
 
-One card runs one engine. The next step is several replicas behind a router that knows each
-replica's load and what's in its KV cache, so a request whose prefix is cached on replica 3 goes
-to replica 3. That's llm-d: vLLM (or SGLang) pods, the Gateway API Inference Extension's
-`InferencePool`, and a scheduler that scores pods on queue depth, KV usage and prefix hits. It
-was launched by Red Hat with Google Cloud, IBM Research, CoreWeave and NVIDIA in May 2025
+Everything so far ran on one card, and one card runs one engine. The next step is several
+replicas behind a router that knows each replica's load and what's in its KV cache. Then a
+request whose prefix is cached on replica 3 goes to replica 3. That's llm-d: vLLM (or SGLang)
+pods, the Gateway API Inference Extension's `InferencePool`, and a scheduler that scores pods on
+queue depth, KV usage and prefix hits. It was launched by Red Hat with Google Cloud, IBM
+Research, CoreWeave and NVIDIA in May 2025
 ([Red Hat](https://www.redhat.com/en/about/press-releases/red-hat-launches-llm-d-community-powering-distributed-gen-ai-inference-scale))
 and reached 1.0 on 2026-10-20.
 
@@ -644,11 +707,16 @@ flowchart LR
     P1 & P2 & P3 & P4 -. "/metrics" .-> G
 ```
 
+In the diagram, the router reads each pod's `/metrics` and uses it to pick a pod.
+
 > [!CAUTION]
 > **Not executed by the author** — requires a Kubernetes cluster with 4+ NVIDIA GPU nodes.
 > Written against the llm-d v1.0 quickstart, https://llm-d.ai/docs/getting-started/quickstart
 > (accessed 2026-11-07), and checked with `kustomize build` (v5.7.1), which rendered the
 > Deployment from the guide's remote base (`results/logs/llm-d-kustomize-build.yaml`).
+
+The overlay's main change is the model server spec. Look at the replica count and the vLLM
+arguments, which match our single-card run:
 
 ```yaml
 # ch16/01_main-chapter-code/k8s/llm-d-qwen3-8b/patch-vllm.yaml (excerpt)
@@ -682,8 +750,10 @@ a live Deployment.
 
 ## Results
 
-All numbers are 32 requests per level, ~545-token prompts, 256 output tokens, Qwen3-8B, one RTX
-3090 shared with a 2.3 GB process. The hosted row is the same benchmark against OpenRouter.
+Now we can put every engine side by side and check them against the requirements. All numbers
+are 32 requests per level, ~545-token prompts, 256 output tokens, Qwen3-8B, on one RTX 3090
+shared with a 2.3 GB process. The hosted row is the same benchmark against OpenRouter. The second
+column is the one that answers our question:
 
 | engine | max concurrency within targets¹ | c=1 TTFT p50 | c=1 TPOT p50 | c=32 TTFT p95 | c=32 out tok/s |
 |---|---|---|---|---|---|
@@ -696,13 +766,15 @@ All numbers are 32 requests per level, ~545-token prompts, 256 output tokens, Qw
 | openai/gpt-6-luna via OpenRouter | 32 | 845 ms | 7.3 ms | 1.1 s | 2,292 |
 
 ¹ TTFT p95 < 2 s and TPOT p50 < 50 ms. The 16-user requirement **was not met** by any local
-engine. vLLM missed it by 7 ms (TTFT p95 2,007 ms at c=16) and SGLang by 12 ms; at 8 users all
+engine. vLLM missed it by 7 ms (TTFT p95 2,007 ms at c=16) and SGLang by 12 ms. At 8 users all
 engines met both targets. Our closed loop starts each level with all requests arriving at once,
-a worst case. Steadier arrivals would pass, but a real lunch-time spike would not.
+which is a worst case. Steadier arrivals would pass, but a real lunch-time spike would not.
 
-Cost, if the card is busy 100% of the time at the c=32 throughput (RunPod's RTX 3090 at
-$0.22/h Community or $0.50/h Secure Cloud, [as of 2026-11-04](https://www.runpod.io/pricing);
-`openai/gpt-6-luna` at $0.10 / $0.50 per 1M input/output tokens on OpenRouter, as of 2026-11):
+Latency is only half of the requirements. The other half is cost.
+
+Here we assume the card is busy 100% of the time at the c=32 throughput. Prices: RunPod's RTX
+3090 at $0.22/h Community or $0.50/h Secure Cloud, [as of 2026-11-04](https://www.runpod.io/pricing);
+`openai/gpt-6-luna` at $0.10 / $0.50 per 1M input/output tokens on OpenRouter, as of 2026-11:
 
 | engine | out tok/s | $ per 1k requests @ $0.22/h | @ $0.50/h |
 |---|---|---|---|
@@ -712,6 +784,8 @@ $0.22/h Community or $0.50/h Secure Cloud, [as of 2026-11-04](https://www.runpod
 | SGLang BF16 | 512 | 0.0306 | 0.0695 |
 | **openai/gpt-6-luna** (API) | n/a | 0.1799 | 0.1799 |
 
+A card is rarely busy all day, so the useful number is how busy it must be to beat the API:
+
 ```
 break-even utilization of vLLM at community $0.22/h: 12% (output-only break-even: 122 tok/s)
 break-even utilization of vLLM at secure $0.50/h: 27% (output-only break-even: 278 tok/s)
@@ -719,9 +793,9 @@ break-even utilization of vLLM at secure $0.50/h: 27% (output-only break-even: 2
 
 A rented 3090 running vLLM beats the API on price as soon as it's busy more than 12–27% of the
 day. Ollama with its defaults never does: on the secure tier it costs 1.7× the API. The API wins
-on everything else: a flat 0.8–0.9 s TTFT at any load we could generate, 7.3 ms per token,
-3× our throughput at c=32, and nothing to patch. The OpenRouter runs for this chapter cost about
-$0.035.
+on everything else. It has a flat 0.8–0.9 s TTFT at any load we could generate, 7.3 ms per
+token, 3× our throughput at c=32, and nothing to patch. The OpenRouter runs for this chapter cost
+about $0.035.
 
 > [!IMPORTANT]
 > **Decision: self-host the batch and private workloads, keep the API for the customer-facing
@@ -732,6 +806,8 @@ $0.035.
 > GPUs busy behind a router (llm-d above), or when a regulation forbids the API.
 
 ## Exercises
+
+These exercises push the benchmark into areas this chapter only touched.
 
 1. Run `ch16_bench.py` against vLLM with `--prompt-tokens 2048 --concurrency 8,16`. How does the
    TTFT staircase change when prefill dominates? Then restart vLLM with a smaller
@@ -767,6 +843,11 @@ $0.035.
   leave. Hosted APIs still win on latency under spikes and on operations.
 - An API key on an inference server guards `/v1`, not `/metrics`. Bind to localhost, put a
   gateway in front, pin versions and patch: CVE-2026-22778 was a 9.8.
+
+We picked an engine and found the limit of one card: KV-cache memory, with 16.4 GB of BF16 weights
+squeezing the batch. Chapter 17 attacks that limit on the same RTX 3090 and the same Qwen3-8B. It
+measures weight precision, prefix caching, speculative decoding and batching, and asks what each
+one costs in quality and saves in dollars.
 
 ## References
 

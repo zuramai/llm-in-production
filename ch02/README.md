@@ -8,6 +8,10 @@
 > 2026-11-09 00:26 ET. The first run (2026-11-08) used an earlier seed; its cached replies no longer
 > matched the tickets, so the hosted side was re-run from scratch.
 
+Chapter 1 ended with a support bot that answers customers in plain text. People forgive a clumsy
+sentence, but much LLM work feeds code instead, and code needs a fixed shape. This chapter is
+about getting that shape every time.
+
 In August 2024 OpenAI shipped *Structured Outputs*. On its own eval of complex JSON schemas,
 `gpt-4o-2024-08-06` with the feature scored 100%, while `gpt-4-0613` scored "less than 40%"
 ([OpenAI](https://openai.com/index/introducing-structured-outputs-in-the-api/)). Training alone
@@ -25,6 +29,8 @@ and the labels.
 
 ## The problem
 
+The task we pick is an everyday one that every support team has.
+
 ShopFlow gets about 1,500 support tickets a month by email, chat and web form. A human reads each
 one, picks a queue (shipping, refunds, ...), sets a priority, and types the order number into the
 ticketing system. The support lead wants a model to do that first pass, so agents start from a
@@ -40,29 +46,42 @@ row.
 > ([Remote Engineering, 2026-03](https://engineering.remote.com/blog/ai-powered-engineering-support)).
 > Schema plus validator plus a small model is the pattern this chapter measures.
 
-The output feeds code, not people. A missing field, an invented category or `"order_id": "#4228"`
-instead of `4228` breaks the router. A wrong priority sends a fraud report to the back of the
-queue.
+Here the output feeds code, not people. A missing field, an invented category or
+`"order_id": "#4228"` instead of `4228` breaks the router. A wrong priority sends a fraud report
+to the back of the queue.
 
 ## Requirements
 
-| Type | Requirement | Target |
-|---|---|---|
-| Functional | Output matches `TicketTriage` (types, enums, `summary` ≤ 200 chars) | 100% after retries; every failure is a typed error, never a crash |
-| Functional | Category accuracy vs gold labels | ≥ 85% |
-| Functional | Priority accuracy vs gold labels | report it, explain the gap |
-| Functional | `order_id` extracted exactly, `null` when absent, never invented | ≥ 99% |
-| Functional | Instructions inside a ticket don't change the triage | 0 attacker wins with the production prompt |
-| Non-functional | Cost | < $0.10 per 1,000 tickets |
-| Non-functional | Throughput | the monthly backlog (1,500) in under 5 minutes |
-| Non-functional | Retries | at most 2 per ticket, and none when a retry can't help |
+Before we write any code, let's agree on what "done" means. The triage must get these things
+right:
+
+- **Always return the right shape.** Every reply matches `TicketTriage`: correct types, allowed
+  values only, and a `summary` of at most 200 characters. After retries this holds for 100% of
+  tickets. Any failure comes back as a typed error our code can handle, never a crash.
+- **Pick the right queue.** Category matches the gold labels on at least 85% of tickets.
+- **Report priority honestly.** We have no fixed target. We measure priority accuracy against
+  the gold labels and explain any gap.
+- **Copy the order number exactly.** `order_id` is correct on at least 99% of tickets. It is
+  `null` when the ticket names no order, and the model never invents one.
+- **Ignore orders hidden in tickets.** Instructions written inside a ticket don't change the
+  triage: 0 attacker wins with the production prompt.
+
+It also has to be cheap and quick enough to run as a routine job:
+
+- **Stay cheap.** Under $0.10 per 1,000 tickets.
+- **Clear the backlog fast.** The monthly backlog of 1,500 tickets is done in under 5 minutes.
+- **Retry with care.** At most 2 retries per ticket, and none when a retry can't help.
+
+At the end of the chapter we check every item against measured numbers.
 
 ## The data
 
-`support_tickets` in the ShopFlow database ([datasets/shopflow](../datasets/shopflow/README.md)):
+To check those targets we need tickets with known answers. They live in the `support_tickets`
+table of the ShopFlow database ([datasets/shopflow](../datasets/shopflow/README.md)):
 1,500 tickets generated from 30 templates, plus 60 hand-written hard ones (ids 1501–1560):
 sarcasm, multiple issues, non-English text, and prompt injections. Each has a gold
-`label_category` and `label_priority`; `order_id` is the order the ticket is about.
+`label_category` and `label_priority`; `order_id` is the order the ticket is about. The diagram
+shows the table and how it links to customers and orders.
 
 ```mermaid
 erDiagram
@@ -97,7 +116,8 @@ Our evaluation sample is all 60 hard tickets plus 240 templated ones drawn with 
 with an order number: 164 | without: 136
 ```
 
-Four of them, as the model sees them:
+Here are four of them, as the model sees them. Note the sarcasm, the Indonesian text and the
+fake `SYSTEM:` line:
 
 ```
 #3 [chat] Item arrived broken
@@ -121,6 +141,9 @@ There is no gold column for sentiment. The 8 sarcastic tickets (#1501–#1508) w
 (by the AI tooling used to write this chapter, not by a human reviewer): all are negative.
 
 ## Concepts
+
+We know the task and the data. Before calling a model, we need three ideas: a schema, the ways to
+ask for it, and how a decoder can enforce it.
 
 ### The schema is the contract
 
@@ -152,12 +175,18 @@ type, we want to know. `extra="forbid"` rejects unknown keys.
 
 ### Four ways to ask for JSON
 
+With the schema written, the next question is how to hand it to the model. There are four common
+ways, from the weakest guarantee to the strongest:
+
 | Method | What we send | Where the constraint lives |
 |---|---|---|
 | **prompt-only** | "Reply with a single JSON object with exactly these keys..." | in the prompt; the model can ignore it |
 | **JSON mode** | `response_format={"type": "json_object"}` | the decoder only allows valid JSON *syntax*; keys and values are free |
 | **strict `json_schema`** | `response_format={"type": "json_schema", "json_schema": {..., "strict": True}}` | the decoder only allows tokens that keep the output valid against *our schema* |
 | **forced tool call** | `tools=[record_triage(schema)]`, `tool_choice` forcing it, `strict: True` | same as above, but the JSON arrives in `tool_calls[0].function.arguments` |
+
+The first method relies on the model's good will. The other three move the constraint into the
+decoder, and the last two bind it to our schema. It's worth seeing how that works.
 
 ### Constrained decoding, in one picture
 
@@ -167,7 +196,7 @@ distribution and the choice. The schema is compiled into a grammar, a state mach
 which tokens may legally come next. Before each step, every illegal token gets probability zero.
 After `{"category": "` the only legal continuations spell one of our six categories. It's like an
 input mask on a web form: the user can still type the wrong thing, but not something
-unparseable.
+unparseable. The diagram shows the loop: the grammar masks the model's choices at every step.
 
 ```mermaid
 flowchart LR
@@ -231,8 +260,9 @@ def strict_schema() -> dict[str, Any]:
 
 ## v0: the naive solution
 
-The first version is the one everybody writes: describe the fields in the prompt, ask for JSON,
-`json.loads` the reply. One ticket, all four methods, `openai/gpt-6-luna` ($0.10 / $0.50 per 1M
+With the concepts in place, let's build the simplest thing that could work. It's the version
+everybody writes first: describe the fields in the prompt, ask for JSON, `json.loads` the reply.
+One ticket, all four methods, `openai/gpt-6-luna` ($0.10 / $0.50 per 1M
 input/output tokens on OpenRouter, as of 2026-11), reasoning off:
 
 ```
@@ -259,8 +289,9 @@ to set. Single examples prove nothing, which is why the rest of the chapter runs
 Notice the prompt tokens: the strict schema costs about 125 extra input tokens per call. The
 provider renders the schema into the prompt so the model knows what it's being steered towards.
 
-Every method ends in the same parser, which turns *any* reply into either a `TicketTriage` or a
-typed `TriageError` with a `kind` our code can branch on:
+Every method ends in the same parser. It turns *any* reply into either a `TicketTriage` or a
+typed `TriageError` with a `kind` our code can branch on. Here is what it returns for a few good
+and bad replies:
 
 ```
 category='refund' priority='high' sentiment='negative' order_id=42 summary='Refund overdue.'
@@ -272,9 +303,12 @@ not_json invalid JSON: Expecting value: line 1 column 1 (char 0)
 
 ## Measuring v0
 
-We ran each method on the 300-ticket sample with two hosted models: `openai/gpt-6-luna` and
+One ticket proves nothing, as the flaky tool call just showed. So we ran each method on the
+300-ticket sample with two hosted models: `openai/gpt-6-luna` and
 `anthropic/claude-haiku-5.5` ($0.10 / $0.50 per 1M tokens on OpenRouter, as of 2026-11). Same
 system prompt, same tickets, up to 2 retries on a validation error.
+
+The table uses three validity columns:
 
 - `raw_json_%`: the reply was parseable by a bare `json.loads` on the first try.
 - `first_try_valid_%`: it passed `TicketTriage` validation on the first try (our parser strips
@@ -293,7 +327,7 @@ claude-haiku-5.5 json_schema        99.7               99.7           99.7      
 claude-haiku-5.5   tool_call       100.0              100.0          100.0            84.3            64.0           100.0
 ```
 
-Three surprises.
+The table held three surprises.
 
 **1. The naive version almost never broke the JSON.** 2,400 ticket runs (300 tickets × 4 methods ×
 2 models), and the only failures were 3 runs on one ticket. On 2026 models, prompt-only JSON is not
@@ -329,7 +363,7 @@ a sensible triage. Our v0 treated the empty reply as a validation error and retr
 which can't help: same input, same filter. The run above already uses the fixed policy from
 section 2 below, so each refusal costs one attempt.
 
-Cost and latency for the same runs:
+Validity and accuracy are only half the picture. Here are cost and latency for the same runs:
 
 ```
            model      method  avg_attempts  prompt_tokens  completion_tokens  cost_usd  cost_per_1k_usd  latency_p50_ms  latency_p95_ms
@@ -360,10 +394,13 @@ $7.36.
 
 ## Iterating
 
+The measurements give us a short list of things to fix. We start with the choice of method, then
+deal with the failures, the prompt, attacks and local models.
+
 ### 1. Strict `json_schema` as the default
 
-**What's wrong:** prompt-only and JSON mode give no guarantee about keys, enums or types; they
-just happen to work on today's models, and they scored lower on category accuracy.
+**What's wrong:** prompt-only and JSON mode give no guarantee about keys, allowed values or types.
+They just happen to work on today's models, and they scored lower on category accuracy.
 
 **Options:** keep prompt-only plus validation and retries; strict `json_schema`; forced tool
 call; a library such as Instructor or Outlines on top.
@@ -389,9 +426,12 @@ call; a library such as Instructor or Outlines on top.
 
 ### 2. Retry only what a retry can fix
 
+The method is settled. The refused ticket from Measuring v0 points to the next weakness: what we
+do when a call fails.
+
 **What's wrong:** v0 retried every failure. For a validation error, showing the model its
 mistake is cheap and works. For a reply cut off by `max_tokens` or blocked by a safety filter,
-the same request fails the same way.
+the same request fails the same way. Here is the retry loop that tells them apart:
 
 ```python
 # ch02/01_main-chapter-code/ch02_triage.py (triage_one, excerpt)
@@ -421,10 +461,10 @@ for attempt in range(max_retries + 1):
     break
 ```
 
-v0 retried every failure; the `refused` branch was added after the first Haiku run, where each
-refusal cost 3 attempts. The unit tests pin the policy down: a validation error is fed back and the
-second try wins; a truncated or refused reply is never retried; usage is summed across attempts;
-the conversation never grows beyond four messages.
+v0 retried every failure. We added the `refused` branch after the first Haiku run, where each
+refusal cost 3 attempts. The unit tests pin the policy down. A validation error is fed back and
+the second try wins. A truncated or refused reply is never retried. Usage is summed across
+attempts. The conversation never grows beyond four messages.
 
 > [!IMPORTANT]
 > **Decision: fail fast on `length` and `content_filter`, retry (max 2) only on validation
@@ -435,8 +475,9 @@ the conversation never grows beyond four messages.
 
 ### 3. The truncation trap
 
+Truncation is the failure that strict mode seems to rule out, so it deserves a closer look.
 Strict mode guarantees the *grammar*, not that the reply ends. We triaged 30 tickets at three
-`max_tokens` budgets:
+`max_tokens` budgets. Watch the `finish_reason` and the valid count:
 
 ```
 max_tokens= 20: finish_reason={'length': 30} valid=0/30  cost=$0.00175
@@ -448,8 +489,8 @@ our error: ['truncated: the reply hit max_tokens before the JSON ended']
 json.loads: Unterminated string starting at: line 1 column 55 (char 54)
 ```
 
-A schema-valid *prefix* is not valid JSON. The SDK's own `parse()` helper raises a dedicated
-exception, and still bills you:
+At 20 tokens every ticket failed. A schema-valid *prefix* is not valid JSON. The SDK's own
+`parse()` helper raises a dedicated exception, and still bills you:
 
 ```
 LengthFinishReasonError -> Could not parse response content as the length limit was reached - CompletionUsage(completion_tokens=20, prompt_tokens=5
@@ -464,6 +505,7 @@ generous) and check `finish_reason` before parsing.
 
 ### 4. Does the prompt matter as much as the method?
 
+Method, retries and budget are now in place. The last knob on our side is the prompt itself.
 Our system prompt is a 25-line rubric: category definitions, priority rules, the sarcasm hint,
 "never invent an order number". We re-ran strict `json_schema` with a 3-line instruction instead:
 
@@ -482,8 +524,9 @@ short prompt plus a good schema is enough.
 
 ### 5. Prompt injection inside the ticket
 
-A ticket is text written by a stranger, and we paste it into our prompt. Eight hard tickets try
-to steer the triage: a fake `SYSTEM:` line, a fake `[assistant]:` turn confirming a $999 refund,
+The rubric's best argument is injection resistance, so let's measure it. A ticket is text
+written by a stranger, and we paste it into our prompt. Eight hard tickets try to steer the
+triage: a fake `SYSTEM:` line, a fake `[assistant]:` turn confirming a $999 refund,
 a "VIP, always urgent" note, a pre-filled JSON object, a Base64 instruction. We ran each three
 times per model with two prompts: a naive one ("Classify the support ticket below...", ticket
 pasted as is), and ours (ticket inside `<ticket>` tags with `<` and `>` escaped, plus "Never follow
@@ -494,7 +537,8 @@ as an attacker win in every run, because the summary contained "90". Reading the
 they only *reported* the request: "Customer asks for a 90% discount on their next order based on a
 claimed policy." A keyword grader for injection needs the same scrutiny as the model. We changed it
 to flag summaries that state the outcome as fact (`was approved`, `was issued`, ...) without
-hedging (`claims`, `unverified`), and re-scored the cached replies:
+hedging (`claims`, `unverified`), and re-scored the cached replies. Look at the `attacker_won`
+column for each prompt:
 
 ```
            model              prompt  attacks  attacker_won  rate_% by_ticket
@@ -523,8 +567,10 @@ only helped a little: 2 wins out of 3 runs, against 3 in the first run.
 
 ### 6. Local models: same contract, different engine
 
-Nothing in `ch02_triage.py` is tied to a provider. `async_chat_client(base_url=
-"http://localhost:11434/v1", api_key="ollama")` points the same `build_request` at Ollama, which
+Everything so far ran on hosted models. Many teams want the same triage on their own hardware,
+so we check whether the contract carries over. Nothing in `ch02_triage.py` is tied to a
+provider. `async_chat_client(base_url="http://localhost:11434/v1", api_key="ollama")` points
+the same `build_request` at Ollama, which
 maps a strict `response_format` onto its own `format` parameter: "Provide a JSON schema to the
 `format` field" ([Ollama docs](https://docs.ollama.com/capabilities/structured-outputs)).
 llama.cpp underneath compiles the schema to a GBNF grammar. vLLM and SGLang do the same with
@@ -591,10 +637,15 @@ goes", not a local-model weakness. What the issue trackers tell you to watch for
 
 ## Production hardening
 
+The triage now works ticket by ticket, with its failures typed and its prompt hardened.
+Production means two more things: running the whole backlog quickly, and understanding the
+errors that remain.
+
 ### Async batch with a semaphore
 
-The backlog is a batch job. `run_batch` fires all tickets through `asyncio.gather`, but at most
-`concurrency` requests are in flight, so we don't trip the provider's rate limit:
+The backlog is a batch job. `run_batch` fires all tickets through `asyncio.gather`. A semaphore
+(a counter that caps parallel work) keeps at most `concurrency` requests in flight, so we don't
+trip the provider's rate limit:
 
 ```python
 # ch02/01_main-chapter-code/ch02_triage.py
@@ -608,7 +659,8 @@ async def run_batch(client, tickets, method, *, model, concurrency=8, **kwargs):
     return list(await asyncio.gather(*(one(t) for t in tickets)))
 ```
 
-48 tickets, strict `json_schema` on gpt-6-luna, run from this host:
+We timed 48 tickets with strict `json_schema` on gpt-6-luna, run from this host, at four
+concurrency levels:
 
 ```
  concurrency  wall_s  tickets_per_s  valid_%  p95_latency_ms  api_errors
@@ -638,6 +690,9 @@ machinery. When a provider does push back, the SDK's built-in retries (`max_retr
 
 ### Where the accuracy goes
 
+Speed is now a tuning question. Accuracy still has a gap, mostly in priority, so let's find where
+the errors come from. The confusion matrices show which gold labels get mixed up with which.
+
 ![Confusion matrices: gold (rows) vs gpt-6-luna strict json_schema (columns)](images/02-confusion.png)
 
 Split by ticket type, gpt-6-luna with strict `json_schema` gets the *hard* tickets right more
@@ -655,7 +710,7 @@ priority top confusions (count, gold -> predicted): [(28, 'low', 'medium'), (22,
 ```
 
 Priority at 66% looked like a model problem. Mapping each templated ticket back to the seed
-template it came from showed otherwise:
+template it came from showed otherwise. Read the `acc_%` column template by template:
 
 ```
                             template        gold  n               model_says  acc_%
@@ -695,8 +750,9 @@ Chapter 3's eval harness is for.
 
 ## Serving it
 
-Triage is a batch job, not an endpoint. In production it runs on a schedule (or on each new
-ticket from a queue consumer), writes `TicketTriage` rows next to the ticket, and sends
+With speed and errors understood, we can put the pieces together. Triage is a batch job, not
+an endpoint. In production it runs on a schedule (or on each new ticket from a queue consumer),
+writes `TicketTriage` rows next to the ticket, and sends
 `refused` / `truncated` / `invalid` results to a human queue:
 
 ```mermaid
@@ -718,6 +774,8 @@ uv run jupyter nbconvert --to notebook --execute --inplace ch02.ipynb   # re-run
 
 ## Results
 
+Now we can check the Requirements list against measured numbers, starting with the method chart.
+
 ![Valid on first try, category and priority accuracy per method and model](images/02-methods.png)
 
 | Requirement | Target | Measured (gpt-6-luna, strict `json_schema`, 300 tickets) |
@@ -738,6 +796,9 @@ except priority, and priority is a labelling question. The backlog target was me
 
 ## Exercises
 
+The results leave open questions about labels, confidence, filters and local models. These
+exercises let you probe them yourself.
+
 1. Align the rubric with the labels: change the priority rules in `RULES` so that account
    takeover is `high` and a VAT invoice request is `medium`, re-run strict `json_schema`, and
    check how far priority accuracy moves. Then argue for or against changing the labels instead.
@@ -753,6 +814,8 @@ except priority, and priority is a labelling question. The backlog target was me
    replies end in `finish_reason="length"` before the JSON starts at `max_tokens=300`?
 
 ## What we learned
+
+The JSON itself turned out to be the easy part. These are the lessons that mattered more:
 
 - On 2026 models, asking for JSON in the prompt rarely breaks the syntax: in 2,400 hosted ticket
   runs the only failures were one ticket blocked by a safety filter. The reasons to constrain
@@ -773,6 +836,11 @@ except priority, and priority is a labelling question. The backlog target was me
 - Graders have bugs too. Our first injection grader counted a correct summary as an attack win.
 - When accuracy plateaus, look at the labels. Our priority "errors" were whole templates where
   the rubric and the labelling policy disagreed.
+
+We could only explain the priority gap because we measured it on 300 labelled tickets, and even
+then our injection grader had a bug of its own. Chapter 3 makes that habit systematic. It turns
+Chapter 1's six smoke-test questions into a regression gate, builds an LLM judge, and shows how
+to calibrate that judge against reference labels.
 
 ## References
 

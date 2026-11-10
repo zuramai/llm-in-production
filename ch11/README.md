@@ -20,6 +20,11 @@ of September 2026 was about the flip side: engineers who let the agent handle in
 slowly lose touch with their own systems
 ([Hacker News](https://news.ycombinator.com/item?id=49574167)).
 
+Chapter 10 made an agent safe to trust with writes. It saved its progress in checkpoints, and a
+human approved every refund before it happened. This chapter, still in Part III on agents and
+tools, takes the opposite case: an agent that never writes anything. Its whole value is how well
+it reads, which makes it a clean place to study what tools should return to the model.
+
 This chapter builds a small, honest version of that agent for ShopFlow's `checkout` service. We
 run a real telemetry stack (Prometheus, Loki, Grafana) in Docker Compose on one machine, break the
 service on purpose in three different ways, and measure whether the agent puts the right cause
@@ -28,6 +33,8 @@ first. It only reads, and every action it suggests is addressed to a human.
 ![Telemetry plane and agent plane](images/11-architecture.svg)
 
 ## The problem
+
+Let's make that concrete with one alert, the kind that wakes someone up.
 
 At 13:13 UTC the **Checkout Overview** alert fires: *elevated errors and/or latency on service
 `checkout` (5xx ratio > 5% or p95 latency > 2 s for 5 minutes)*. The on-call engineer has to
@@ -38,27 +45,41 @@ answer three questions fast:
 3. **What do we do now?** (roll back, fail over, scale, page someone else)
 
 The data to answer them is already there: metrics in Prometheus, logs in Loki, a deploy history
-and three runbooks. Reading it takes time and the right queries. The ask: an agent that reads
-the same data when the alert fires and drafts the incident report in under a minute, so the
-human starts from a ranked list of hypotheses instead of a blank page.
+and three runbooks. Reading it takes time and knowing the right queries. So the ask is an agent
+that reads the same data when the alert fires and drafts the incident report in under a minute.
+The human then starts from a ranked list of hypotheses instead of a blank page.
 
 ## Requirements
 
-| Type | Requirement | Target |
-|---|---|---|
-| Functional | The injected root cause is the **top-ranked** hypothesis | 3/3 scenarios on each of 2 models |
-| Functional | Every hypothesis carries evidence quoted from tool output | always (schema-enforced) |
-| Functional | Output: `IncidentReport(summary, impact, timeline, hypotheses, next_actions)` → Markdown postmortem | always |
-| Safety | Tools are read-only; next actions are proposals for a human | by construction |
-| Non-functional | Latency per investigation | p95 < 60 s on the hosted model |
-| Non-functional | Cost per investigation | < $0.01 |
-| Non-functional | Context budget | peak prompt < 8k tokens, so a local model can run it |
+Before we build anything, let's pin down what a good draft means. The agent must do four things:
+
+- **Put the real cause first.** The injected root cause is the top-ranked hypothesis in 3/3
+  scenarios, on each of 2 models.
+- **Show its evidence.** Every hypothesis carries evidence quoted from tool output, always. The
+  report schema enforces this.
+- **Write a usable report.** The output is always an
+  `IncidentReport(summary, impact, timeline, hypotheses, next_actions)`, rendered as a Markdown
+  postmortem.
+- **Only look, never touch.** The tools are read-only by construction, and every next action is
+  a proposal for a human.
+
+It also has to be quick and cheap enough to run on every alert:
+
+- **Finish fast.** p95 latency per investigation under 60 s on the hosted model. (p95 means
+  95% of investigations finish faster than this.)
+- **Cost almost nothing.** Under $0.01 per investigation.
+- **Fit a small context.** The largest single prompt stays under 8k tokens, so a local model can
+  run it.
+
+In [Results](#results) we check each item against measured numbers.
 
 ## The data
 
-There's no database in this chapter. The "data" is telemetry from a simulated `checkout` service
-that we run in Docker. It follows the observability contract that the ShopFlow runbooks
-([`datasets/shopflow/docs/runbooks/`](../datasets/shopflow/docs/runbooks/)) already describe:
+To test those targets we need an incident we can cause on demand. There's no database in this
+chapter. The "data" is telemetry from a simulated `checkout` service that we run in Docker. It
+follows the observability contract that the ShopFlow runbooks
+([`datasets/shopflow/docs/runbooks/`](../datasets/shopflow/docs/runbooks/)) already describe.
+The table lists every signal the agent can query:
 
 | Signal | Name | Labels / fields |
 |---|---|---|
@@ -71,6 +92,9 @@ that we run in Docker. It follows the observability contract that the ShopFlow r
 | Loki stream | `{service="checkout", level="info" \| "error"}` | JSON line: `msg`, `route`, `status`, `duration_ms`, `deploy_version`, `error`, `provider` |
 | file | [`deploys.json`](01_main-chapter-code/deploys.json) | `version`, `sha`, `deployed_at` (UTC), `author`, `summary` |
 | Markdown | 3 runbooks + 11 handbook pages | `datasets/shopflow/docs/{runbooks,handbook}/` |
+
+The diagram shows how the pieces connect. Solid arrows carry traffic and telemetry; dotted
+arrows are the four tools the agent reads through.
 
 ```mermaid
 flowchart LR
@@ -96,8 +120,10 @@ uv run python loadgen.py --rps 6 &           # steady traffic
 uv run python inject_fault.py --scenario db-pool-exhaustion   # or bad-deploy, payment-provider-timeout, none
 ```
 
-The three scenarios, as implemented in [`checkout/ch11_sim.py`](01_main-chapter-code/checkout/ch11_sim.py)
-and [`checkout/main.py`](01_main-chapter-code/checkout/main.py):
+With traffic flowing, we can break things. These are the three scenarios, as implemented in
+[`checkout/ch11_sim.py`](01_main-chapter-code/checkout/ch11_sim.py)
+and [`checkout/main.py`](01_main-chapter-code/checkout/main.py). The last column is what a human
+would see on the dashboard:
 
 | Scenario | What we break | What an engineer would see |
 |---|---|---|
@@ -124,17 +150,20 @@ minute *if* they know which six panels matter.
 
 ## Concepts
 
+A human reads that dashboard in a minute because they know what each signal means. The agent
+needs the same background, so let's go over it.
+
 ### Metrics, logs and the questions each answers
 
-**Metrics** are numbers sampled over time, like a car's dashboard: cheap to store, perfect for
-"how many" and "how slow", useless for "which request". Prometheus *pulls* them by scraping
-`/metrics` every 5 seconds and answers questions in PromQL, for example
-`sum by (status) (rate(http_requests_total[1m]))`: requests per second, per status code,
+**Metrics** are numbers sampled over time, like a car's dashboard. They are cheap to store and
+perfect for "how many" and "how slow", but useless for "which request". Prometheus *pulls* them
+by scraping `/metrics` every 5 seconds and answers questions in PromQL. For example,
+`sum by (status) (rate(http_requests_total[1m]))` gives requests per second, per status code,
 averaged over the last minute. A **histogram** stores counts per latency bucket, so we can ask
 for a percentile after the fact with `histogram_quantile(0.95, ...)`.
 
-**Logs** are the individual events, like a ship's logbook: expensive, but they carry the
-details (the exception text, the deploy version, the provider). Loki indexes only a few
+**Logs** are the individual events, like a ship's logbook. They are expensive, but they carry
+the details: the exception text, the deploy version, the provider. Loki indexes only a few
 *labels* (`service`, `level`) and stores the rest as text, which keeps it cheap. You filter
 with LogQL: `{service="checkout", level="error"} | json | route="/checkout"`.
 
@@ -143,10 +172,12 @@ need them; Chapter 14 does.
 
 ### An agent is a loop
 
-An **agent** here is nothing more than an LLM in a loop with tools. Each turn, the model sees
-the conversation so far and either calls one or more tools (we run them and append the results)
-or stops. It's the same function-calling loop as Chapter 9's MCP tools, pointed at telemetry
-instead of a database.
+Those signals are what the agent reads. How it reads them is simpler than the word "agent"
+suggests. An **agent** here is nothing more than an LLM in a loop with tools. Each turn, the
+model sees the conversation so far and either stops or calls one or more tools. We run the
+tools and append the results. It's the same function-calling loop as Chapter 9's MCP tools,
+pointed at telemetry instead of a database. The diagram shows one investigation from alert to
+draft:
 
 ```mermaid
 sequenceDiagram
@@ -169,18 +200,22 @@ sequenceDiagram
     A-->>P: Markdown postmortem draft, hypotheses sorted by confidence
 ```
 
+Notice that in this final version the tools don't hand back raw API output: they summarize and
+cap it. [Measuring v0](#measuring-v0) shows what happens when they do.
+
 ### Hypotheses, evidence and confidence
 
-A good incident report doesn't just name a cause. It lists the causes it **considered**, the
+The loop ends with a report, and the shape of that report decides how useful it is. A good
+incident report doesn't just name a cause. It lists the causes it **considered**, the
 **evidence** for and against each, and how sure it is. That's what lets a human check the
 agent's work in a minute instead of redoing it. So our schema makes each hypothesis a triple
 `(hypothesis, evidence[], confidence)`, and the report ranks hypotheses by confidence.
 
-Two caveats we'll meet in the results. First, a model's "confidence 0.99" is a number it wrote,
-not a measured probability; it's only useful if it's **calibrated** (over many incidents, the
-0.9s are right about 90% of the time). Second, the agent usually finds the **proximate cause**
-(the pool is exhausted) and not always the deeper one (a slow query holds the connections). How
-deep it can go depends on what the tools can see.
+Two caveats will come up in the results. First, a model's "confidence 0.99" is a number it
+wrote, not a measured probability. It's only useful if it's **calibrated**, meaning that over
+many incidents, the 0.9s are right about 90% of the time. Second, the agent usually finds the
+**proximate cause** (the pool is exhausted), the direct trigger, and not always the deeper one
+(a slow query holds the connections). How deep it can go depends on what the tools can see.
 
 > [!NOTE]
 > **In the wild:** Microsoft's RCACopilot matches each incoming incident to a handler that
@@ -192,11 +227,12 @@ deep it can go depends on what the tools can see.
 
 ### The telemetry plumbing
 
-Our `checkout` service exposes metrics with
+All of this assumes the telemetry actually reaches Prometheus and Loki. Here is how our service
+gets it there. `checkout` exposes metrics with
 [`prometheus_client`](https://prometheus.github.io/client_python/) and pushes its logs straight
 to Loki's HTTP push API (`POST /loki/api/v1/push`,
 [Loki docs](https://grafana.com/docs/loki/latest/reference/loki-http-api/)) through a 30-line
-logging handler:
+logging handler. Watch how it builds labels and what it does when the queue is full:
 
 ```python
 # ch11/01_main-chapter-code/checkout/ch11_loki_handler.py (excerpt)
@@ -221,11 +257,11 @@ class LokiHandler(logging.Handler):
             self.dropped += 1
 ```
 
-A background thread flushes the queue every second. Three details matter more than they look:
-labels are only `service` and `level` (every other field goes into the JSON line, because each
-distinct label combination is a separate stream in Loki); fields are allow-listed, so a stray
-`card_number=` never leaves the process; and when Loki is down we drop the batch instead of
-blocking checkout.
+A background thread flushes the queue every second. Three details matter more than they look.
+Labels are only `service` and `level`, and every other field goes into the JSON line, because
+each distinct label combination is a separate stream in Loki. Fields are allow-listed, so a
+stray `card_number=` never leaves the process. And when Loki is down we drop the batch instead
+of blocking checkout.
 
 > [!IMPORTANT]
 > **Decision: a 30-line push handler over a log shipper (Grafana Alloy).** For one service in a
@@ -248,8 +284,9 @@ blocking checkout.
 
 ## v0: the naive solution
 
-The first version of every tool is a thin wrapper around the API: send the query, return the
-JSON. Prometheus returns a matrix with every sample; Loki returns every matching line.
+With the stack running and the concepts in place, we can build the simplest agent that could
+work. The first version of every tool is a thin wrapper around the API: send the query, return
+the JSON. Prometheus returns a matrix with every sample; Loki returns every matching line.
 
 ```python
 # ch11/01_main-chapter-code/ch11_agent/tools.py (excerpt: the summarize=False path)
@@ -266,9 +303,10 @@ schema. Only what the tools hand back differs.
 
 ## Measuring v0
 
-First, the size of what the tools return. The notebook runs six typical queries against the
-live `db-pool-exhaustion` incident, once raw and once summarized, and counts tokens with
-`o200k_base`:
+v0 has the full loop, so the question is what all that raw output costs. We start with the size
+of what the tools return. The notebook runs six typical queries against the live
+`db-pool-exhaustion` incident, once raw and once summarized, and counts tokens with
+`o200k_base`. Compare the two token columns:
 
 ```
 tool                                                        query  raw_tokens  summary_tokens  ratio
@@ -284,14 +322,16 @@ total raw tokens: 22274 | total summarized: 1454
 
 ![Tokens per tool call, raw vs summarized](images/11-tool-output-size.png)
 
-Two queries an agent will naturally try, "show me the latency buckets" and "show me the logs",
-cost 8–10k tokens each, raw. Either one alone fills an 8k context window before the model has
+The summarized column is several times smaller on every row. Two queries an agent will
+naturally try, "show me the latency buckets" and "show me the logs", cost 8–10k tokens each,
+raw. Either one alone fills an 8k context window before the model has
 written a word. And this is a *toy*: one service, three routes, 6 requests per second, two
 minutes of incident. A real service has more routes, more instances and more traffic, so the
 raw matrix grows with every label value and the log dump hits the line limit in seconds.
 
-Then the whole agent, end to end. We ran the eval with `--raw-tools` on `openai/gpt-6-luna`,
-3 scenarios × 3 repeats (full table in [Results](#results)):
+Token counts per query don't tell us whether the answers got worse, so we ran the whole agent,
+end to end. We ran the eval with `--raw-tools` on `openai/gpt-6-luna`, 3 scenarios × 3 repeats
+(full table in [Results](#results)):
 
 | tools | top-1 | prompt tokens / investigation (mean) | largest single prompt (mean / max) | $ / investigation |
 |---|---|---|---|---|
@@ -302,7 +342,7 @@ The honest result: **on a hosted model with a big context window, raw tools didn
 accuracy.** Luna read up to 60k characters of JSON and log lines per investigation and still
 found the cause every time. What v0 costs is 3.8× the tokens, 2.4× the money, and a peak prompt
 of 23,782 tokens. That last number is the real problem. A local model behind Ollama with an 8k
-context doesn't fail on a prompt that long; it silently truncates it, and the model reasons
+context doesn't fail on a prompt that long. It silently truncates it, and the model reasons
 over whatever part of the history survived. And the raw outputs grow with traffic, while the
 summaries don't.
 
@@ -313,10 +353,14 @@ in [Results](#results).
 
 ## Iterating
 
+v0 finds the cause but blows past the 8k budget. Each step below fixes one weakness we measured
+or ran into, starting with that one.
+
 ### 1. Summarize inside the tool
 
-The fix is to make each tool return what an engineer would *read*, not what the API returns.
-Two pure functions, unit-tested without a network:
+The peak prompt is too big because the tools pass along what the API returns. The fix is to make
+each tool return what an engineer would *read*. We use two pure functions, unit-tested without
+a network:
 
 - `summarize_matrix()` turns each Prometheus series into one line: labels, first, min, max,
   last, and six evenly spaced samples, so the shape of the curve survives. At most 8 series,
@@ -358,10 +402,11 @@ tokens per investigation from 68,760 to 18,081 and the largest single prompt fro
 > and never hallucinates a count. Use an LLM summarizer only for free-text sources you can't
 > group by fields, like long stack traces or chat transcripts.
 
-The live run in the notebook, with summarized tools: 20 tool calls in 8 steps, 37,944 prompt
-tokens, largest prompt 7,787, 24.4 s, $0.0032, and the pool ranked first. It used the whole
-8-step budget, four of the steps on runbook searches, and its largest prompt is above the
-eval's 5,832 peak, which is why the step cap matters for an 8k local model:
+The eval numbers are averages, so it helps to look at one full run. The live run in the notebook,
+with summarized tools, made 20 tool calls in 8 steps: 37,944 prompt tokens, largest prompt
+7,787, 24.4 s, $0.0032, and the pool ranked first. It used the whole 8-step budget, four of the
+steps on runbook searches. Its largest prompt is above the eval's 5,832 peak, which is why the
+step cap matters for an 8k local model. Here is the trace:
 
 ```
 step 1 query_prometheus  1007 chars  {"promql": "sum by (route, status) (rate(http_requests_total{job=\"checkout\"}[1m]))", "range": "15m"}
@@ -405,15 +450,16 @@ investigation supports a deploy regression". Hold on to that; it's the trap Haik
 
 ### 2. Put the telemetry contract in the prompt
 
-An agent that doesn't know the metric names guesses them. Even with the catalog in the prompt,
-one `gpt-6-luna` run in the bad-deploy eval asked Prometheus for
-`checkout_unhandled_exceptions_total`, a metric that doesn't exist. Without a catalog, every
-investigation would start with a few rounds of guessing.
+Summaries fixed the size of tool output. The next weakness is about names: the model has to know
+which metric names to ask for. An agent that doesn't know the names guesses
+them. Even with the catalog in the prompt, one `gpt-6-luna` run in the bad-deploy eval asked
+Prometheus for `checkout_unhandled_exceptions_total`, a metric that doesn't exist. Without a
+catalog, every investigation would start with a few rounds of guessing.
 
-The options: a `list_metrics` tool that returns everything Prometheus knows (on a real
-Prometheus that's thousands of series names), or a short, hand-written **telemetry contract**
-in the system prompt: the 6 metrics, their labels and the Loki fields that matter for this
-service, plus a method.
+We had two options. One is a `list_metrics` tool that returns everything Prometheus knows; on a
+real Prometheus that's thousands of series names. The other is a short, hand-written
+**telemetry contract** in the system prompt: the 6 metrics, their labels and the Loki fields
+that matter for this service, plus a method. We chose the contract. Here is part of it:
 
 ```python
 # ch11/01_main-chapter-code/ch11_agent/agent.py (excerpt of SYSTEM)
@@ -443,8 +489,10 @@ message, moved on, and still ranked the bad deploy first.
 
 ### 3. A strict report schema, ranked by confidence
 
-The final call asks for the report under a **strict JSON schema** generated from the Pydantic
-model, so the provider constrains decoding to valid JSON with every field present:
+The agent now asks good questions. What remains is the answer it writes at the end, which the
+eval and the human both depend on. The final call asks for the report under a **strict JSON
+schema** generated from the Pydantic model. The provider then constrains decoding to valid JSON
+with every field present:
 
 ```python
 # ch11/01_main-chapter-code/ch11_agent/report.py (excerpt)
@@ -492,9 +540,10 @@ rejected.
 
 ### 4. Keyword search over runbooks
 
-`search_runbooks` splits each runbook and handbook page into Markdown sections and scores them
-by term overlap, with matches in the heading counting triple and a mild length penalty. No
-embeddings, no vector store.
+The report's next actions are only as good as the procedures the agent can find, which brings us
+to the runbooks. `search_runbooks` splits each runbook and handbook page into Markdown sections
+and scores them by term overlap. Matches in the heading count triple, and longer sections get a
+mild penalty. No embeddings, no vector store.
 
 ```python
 # ch11/01_main-chapter-code/ch11_agent/tools.py (excerpt)
@@ -520,6 +569,9 @@ runbook procedure").
 > hundreds of runbooks and postmortems written in many voices.
 
 ## Production hardening
+
+The agent works on our three scenarios. Before it reads a real system's telemetry during a real
+incident, a few limits and safety rules need to be in place.
 
 - **Read-only by construction.** The four tools only `GET` from Prometheus and Loki and read
   files. In production, give the agent its own Grafana service account with the Viewer role and
@@ -555,6 +607,9 @@ runbook procedure").
   confidence"; the evidence list is what lets a human catch that.
 
 ## Serving it
+
+With those limits in place, the agent needs a way to run. We start with a command a human types,
+then move it behind the pager.
 
 ### From the terminal
 
@@ -603,7 +658,8 @@ payment-provider runbook's idempotency section, which is the kind of detail a ti
 
 ### Behind the pager
 
-In production the agent runs when the alert fires, not when someone types a command:
+Typing a command is fine for testing, but during an incident nobody should have to remember to
+do it. In production the agent runs when the alert fires:
 
 ```mermaid
 flowchart LR
@@ -622,11 +678,13 @@ fingerprint, so a flapping alert doesn't start ten investigations.
 
 ## Results
 
-`eval/run_eval.py`, 3 scenarios × 3 repeats per model, run on this host: hosted models on
-2026-11-07 (UTC), `gpt-oss:20b` on 2026-11-09 against the 2026-11-09 ShopFlow seed. Each
+We've now set every requirement and seen single runs. The eval checks them across models and
+repeats. `eval/run_eval.py` runs 3 scenarios × 3 repeats per model on this host: hosted models
+on 2026-11-07 (UTC), and `gpt-oss:20b` on 2026-11-09 against the 2026-11-09 ShopFlow seed. Each
 scenario gets fresh Prometheus and Loki containers, 75 s of healthy traffic, the fault, 100 s
 for the signals to build, and then the agent with nothing but the alert text. A run counts
-when the injected cause is the **top-ranked** hypothesis (`ch11_agent/scoring.py`).
+when the injected cause is the **top-ranked** hypothesis (`ch11_agent/scoring.py`). Read the
+table by row: the bold one is our default, and the others show where other choices break.
 
 | variant | model | db-pool-exhaustion | bad-deploy | payment-provider-timeout | top-1 overall | prompt tokens / run (mean) | peak prompt (max) | p50 | p95 | $ / investigation |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -720,6 +778,9 @@ had pushed `gpt-oss:20b` partly onto the CPU.
 
 ## Exercises
 
+These exercises push on the agent's limits: depth, compound faults, calibration and prompt
+injection.
+
 1. **Go one level deeper.** In `db-pool-exhaustion`, the agent finds the proximate cause (the
    pool is exhausted) but can't see *why*: the slow inventory-lock query. Add a
    `slow_queries()` tool that returns the top 5 statements by duration (simulate
@@ -761,6 +822,11 @@ had pushed `gpt-oss:20b` partly onto the CPU.
 - On a hosted model, the whole investigation costs about $0.002 and takes about 20 s. The
   expensive part of an incident is still the human, so spend the savings on making the draft
   easy to check, not on letting the agent act.
+
+This agent only read, and a human acted on its draft. Chapter 12 keeps that split but changes
+the input from telemetry to a pull request. A code-review bot faces the same two problems we
+met here: putting the right finding first, and staying quiet when nothing is wrong. It also
+needs the same habit of checking the eval against planted, known answers.
 
 ## References
 

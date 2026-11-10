@@ -4,7 +4,8 @@
 > <models + providers> · <key library versions>
 
 <Opening hook: a concrete scene from a real team, then what is happening in the industry right
-now, dated and sourced.>
+now, dated and sourced. Then a bridge from the previous chapter: what we built there and why it
+leads to this chapter's problem.>
 
 ![<alt>](images/NN-<slug>.svg)
 
@@ -14,12 +15,18 @@ now, dated and sourced.>
 
 ## Requirements
 
-| Type | Requirement | Target |
-|---|---|---|
-| Functional | ... | ... |
-| Non-functional | p95 latency | < N s |
-| Non-functional | cost | < $N per 1k requests |
-| Non-functional | accuracy | ≥ N% on the eval set |
+<One or two sentences that turn the problem into a definition of "done".> The system must:
+
+- **<Short label>.** <What it does, in plain words, with its test or target.>
+- ...
+
+It also has to behave like a real product:
+
+- **<Fast enough>.** <Latency target in plain words, e.g. 95% of answers start within N s.>
+- **<Cheap enough>.** <Under $N per 1,000 requests.>
+- **<Accurate enough>.** <At least N% right on the eval set.>
+
+<One sentence: we check every item against measured numbers in Results.>
 
 ## The data
 
@@ -73,6 +80,8 @@ now, dated and sourced.>
 ## What we learned
 
 - ...
+
+<A short paragraph handing over to the next chapter's problem.>
 
 ## References
 

@@ -20,17 +20,25 @@ reports 90% overall accuracy and half the manual work
 Ramp benchmarks models on how many invoices come out with *zero* edits needed
 ([Ramp Builders](https://builders.ramp.com/post/financial-benchmarks), 2026-03).
 
-This chapter builds ShopFlow's invoice reader: PDFs and scans in, validated rows in Postgres out,
-anything doubtful in a human review queue. We measure three ways to read a page (text layer,
-vision model, OCR model then LLM) on hosted and local models, and find out which errors
-arithmetic can catch and which it can't.
+Over the last four chapters, ShopFlow's data was already in good shape. We searched its internal
+docs, queried its tables with SQL, and in Chapter 7 put a semantic layer in front of the metrics
+so the model only picked names from a governed menu. A lot of business data doesn't start that
+way. It arrives as PDFs and scans that someone has to read before any table holds it. This
+chapter, the last one in Part II, handles that step.
+
+We build ShopFlow's invoice reader. PDFs and scans go in, validated rows in Postgres come out,
+and anything doubtful goes to a human review queue. We compare three ways to read a page on
+hosted and local models: the PDF's text layer, a vision model, and an OCR model followed by an
+LLM. Along the way we find out which errors arithmetic can catch and which it can't. The figure
+shows the pipeline we end up with.
 
 ![ShopFlow invoice pipeline](images/08-pipeline.svg)
 
 ## The problem
 
-ShopFlow buys boxes, tape, mugs and bike parts from about a dozen suppliers in the US, the UK and
-Germany. Invoices arrive by email as PDFs, and some still come on paper and get scanned. An
+The pipeline replaces a job people do by hand today, so let's start with that job. ShopFlow buys
+boxes, tape, mugs and bike parts from about a dozen suppliers in the US, the UK and Germany.
+Invoices arrive by email as PDFs, and some still come on paper and get scanned. An
 accounts-payable (AP) clerk types each one into the books: supplier, invoice number, date,
 currency, every line, and the totals. It's slow, and it's the kind of work people get wrong at
 5 PM on a Friday.
@@ -38,7 +46,8 @@ currency, every line, and the totals. It's slow, and it's the kind of work peopl
 The ask: read the invoices automatically and book them, but **never book a wrong amount without
 a human seeing it**. A misread SKU is an annoyance. A misread total is money leaving the company.
 
-Three things make this harder than it looks:
+Three things make this harder than it looks. Each row below is one trap, with an example from
+our data:
 
 | Trap | Example from our data |
 |---|---|
@@ -46,31 +55,53 @@ Three things make this harder than it looks:
 | **Money formats** | `$1,234.56`, `£730.65`, `1.234,56 €`. We store integer cents, so all three must become `123456`-style integers. |
 | **Pixels** | Scans are rotated, blurred and noisy. A vision model reading `KH-5319` as `KH-3919` produces perfectly valid JSON. |
 
+The first two traps are about meaning: the characters are right, but they can be read two ways.
+The third is about the characters themselves: a wrong digit still produces valid JSON, so the
+schema doesn't complain.
+
 ## Requirements
 
-| Type | Requirement | Target |
-|---|---|---|
-| Functional | Extract supplier, invoice number, issue date, currency, every line (SKU, description, qty, unit price) and the three totals | every field right on ≥ 99% of clean PDFs |
-| Functional | Handle scans without a text layer | ≥ 90% of scans fully right |
-| Functional | Internally inconsistent extractions (lines ≠ subtotal, subtotal + tax ≠ total, bad date) are never booked | 100% sent to review |
-| Functional | The same invoice twice (PDF by email, then the paper copy) is not booked twice | 100% |
-| Non-functional | Wrong invoices booked without review ("silently wrong") | 0 on the eval set |
-| Non-functional | Cost | < $1 per 1,000 invoices |
-| Non-functional | Latency | p95 < 30 s per invoice (a back-office batch, not a chat) |
-| Non-functional | Data residency | a local path for suppliers who forbid sending invoices to a cloud API |
+That one rule, never book a wrong amount unseen, has to become targets we can measure. Here is
+what the invoice reader must do:
+
+- **Read every field.** That means supplier, invoice number, issue date, currency, every line
+  (SKU, description, quantity, unit price) and the three totals. On clean PDFs, every field must
+  be right on at least 99% of invoices.
+- **Read scans too.** A scan has no text layer, only pixels. At least 90% of scans must come out
+  with every field right.
+- **Never book an invoice that contradicts itself.** If the lines don't add up to the subtotal,
+  if subtotal plus tax isn't the total, or if the date is bad, the invoice goes to review. This
+  must hold 100% of the time.
+- **Never book the same invoice twice.** When a PDF arrives by email and its paper copy follows,
+  only one gets booked, 100% of the time.
+
+It also has to be safe and affordable to run:
+
+- **No silent errors.** A wrong invoice booked without review is "silently wrong". On our eval
+  set the target is 0.
+- **Stay cheap.** Under $1 per 1,000 invoices.
+- **Finish in reasonable time.** The p95 latency, the time within which 95% of invoices finish,
+  stays under 30 s per invoice. This is a back-office batch, not a chat.
+- **Offer a local path.** Some suppliers forbid sending their invoices to a cloud API. For them
+  we need a path that keeps the data on our own hardware (data residency).
+
+In [Results](#results) we check every item on this list against measured numbers.
 
 ## The data
 
-We can't publish real supplier invoices, so we generate them.
+To check those targets we need invoices with known right answers, and we can't publish real
+supplier invoices. So we generate them.
 [`make_invoices.py`](01_main-chapter-code/make_invoices.py) draws 50 invoices with `reportlab` in
-three layouts, renders 10 of them a second time as "scans" with Pillow, and writes the ground
-truth next to them:
+three layouts. It renders 10 of them a second time as "scans" with Pillow, and it writes the
+ground truth (the correct values) next to them:
 
 ```bash
 cd ch08/01_main-chapter-code
 uv run python make_invoices.py --out data --seed 8
 # wrote 50 PDFs and 10 scans to data/
 ```
+
+Each layout plants different traps:
 
 | Layout | What it looks like | Traps |
 |---|---|---|
@@ -81,10 +112,11 @@ uv run python make_invoices.py --out data --seed 8
 Three of the 50 are 38–42 lines long and spill onto a second page. The scans come in two tiers:
 "mild" (0.5–1.5° rotation, light noise) and "hard" (3.5–5° rotation, blur, heavy grain). The
 generator is deterministic: the same seed gives byte-identical files, and a unit test checks it.
+Here is one page of each layout, and one hard scan:
 
 ![One page per layout, and a hard scan](images/08-samples.png)
 
-The notebook's summary of the set:
+The notebook's summary of the set shows how the files split by kind and layout:
 
 ```
              files  min_lines  max_lines  max_pages
@@ -99,7 +131,11 @@ scan A           1          9          9          1
 scan tiers: {'mild': 6, 'hard': 4}
 ```
 
-The pipeline writes to two tables of its own (created idempotently by `setup_tables()`):
+Most scans use layout B, and only PDFs reach two pages. The scans split into 6 mild and 4 hard.
+
+The pipeline writes to two tables of its own: `ch08_invoices` for booked invoices and
+`ch08_invoice_review` for the review queue. `setup_tables()` creates them idempotently, so it is
+safe to run again:
 
 ```mermaid
 erDiagram
@@ -126,46 +162,62 @@ erDiagram
         text status "open | approved | rejected"
     }
 ```
+
+Keep an eye on `UNIQUE (supplier, invoice_no)` in `ch08_invoices`. It comes back in
+[Production hardening](#production-hardening) as our guard against paying an invoice twice.
+
 ## Concepts
+
+We have invoices and a place to store them. Before writing the extractor we need four ideas: how
+a page becomes text, how to get typed output, how invoices check themselves, and how to score an
+extraction.
 
 ### Three ways to read a page
 
-A PDF is not a picture. A PDF made by software ("born digital") contains the characters
-themselves, with positions: a **text layer**. `pypdf` reads it in 4.2 ms per invoice on our
-set, with every digit exactly as the supplier's software wrote it. What it doesn't keep is the
-*structure*: a table comes out as a stream of cells in drawing order (`Item`, `Qty`, `Price`,
-`Total`, then the values, one per line).
+The first question is what the model actually gets to read, and that depends on how the PDF was
+made. A PDF is not a picture. A PDF made by software ("born digital") contains the characters
+themselves, with their positions. This is the **text layer**. `pypdf` reads it in 4.2 ms per
+invoice on our set, with every digit exactly as the supplier's software wrote it. What it doesn't
+keep is the *structure*. A table comes out as a stream of cells in drawing order: `Item`, `Qty`,
+`Price`, `Total`, then the values, one per line.
 
 A scan or a phone photo has no text layer, just pixels. pypdf's maintainer puts it bluntly:
 these libraries "are not OCR libraries and thus will never be able to convert images into text"
 ([Stack Overflow](https://stackoverflow.com/questions/66283836/pdf-to-text-in-python-returning-empty-results-in-image-files)).
 For pixels we have two options:
 
-- A **vision LLM** (a *multimodal* model): the image is cut into small square patches, each
-  patch becomes a few tokens, and the model reads them like words. Think of it as the model
-  looking at the page through a grid of tiny windows. It reads and structures in one step.
-- **OCR then LLM**: a dedicated *OCR* (optical character recognition) model transcribes the
-  page to text, and a text LLM structures the transcript. Two cheaper steps, but the second model
-  never sees the page, so OCR mistakes are baked in.
+- A **vision LLM** (a *multimodal* model, one that takes images as well as text). The image is
+  cut into small square patches, each patch becomes a few tokens, and the model reads them like
+  words. Think of it as the model looking at the page through a grid of tiny windows. It reads
+  and structures in one step.
+- **OCR then LLM.** A dedicated *OCR* (optical character recognition) model transcribes the page
+  to text, and a text LLM structures the transcript. These are two cheaper steps. But the second
+  model never sees the page, so OCR mistakes are baked in.
+
+The figure puts the three paths side by side. All of them end in the same `Invoice`:
 
 ![Three ways to turn a page into an Invoice](images/08-three-paths.svg)
 
+One warning before we trust any pixels at all:
+
 > [!NOTE]
 > **In the wild:** In 2013 David Kriesel found that Xerox WorkCentre scanners were silently
-> *changing digits* in scanned documents: in one cost table "The 65 became an 85". It wasn't OCR,
-> which was switched off; the JBIG2 compression reused similar-looking patches of the image. The
-> scans "look correct at first glance"
+> *changing digits* in scanned documents. In one cost table, "The 65 became an 85". OCR wasn't
+> the cause, because it was switched off. The JBIG2 compression had reused similar-looking
+> patches of the image. The scans "look correct at first glance"
 > ([D. Kriesel](https://www.dkriesel.com/en/blog/2013/0802_xerox-workcentres_are_switching_written_numbers_when_scanning)).
 > The pixels themselves can be wrong before any model sees them.
 
 ### Structured outputs
 
-We want a typed object, not prose. Chapter 2 covered this in depth; here's the short version. We
-define the `Invoice` with Pydantic, turn it into a JSON Schema, and pass it as
-`response_format={"type": "json_schema", ..., "strict": True}`. In *strict* mode the provider
-constrains generation so the output always parses and always has every field. It does **not**
-make the values right. A schema guarantees `total_cents` is an integer, not that it's the right
-integer.
+Whichever path reads the page, we want a typed object out of it, not prose. Chapter 2 covered
+this in depth; here's the short version. We define the `Invoice` with Pydantic, turn it into a
+JSON Schema, and pass it as `response_format={"type": "json_schema", ..., "strict": True}`. In
+*strict* mode the provider constrains generation, so the output always parses and always has
+every field. It does **not** make the values right. A schema guarantees `total_cents` is an
+integer, not that it's the right integer.
+
+Here is the schema. Each field's description tells the model exactly what to put there:
 
 ```python
 # ch08/01_main-chapter-code/ch08_invoice.py (excerpt)
@@ -189,32 +241,36 @@ class Invoice(BaseModel):
     total_cents: int = Field(description="Amount due including tax, integer cents")
 ```
 
-Money is integer cents for the same reason as in the ShopFlow database: `0.1 + 0.2 != 0.3` in
-floating point, and accountants notice.
+Money is stored as integer cents for the same reason as in the ShopFlow database: in floating
+point, `0.1 + 0.2 != 0.3`, and accountants notice.
 
 ### Invoices check themselves
 
-An invoice has redundancy built in. The lines must add up to the subtotal, and subtotal plus tax
-must equal the total. If a model misreads one digit in one unit price, the arithmetic breaks.
-That gives us a free, model-independent check: **validation rules**. They can't prove an
-extraction is right, but they can prove many extractions are wrong.
+The schema gets the shape right but says nothing about the values. For invoices, the document
+itself helps. An invoice has redundancy built in: the lines must add up to the subtotal, and
+subtotal plus tax must equal the total. If a model misreads one digit in one unit price, the
+arithmetic breaks. That gives us a free check that doesn't depend on any model: **validation
+rules**. They can't prove an extraction is right, but they can prove many extractions are wrong.
 
-So every extraction lands in one of four buckets, and the eval counts all four:
+So every extraction lands in one of four buckets, depending on whether it is right and whether
+the rules pass. The eval counts all four:
 
 | | rules pass | rules fail |
 |---|---|---|
 | **extraction right** | correct (booked) | false alarm (a human wastes a minute) |
 | **extraction wrong** | **silently wrong** (booked, money lost) | caught (a human fixes it) |
 
-The number that matters most is the bottom-left cell.
+The number that matters most is the bottom-left cell. A wrong extraction that passes the rules
+gets booked, and the money is gone.
 
 ### Field-level accuracy
 
-"Accuracy" of an extraction means little until we say *of what*. We score each field separately
-against the ground truth: supplier (ignoring case and punctuation), invoice number (exact),
-date, currency, the three totals (exact, to the cent), and the line items. A line item counts
-as right when its SKU, quantity and unit price all match, because those fields move money; the
-description may vary. `all` means every field of the invoice is right, which is Ramp's "perfect
+The rules only tell us whether an extraction is consistent. To know whether it is *right*, we
+compare it with the ground truth. "Accuracy" means little until we say *of what*, so we score
+each field separately: supplier (ignoring case and punctuation), invoice number (exact), date,
+currency, the three totals (exact, to the cent), and the line items. A line item counts as right
+when its SKU, quantity and unit price all match, because those fields move money. The
+description may vary. `all` means every field of the invoice is right. That's Ramp's "perfect
 extraction" idea: zero edits needed.
 
 > [!NOTE]
@@ -226,8 +282,9 @@ extraction" idea: zero edits needed.
 
 ## v0: the naive solution
 
-The version everyone writes first: pull the text out with pypdf, ask for JSON with the key names
-listed, parse it.
+We now have a schema, rules and a way to score. The first version is the one everyone writes:
+pull the text out with pypdf, ask for JSON with the key names listed, and parse it. Here are the
+prompt and the text extraction:
 
 ```python
 # ch08/01_main-chapter-code/ch08_extract.py (excerpt)
@@ -239,6 +296,8 @@ def pdf_text(path: Path) -> str:
     """Text layer of every page, joined. Empty for image-only PDFs."""
     return "\n".join((page.extract_text() or "") for page in PdfReader(str(path)).pages)
 ```
+
+The call uses plain JSON mode, not the strict schema:
 
 ```python
 ex = extract_from_text(client, "openai/gpt-6-luna", pdf_text(path),
@@ -266,14 +325,16 @@ One live call from the notebook, on the UK invoice whose text layer says `Issued
 all fields correct: True
 ```
 
-10 January, correctly, from a prompt that never mentioned date formats.
+The model read `10/01/2026` as 10 January, which is right for a UK supplier, from a prompt that
+never mentioned date formats.
 
 ## Measuring v0
 
-We ran the naive prompt over all 50 PDFs and scored every field against the ground truth
-(`eval/run_eval.py text-naive-luna`, saved in `eval/results/`). Next to it, "v1": the prompt the
-rest of the chapter uses, with explicit rules (cents, dates by supplier country, issue date not
-due date) and the strict `Invoice` schema instead of JSON mode:
+One correct invoice proves little, so we ran the naive prompt over all 50 PDFs and scored every
+field against the ground truth (`eval/run_eval.py text-naive-luna`, saved in `eval/results/`).
+Next to it is "v1", the prompt the rest of the chapter uses. It adds explicit rules (cents, dates
+by supplier country, issue date not due date) and uses the strict `Invoice` schema instead of
+JSON mode. Look at the "all fields right" column:
 
 | run | model | n | supplier | invoice no. | date | currency | totals | line items | all fields right | p50 | $ / 1k invoices |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -281,9 +342,10 @@ due date) and the strict `Invoice` schema instead of JSON mode:
 | v1: rules + strict schema | openai/gpt-6-luna | 50 | 100% | 100% | 100% | 100% | 100% | 100% | **100%** | 4.0 s | $0.31 |
 | v1: rules + strict schema | anthropic/claude-haiku-5.5 | 50 | 100% | 100% | 100% | 100% | 100% | 100% | **100%** | 3.0 s | $0.56 |
 
-"Totals" is subtotal, tax and total, each exact to the cent. Prices as of 2026-11: Luna and Haiku
-both $0.10 / $0.50 per 1M input/output tokens on OpenRouter; Haiku costs more here because it
-used about twice the tokens (1,625 in / 792 out per invoice against Luna's 810 / 456).
+"Totals" means subtotal, tax and total, each exact to the cent. Prices are as of 2026-11: Luna
+and Haiku both cost $0.10 / $0.50 per 1M input/output tokens on OpenRouter. Haiku costs more
+here because it used about twice the tokens: 1,625 in / 792 out per invoice, against Luna's
+810 / 456.
 
 **Everything was right.** 50 out of 50 invoices, every field, including the 17 ambiguous
 slash dates, the German number formats, and the three two-page invoices. We expected the
@@ -299,23 +361,30 @@ So we make the problem harder in the way production does: **take away the text l
 
 ## Iterating
 
+Every step below starts from what the previous one measured. We begin where v0 has nothing to
+read, the scans, and finish with the whole pipeline running end to end.
+
 ### 1. Scans: vision model or OCR then LLM?
 
-A scan has no text layer, so pypdf returns nothing. We tried three readers on the 10 scans:
+Without a text layer, v0 is stuck: pypdf returns nothing for a scan. We tried three kinds of
+reader on the 10 scans:
 
 - `openai/gpt-6-luna` and `anthropic/claude-sonnet-5.5` (hosted vision),
 - `gemma3:4b` on Ollama (local vision; 4B parameters, 3.4 GB),
 - `glm-ocr` on Ollama (a 0.9B OCR model) → Luna structures the transcript.
 
-First a live call: the same invoice once as a scan (vision) and once through its PDF text layer:
+First, a live call. The same invoice is read once as a scan (vision) and once through its PDF
+text layer:
 
 ```
 luna vision: 3049 in / 625 out tokens, $0.000343, 9.7 s, all fields correct: True
 luna text  : 793 in / 412 out tokens, $0.000285, 4.7 s (same invoice, inv-034.pdf)
 ```
 
-The image costs 3.8× the input tokens of the text layer. Then all 10 scans
-(`eval/run_eval.py scan-vision-luna scan-vision-sonnet scan-vision-gemma3-4b scan-ocr-glm-luna`):
+The image costs 3.8× the input tokens of the text layer. Then we ran all 10 scans through every
+reader
+(`eval/run_eval.py scan-vision-luna scan-vision-sonnet scan-vision-gemma3-4b scan-ocr-glm-luna`).
+The "caught" and "silently wrong" columns show what the rules did with each mistake:
 
 | run | model | supplier | invoice no. | date | totals (subtotal / tax / total) | line items | all fields right | caught | silently wrong | p50 | $ / 1k |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -324,12 +393,13 @@ The image costs 3.8× the input tokens of the text layer. Then all 10 scans
 | vision | gemma3:4b (Ollama, RTX 3090) | 90% | 100% | 10% | 50 / 50 / 50% | 0% | **0/10** | 10 | 0 | 5.6 s | $0 |
 | glm-ocr → Luna | glm-ocr + openai/gpt-6-luna | 30% | 30% | 30% | 100 / 100 / 100% | 100% | **3/10** | 7 | 0 | 5.4 s | $0.25 |
 
-Currency was 100% everywhere. Latency for gemma3:4b and glm-ocr is warm, on the RTX 3090
-(2026-11-07); the first gemma3:4b calls took 55 s while the model loaded.
+Currency was 100% everywhere. Latency for gemma3:4b and glm-ocr is warm (model already loaded),
+measured on the RTX 3090 (2026-11-07). The first gemma3:4b calls took 55 s while the model
+loaded. The chart shows the same results field by field:
 
 ![Field-level accuracy on 10 scans](images/08-field-accuracy.png)
 
-Four very different results:
+Four readers, four very different results:
 
 - **Luna and Sonnet read every scan perfectly**, the hard tier included. Sonnet costs 19.5×
   more per invoice ($11.53 vs $0.59 per 1,000) for the same score.
@@ -344,7 +414,8 @@ Four very different results:
   and `date_parse` rules caught all 7. The three scans where glm-ocr transcribed the whole page
   (all German *Rechnungen*) were extracted perfectly.
 
-The glm-ocr transcripts from the eval run:
+The glm-ocr transcripts from the eval run show what went wrong. Several start with an HTML table
+instead of the supplier's name:
 
 ```
 {'model': 'glm-ocr', 'max_side': 1000, 'run_at': '2026-11-07T20:55:04'}
@@ -363,15 +434,15 @@ envelope</td><td>48</td><td>$1.31</td><td>$62.88</td></tr>...<tr><td></td><td></
 <td>Total</td><td>$944.18</td></tr></tfoot></table>
 ```
 
-We also tried it at full resolution and at 1,000 px on the GPU: the transcript of `scan-08` was
-identical (590 characters) and the prompt dropped from 2,791 to 919 tokens, so the eval used
+We also tried glm-ocr at full resolution and at 1,000 px on the GPU. The transcript of `scan-08`
+was identical (590 characters), and the prompt dropped from 2,791 to 919 tokens, so the eval used
 1,000 px.
 
-That isn't the model being bad at OCR: what it read, it read correctly (every amount and SKU in
-the tables was right). GLM-OCR is designed to run *behind* a layout detector: the official SDK
-first finds regions with PP-DocLayoutV3, then recognizes each region separately
-([GLM-OCR technical report](https://arxiv.org/abs/2603.10910), 2026-03). Called directly on a
-whole page through Ollama, it treats a page with a table as a table.
+So the model isn't bad at OCR. What it read, it read correctly: every amount and SKU in the
+tables was right. The problem is how we called it. GLM-OCR is designed to run *behind* a layout
+detector: the official SDK first finds regions with PP-DocLayoutV3, then recognizes each region
+separately ([GLM-OCR technical report](https://arxiv.org/abs/2603.10910), 2026-03). Called
+directly on a whole page through Ollama, it treats a page with a table as a table.
 
 > [!NOTE]
 > **In the wild:** glm-ocr on Ollama has a trail of practitioner issues: it crashed at the 4,096-token
@@ -389,14 +460,15 @@ whole page through Ollama, it treats a page with a table as a table.
 > text layer we use it: exact characters, ~810 input tokens instead of ~3,000, and pypdf takes
 > 4.2 ms. For scans we send the image to a vision LLM, which reads and structures in one
 > step and was 10/10 here. We'd pick OCR-then-LLM when the documents can't leave the building
-> and no capable local vision model fits the hardware, and then we'd run the OCR model with a
+> and no capable local vision model fits the hardware. Even then we'd run the OCR model with a
 > layout stage in front, as its authors do.
 
 ### 2. How many pixels does a page need?
 
-Our scans are 1240×1754 px (A4 at 150 dpi) and cost Luna 3,049 input tokens each. Image tokens
-scale with pixels, so we downscaled the page before sending it and re-ran the 10 scans at each
-size:
+Vision works, but images cost tokens. Our scans are 1240×1754 px (A4 at 150 dpi), and each one costs
+Luna 3,049 input tokens. Image tokens scale with pixels, so we downscaled the page before sending
+it and re-ran the 10 scans at each size. The bottom of the output shows the first error that
+appeared:
 
 ```
  longest side px  prompt tokens/page  all_correct %  caught  silent_wrong  usd_per_1k
@@ -417,8 +489,9 @@ scan-09.png [SILENT]
 Down to 900 px, nothing changes except the bill: 62% fewer input tokens. At 700 px the first
 error appears, and it's the worst kind: one SKU digit misread, `KH-5319` → `KH-3919`, with
 quantity and price correct, so the arithmetic still adds up and **no rule fires**. At 500 px,
-three invoices are silently wrong the same way and one more is caught. (At 500 px the cost per
-invoice goes *up* again: the output nearly doubled on one scan that the model struggled with.)
+three invoices are silently wrong the same way and one more is caught. At 500 px the cost per
+invoice even goes *up* again, because the output nearly doubled on one scan that the model
+struggled with.
 
 > [!IMPORTANT]
 > **Decision: downscale scans to 1200 px, not 700** — 1200 px cut input tokens by 44% with no
@@ -428,14 +501,17 @@ invoice goes *up* again: the output nearly doubled on one scan that the model st
 
 ### 3. Copy, then convert: let small models transcribe, let Python do the math
 
-gemma3:4b *read* the scans better than its score suggests: supplier and invoice number were
-right on 9–10 of 10. What broke was the conversion step we asked of it: "$1.31 → 131 cents",
-"06/11/2026 from a US supplier → 2026-06-11". That is arithmetic and locale logic, which
-deterministic code does better.
+Resolution tuned the hosted path. The local path still scored 0 of 10, and that's the path for
+suppliers who forbid cloud APIs. Its failures in step 1 point to a fix: gemma3:4b *read* the
+scans better than its score suggests. Supplier and invoice number were right on 9–10 of 10.
+What broke was the conversion we asked of it: "$1.31 → 131 cents", "06/11/2026 from a US
+supplier → 2026-06-11". That is arithmetic and locale logic, and deterministic code does it
+better.
 
-So we split the job ([`ch08_normalize.py`](01_main-chapter-code/ch08_normalize.py)): the model
-fills a `PrintedInvoice` where every value is a string copied *as printed*, plus the supplier's
-country, and unit-tested parsers do the rest.
+So we split the job ([`ch08_normalize.py`](01_main-chapter-code/ch08_normalize.py)). The model
+fills a `PrintedInvoice`, where every value is a string copied *as printed*, plus the supplier's
+country. Unit-tested parsers do the rest. The date parser shows the idea: the supplier's country
+decides whether a numeric date is month-first.
 
 ```python
 # ch08/01_main-chapter-code/ch08_normalize.py (excerpt)
@@ -454,9 +530,10 @@ def parse_printed_date(printed: str, country: str) -> date:
     raise ValueError(f"unrecognized date: {printed!r}")
 ```
 
-The amount parser refuses anything ambiguous: `12.345` is twelve thousand in Germany and twelve
-point three in the US, so without two decimals it raises instead of guessing, and the invoice
-goes to repair or review. A test round-trips every amount and date the generator can print.
+The amount parser refuses anything ambiguous. `12.345` is twelve thousand in Germany and twelve
+point three in the US, so without two decimals it raises an error instead of guessing, and the
+invoice goes to repair or review. A test round-trips every amount and date the generator can
+print. We re-ran the 10 scans both ways, on the weak model and the strong one:
 
 | 10 scans | all fields right | caught (incl. parse failures) | parse failures | silently wrong |
 |---|---|---|---|---|
@@ -465,11 +542,11 @@ goes to repair or review. A test round-trips every amount and date the generator
 | gpt-6-luna, cents + ISO dates (v1) | 10 | 0 | 0 | 0 |
 | gpt-6-luna, copy-then-convert | 10 | 0 | 0 | 0 |
 
-Copy-then-convert took gemma3:4b from 0 to 3 of 10, with every date and currency now right on
+Copy-then-convert took gemma3:4b from 0 to 3 of 10, and every date and currency was now right on
 the invoices it parsed. The remaining failures are *reading* errors: unit prices shifted to the
-wrong row, the tax rate copied instead of the tax amount (`"Tax 20%"`, which our parser
-refused), a line amount read as the subtotal. All were caught. Luna was unaffected (10/10 either way), which is the
-point: the change helps the weak model and costs the strong one nothing.
+wrong row, the tax rate copied instead of the tax amount (`"Tax 20%"`, which our parser refused),
+and a line amount read as the subtotal. All were caught. Luna was unaffected (10/10 either way),
+which is the point: the change helps the weak model and costs the strong one nothing.
 
 > [!IMPORTANT]
 > **Decision: copy-then-convert for local models, over asking them for cents and ISO dates** —
@@ -489,7 +566,9 @@ point: the change helps the weak model and costs the strong one nothing.
 
 ### 4. Validate, repair, escalate
 
-The rules from [Concepts](#invoices-check-themselves) run after every extraction:
+Copy-then-convert reduced the mistakes, but the local models still get some invoices wrong. The
+validation rules are the safety net. The rules from [Concepts](#invoices-check-themselves) run
+after every extraction:
 
 ```python
 # ch08/01_main-chapter-code/ch08_invoice.py (excerpt)
@@ -521,7 +600,8 @@ non-ISO dates, a missing header, a misplaced price, a tax rate copied as an amou
 least one rule. The rules never flagged a correct invoice.
 
 When a rule fails, the pipeline ([`ch08_pipeline.py`](01_main-chapter-code/ch08_pipeline.py))
-tries twice more before giving up:
+tries twice more before giving up. The diagram shows the full routing, scans and image-only PDFs
+included:
 
 ```mermaid
 flowchart LR
@@ -546,9 +626,9 @@ The *repair* step is a second turn in the same conversation: the model sees its 
 and the exact rule that broke (`line_sum: sum(qty*unit_price_cents) = 6913 but subtotal_cents =
 6912`) and gets one chance to fix it.
 
-For the *escalation* step we had a choice: hand the strong model the whole repair conversation,
-weak answer included, or let it read the page from scratch. We measured it with Luna repairing
-gemma3:4b's answers on the 10 scans:
+For the *escalation* step we had a choice. We could hand the strong model the whole repair
+conversation, weak answer included, or let it read the page from scratch. We measured it with
+Luna repairing gemma3:4b's answers on the 10 scans:
 
 ```
                              n  supplier  all_correct  caught  silent_wrong  usd_per_1k
@@ -575,12 +655,16 @@ what it's shown.
 
 ### 5. The whole pipeline
 
-The notebook runs the production configuration live over all 60 files: Luna on the text layer
-or on the scan downscaled to 1200 px, repair, then Sonnet as a fresh-read escalation:
+We now have every piece: routing by text layer, smaller scan images, repair, and escalation with
+a fresh read. The notebook runs this production configuration live over all 60 files: Luna on
+the text layer or on the scan downscaled to 1200 px, repair, then Sonnet as a fresh-read
+escalation:
 
 ```
 hosted pipeline: 60 files in 50 s wall
 ```
+
+The table counts where each file ended up and what the run cost:
 
 | files | accepted | accepted and correct | accepted but wrong | review | first try | fixed by repair | fixed by escalation | total cost | $ / 1k | p50 | p95 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -593,10 +677,15 @@ scans; see [Results](#results).
 
 ## Production hardening
 
+The pipeline extracted every file correctly on our set. Real accounts payable adds problems that
+accuracy alone doesn't solve: duplicate copies, fraud, changing dependencies, odd files and
+hostile text.
+
 **Duplicates are a database rule, not a model rule.** `ch08_invoices` has
 `UNIQUE (supplier, invoice_no)`. The same invoice arriving as a PDF by email and later as a
 scanned paper copy is the most common way AP pays twice. In our dataset every scan is a copy of
-an invoice that also came as a PDF, so a correct pipeline must send all 10 scans to review:
+an invoice that also came as a PDF, so a correct pipeline must send all 10 scans to review. When
+the insert breaks the unique key, the pipeline records a `duplicate_invoice` reason instead:
 
 ```python
 # ch08/01_main-chapter-code/ch08_pipeline.py (excerpt)
@@ -638,16 +727,19 @@ it, and show the page next to the fields, like Uber's review UI does.
 
 ## Serving it
 
-Invoices are a batch job, not a chat, so the interface is a command
-([`ch08_cli.py`](01_main-chapter-code/ch08_cli.py)) that a cron job or a mailbox hook can call.
-It runs the pipeline in a thread pool, records each outcome, and can list the review queue. A
-real run (the `/tmp/fax-scan-07.pdf` is one of our scans saved as an image-only PDF):
+With those guards in place, the pipeline needs a way to run. Invoices are a batch job, not a
+chat, so the interface is a command ([`ch08_cli.py`](01_main-chapter-code/ch08_cli.py)) that a
+cron job or a mailbox hook can call. It runs the pipeline in a thread pool, records each outcome,
+and can list the review queue. Here is a real run. The `/tmp/fax-scan-07.pdf` is one of our scans
+saved as an image-only PDF:
 
 ```bash
 cd ch08/01_main-chapter-code
 uv run python ch08_cli.py --reset data/pdf/inv-003.pdf data/pdf/inv-009.pdf data/pdf/inv-038.pdf \
     data/scans/scan-07.png data/scans/scan-02.png /tmp/fax-scan-07.pdf --review
 ```
+
+Each row shows the file, the route, the outcome, the cost, the time and the extracted header:
 
 ```
 inv-003.pdf    text    first                  accepted $0.00020   3.6s  Pennine Cycle Parts Ltd T-63366 2026-01-10 GBP 4,383.90
@@ -661,10 +753,10 @@ fax-scan-07.pdf unsupported -                      review   $0.00000   0.0s  -  
   #2    fax-scan-07.pdf no_text_layer            no_text_layer: image-only PDF; needs vision
 ```
 
-The UK date came out as 10 January, the 40-line two-page invoice was booked in one call, the
+The UK date came out as 10 January, and the 40-line two-page invoice was booked in one call. The
 paper copy of `RE-2026-1475` was stopped as a duplicate, and the image-only PDF went to review
-instead of being guessed at. `--local` swaps in `qwen3:8b` for text and `gemma3:4b` for scans, both with
-copy-then-convert, and Luna as the escalation model.
+instead of being guessed at. The `--local` flag swaps in `qwen3:8b` for text and `gemma3:4b` for
+scans, both with copy-then-convert, and Luna as the escalation model.
 
 A reviewer works the queue in SQL or in whatever back-office UI you already have:
 
@@ -674,16 +766,22 @@ UPDATE ch08_invoice_review SET status = 'rejected' WHERE id = 1;  -- it really w
 
 ## Results
 
-`eval/run_eval.py` and the notebook, 2026-11-07/08; the local `qwen3:8b` and `qwen2.5vl:7b` runs,
-glm-ocr → `qwen3:8b` and the local-first pipeline on 2026-11-09, when the notebook was re-executed
-(ShopFlow data version: the 2026-11-09 seed). Hosted models through OpenRouter, prices as
-of 2026-11: `openai/gpt-6-luna` and `anthropic/claude-haiku-5.5` $0.10 / $0.50, `anthropic/claude-sonnet-5.5`
-$2 / $10 per 1M input/output tokens. Cost is OpenRouter's reported `usage.cost`. Local models
-ran on Ollama 0.40.15 on the RTX 3090. On 2026-11-09 the GPU was shared with other workloads
-using ~15 GB during this run, so local p50 latencies from that date are not a clean
-local-vs-hosted comparison; accuracy is unaffected.
+That run showed a handful of files. Here are the numbers from every experiment in the chapter in
+one place, followed by the check against the requirements.
+
+The numbers come from `eval/run_eval.py` and the notebook, run on 2026-11-07/08. The local
+`qwen3:8b` and `qwen2.5vl:7b` runs, glm-ocr → `qwen3:8b` and the local-first pipeline ran on
+2026-11-09, when the notebook was re-executed (ShopFlow data version: the 2026-11-09 seed).
+Hosted models ran through OpenRouter, with prices as of 2026-11: `openai/gpt-6-luna` and
+`anthropic/claude-haiku-5.5` at $0.10 / $0.50, and `anthropic/claude-sonnet-5.5` at $2 / $10 per
+1M input/output tokens. Cost is OpenRouter's reported `usage.cost`. Local models ran on Ollama
+0.40.15 on the RTX 3090. On 2026-11-09 other workloads shared the GPU and used ~15 GB during
+this run. So local p50 (median) latencies from that date are not a clean local-vs-hosted
+comparison; accuracy is unaffected.
 
 **Extraction, per method and model**
+
+Read the "silently wrong" column first; the requirements set it to 0.
 
 | input | method | model | n | all fields right | caught by rules | silently wrong | p50 | $ / 1k invoices |
 |---|---|---|---|---|---|---|---|---|
@@ -707,6 +805,9 @@ local-vs-hosted comparison; accuracy is unaffected.
 | scan | glm-ocr (local) → text LLM | gpt-6-luna | 10 | 30% | 7 | 0 | 5.4 s | $0.25 |
 | scan | escalation with the weak answer as context | gpt-6-luna after gemma3:4b | 10 | 90% | 0 | **1** | 9.8 s | $0.69 |
 
+Only four runs let wrong invoices through: 700 px, 500 px, `qwen3:8b` with copy-then-convert, and
+escalation with the weak answer as context. Every other mistake was caught.
+
 **The pipeline end to end** (production configuration, live in the notebook)
 
 | configuration | files | booked correct | booked wrong | to review | $ / 1k | p50 | p95 |
@@ -714,15 +815,16 @@ local-vs-hosted comparison; accuracy is unaffected.
 | Luna (scans at 1200 px) → repair → Sonnet fresh read | 60 | 60 | 0 | 0 (then 10 as duplicates) | $0.34 | 5.0 s | 13.0 s |
 | local-first: qwen3:8b / gemma3:4b → repair → Luna fresh read, 10 scans | 10 | 10 | 0 | 0 | $0.42 | 14.6 s | 26.0 s |
 
-Local-first on the scans: gemma3:4b passed the rules on the first try for 2 scans, repair fixed 2
-more and Luna's escalation the other 6. All 10 were booked correctly, but at $0.42 per 1,000
-it costs more than the hosted pipeline's $0.34, because most scans pay for a local attempt and
-then a hosted read anyway. (Local latencies measured on a shared GPU; see above.)
+Local-first on the scans worked like this: gemma3:4b passed the rules on the first try for 2
+scans, repair fixed 2 more, and Luna's escalation fixed the other 6. All 10 were booked
+correctly. But at $0.42 per 1,000 it costs more than the hosted pipeline's $0.34, because most
+scans pay for a local attempt and then a hosted read anyway. Local latencies were measured on a
+shared GPU; see above.
 
 After booking, Postgres held 50 invoices (26 USD, 16 EUR, 8 GBP) and the review queue held the 10
 scans, each flagged `duplicate_invoice` because its PDF twin was already booked.
 
-Against the requirements:
+Now the check against the requirements:
 
 - **Clean PDFs ≥ 99%, scans ≥ 90%:** met by Luna (100% and 100%).
 - **Inconsistent extractions never booked:** every invoice that broke a rule was caught (84 of
@@ -748,7 +850,7 @@ Our eval is small: 50 PDFs and 10 scans from one generator. 100% here means "no 
 not "no failures". Add your real invoices (with their booked values as ground truth) before
 trusting any of these numbers for your suppliers.
 
-Reproduce:
+To reproduce the main runs:
 
 ```bash
 cd ch08/01_main-chapter-code
@@ -759,6 +861,9 @@ uv run jupyter nbconvert --to notebook --execute --inplace ch08.ipynb
 ```
 
 ## Exercises
+
+The results leave a few gaps open: the header-less OCR transcripts, the SKU errors no rule sees,
+our too-clean PDFs, and the local text model. Each exercise picks up one of them.
 
 1. Run glm-ocr behind a layout step: crop the header block and the table separately (try
    a fixed split first, then a horizontal projection profile) and OCR each region. How many of
@@ -774,6 +879,8 @@ uv run jupyter nbconvert --to notebook --execute --inplace ch08.ipynb
    text-only 8B model?
 
 ## What we learned
+
+Here is what building the invoice reader taught us:
 
 - A text layer beats pixels. With pypdf text, a cheap hosted model got every field of 50
   invoices right, even with a naive prompt; the image of the same page cost 3.8× the
@@ -798,6 +905,11 @@ uv run jupyter nbconvert --to notebook --execute --inplace ch08.ipynb
 - Escalate with a fresh read. Shown the weak model's answer, the strong model copied its
   misspelled supplier.
 - Duplicates and image-only PDFs are database and routing rules, not model behavior.
+
+This chapter closes Part II. Across it, we kept the model's job small: it read, searched or
+picked, while code, schemas and rules decided what counted. Part III gives the model tools that
+act. Chapter 9 starts with an assistant that looks up orders and proposes refunds, and asks how
+to make sure a confused or injected model can't move money.
 
 ## References
 

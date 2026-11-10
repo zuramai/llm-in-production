@@ -6,32 +6,39 @@
 > anthropic/claude-sonnet-5.5 (judge) via OpenRouter · qwen3:8b (thinking off) via Ollama 0.40.15
 > (GPU, context 8192) · sqlglot 30.30 · Cube 1.6.77 (bonus)
 
+Chapter 6 gave ShopFlow a Slack bot that turns questions like "how many orders today?" into safe,
+read-only SQL. Its biggest win was writing business meaning down in a context file. That works
+when a metric is defined there, and defined precisely. This chapter asks what happens when a
+definition is missing or vague.
+
 We asked Chapter 6's bot "What's our refund rate this month?" 15 times. It answered 6.26% nine
 times (refunded dollars ÷ revenue dollars), 3.01% three times (cancelled or refunded orders ÷ all
 orders), 2.53% twice (refunds on this month's orders ÷ revenue) and 0% once (integer division).
 Finance's definition gives 3.07%. Not one of the 15 answers matched, every query ran without an
 error, and the same bot scores 100% on Chapter 6's eval, which never asks about refund rate.
 
-This is the oldest problem in analytics, now running at machine speed. At Airbnb, the CEO's
-question "which city had the most bookings in the previous week?" used to get different answers from Data
-Science and Finance, and the company built a metrics platform, Minerva, to end that argument
+This is the oldest problem in analytics, now running at machine speed. At Airbnb, the CEO asked
+"which city had the most bookings in the previous week?" Data Science and Finance used to give
+different answers. The company built a metrics platform, Minerva, to end that argument
 ([Airbnb Engineering](https://medium.com/airbnb-engineering/how-airbnb-achieved-metric-consistency-at-scale-f23cc53dea70)).
 In 2026, dbt Labs re-ran its benchmark of LLMs answering business questions: on the same
 modeled project, Claude Sonnet 4.6 scored 90.0% writing SQL and 98.2% going through a semantic
 layer ([dbt Labs](https://docs.getdbt.com/blog/semantic-layer-vs-text-to-sql-2026), 2026-04-07).
 
-This chapter builds a small semantic layer for ShopFlow: a YAML file of governed metrics, a
-~280-line compiler built on [sqlglot](https://github.com/tobymao/sqlglot), and an LLM that is no
-longer allowed to write SQL. It picks from a menu, and code writes the query.
+This chapter builds a small semantic layer for ShopFlow. It has three parts: a YAML file of
+governed metrics, a ~280-line compiler built on [sqlglot](https://github.com/tobymao/sqlglot),
+and an LLM that is no longer allowed to write SQL. The model picks from a menu, and code writes
+the query. The picture below shows the difference from Chapter 6.
 
 ![Chapter 6 lets the model write SQL; Chapter 7 makes it pick from a menu](images/07-semantic-layer.svg)
 
 ## The problem
 
-Chapter 6 ended at 100% on 30 questions with `openai/gpt-6-luna`. Its context file had a
-glossary: "Revenue = sum(total_cents)/100.0 over orders with status in ('paid', 'shipped',
-'delivered')". That's a definition in prose. The model reads it and re-implements it in SQL,
-every time, for every question. Three things go wrong:
+The opening numbers came from a bot that looked finished. Chapter 6 ended at 100% on 30
+questions with `openai/gpt-6-luna`. Its context file had a glossary: "Revenue =
+sum(total_cents)/100.0 over orders with status in ('paid', 'shipped', 'delivered')". That's a
+definition in prose. The model reads it and re-implements it in SQL, every time, for every
+question. The table shows the three ways this goes wrong, from least to most precise definition:
 
 | Failure | What we saw (real runs, Chapter 6 v1 bot on this host) |
 |---|---|
@@ -39,29 +46,43 @@ every time, for every question. Three things go wrong:
 | **A vague definition → a reading nobody chose** | "Active customer: at least one order placed in the last 90 days." Both models read it as `now() - interval '90 days'`, a window that moves during the day and reaches into a 91st calendar day: 4,077 customers at 3 AM. Finance meant 90 calendar days including today: 4,066 all day. |
 | **A precise definition → followed** | Net revenue and AOV are spelled out in the glossary, and all 15 hosted consistency runs on each matched the governed number. Prose definitions work when they're precise. They just have to be precise for *every* metric, and be re-implemented correctly on every question. |
 
-Every one of these returned a plausible number, with no error. A semantic layer moves the
-definition out of the prompt and into code, so there is exactly one implementation of "refund
-rate" and the model's only job is to ask for it by name.
+Every one of these returned a plausible number, with no error. Only the precise definitions held
+up. A semantic layer moves the definition out of the prompt and into code. Then there is exactly
+one implementation of "refund rate", and the model's only job is to ask for it by name.
 
 ## Requirements
 
-| Type | Requirement | Target |
-|---|---|---|
-| Functional | Six governed metrics: `transactions`, `gross_revenue`, `net_revenue`, `aov`, `refund_rate`, `active_customers` | one definition each, in one file |
-| Functional | Time grains (day, week, month, quarter, year) and calendar periods in the business time zone | DST-correct |
-| Functional | The LLM emits a `MetricQuery(metrics, dimensions, filters, time_range, grain, order_by, limit)`, never SQL | 100% of queries compiled by code |
-| Functional | Chapter 6's 30 questions | no regression vs Chapter 6 v1 |
-| Functional | 15 new metric-ambiguity questions | ≥ 95%, and the same number every run |
-| Functional | Refuse writes, PII, and questions no metric answers | 100% |
-| Non-functional | Latency, cost | p95 < 15 s, < $1 per 1,000 questions (same as Chapter 6) |
-| Non-functional | Safety | the same read-only role as Chapter 6; the compiler can't emit anything but one `SELECT` |
+That diagnosis tells us what to build. Before writing code, let's agree on what "done" means.
+First, what the new bot must do:
+
+- **Six governed metrics, each defined once.** `transactions`, `gross_revenue`, `net_revenue`,
+  `aov`, `refund_rate` and `active_customers` each get one definition, in one file.
+- **Correct calendar periods.** Time grains (day, week, month, quarter, year) and periods like
+  "last week" are computed in the business time zone. They stay right across daylight saving
+  time (DST) changes.
+- **No SQL from the model.** The LLM only fills in a `MetricQuery(metrics, dimensions, filters,
+  time_range, grain, order_by, limit)`. Code compiles 100% of queries.
+- **No step backwards.** On Chapter 6's 30 questions, it does no worse than the Chapter 6 v1 bot.
+- **The same right answer every time.** On 15 new questions about ambiguous metrics, it scores
+  ≥ 95% and gives the same number on every run.
+- **Say no when it should.** It refuses writes, requests for personal data (PII) and questions
+  that no metric answers, 100% of the time.
+
+It also has to stay as practical and safe as Chapter 6:
+
+- **Fast and cheap.** The slowest 5% of answers take under 15 s (p95 < 15 s), and 1,000
+  questions cost under $1.
+- **Safe by construction.** It uses the same read-only database role as Chapter 6, and the
+  compiler can't emit anything but one `SELECT`.
+
+At the end of the chapter we check these targets against measured results.
 
 ## The data
 
-Same ShopFlow database as Chapter 6
+We'll build against data the reader already knows. It's the same ShopFlow database as Chapter 6
 ([datasets/shopflow](../datasets/shopflow/README.md)), seeded today. What changes is how we
 *describe* it. A semantic layer sees the schema as a graph of **entities** joined by
-many-to-one foreign keys:
+many-to-one foreign keys. In the diagram, watch the direction of each arrow:
 
 ```mermaid
 flowchart LR
@@ -78,7 +99,8 @@ flowchart LR
 
 Every arrow points from "many" to "one". Follow arrows and you never multiply rows. Walk one
 backwards (from `order` to `order_item`) and every order shows up once per line item. That
-asymmetry is the whole trick of the compiler below.
+asymmetry is the whole trick of the compiler below. To follow along, start the database and the
+notebook:
 
 ```bash
 docker compose -f datasets/shopflow/docker-compose.yml up -d
@@ -87,14 +109,17 @@ cd ch07/01_main-chapter-code && uv run jupyter lab ch07.ipynb
 
 ## Concepts
 
+Before we write the compiler, we need a few terms. They explain what goes into the YAML file and
+why the compiler refuses some questions.
+
 ### What a semantic layer is
 
-A *semantic layer* is a catalog of business metrics, written once, that every tool compiles
-into SQL instead of writing its own. Think of it as the API in front of your warehouse: callers
-ask for `refund_rate by channel, last month`, not for tables and joins, the same way a mobile
-app calls `GET /orders` instead of opening a database connection.
+Start with the core idea. A *semantic layer* is a catalog of business metrics, written once.
+Every tool compiles it into SQL instead of writing its own. Think of it as the API in front of
+your warehouse. Callers ask for `refund_rate by channel, last month`, not for tables and joins.
+It's the same way a mobile app calls `GET /orders` instead of opening a database connection.
 
-It has four building blocks (the names follow dbt MetricFlow; Cube's are similar):
+It has four building blocks. The names follow dbt MetricFlow, and Cube's are similar:
 
 | Block | Meaning | ShopFlow example |
 |---|---|---|
@@ -103,13 +128,15 @@ It has four building blocks (the names follow dbt MetricFlow; Cube's are similar
 | **Measure** | an aggregation over one entity, with optional row filters | `gross_revenue_cents`: `SUM(total_cents)` where status is paid, shipped or delivered |
 | **Metric** | what people ask for, built from measures | `aov = gross_revenue / revenue_order_count` |
 
-Metrics come in three types here: **simple** (one measure, maybe scaled: cents ÷ 100),
-**ratio** (numerator ÷ denominator, each computed on its own before dividing) and **derived**
-(arithmetic over other metrics: `net_revenue = gross_revenue - refunded_amount`). MetricFlow adds
-cumulative and conversion metrics
-([dbt docs](https://docs.getdbt.com/docs/build/metrics-overview)); we don't need them yet.
+Metrics come in three types here. **Simple** metrics use one measure, maybe scaled (cents ÷
+100). **Ratio** metrics divide a numerator by a denominator, and each is computed on its own
+before dividing. **Derived** metrics do arithmetic over other metrics
+(`net_revenue = gross_revenue - refunded_amount`). MetricFlow adds cumulative and conversion
+metrics ([dbt docs](https://docs.getdbt.com/docs/build/metrics-overview)); we don't need them
+yet.
 
-Here is `refund_rate`, the metric Chapter 6 computed three ways:
+Here is `refund_rate`, the metric Chapter 6 computed three ways. Note that the YAML pins down
+both what is counted and what is left out:
 
 ```yaml
 # ch07/01_main-chapter-code/semantic/metrics.yaml (excerpt)
@@ -131,8 +158,8 @@ metrics:
 ```
 
 Someone in finance had to decide that refund rate is counted in orders, not dollars, and that
-pending orders don't count. That decision is now reviewable in a pull request, testable, and
-the same for the bot, the dashboard and the spreadsheet.
+pending orders don't count. That decision can now be reviewed in a pull request and tested. It
+is also the same for the bot, the dashboard and the spreadsheet.
 
 > [!NOTE]
 > **In the wild:** Airbnb's Minerva grew to more than 12,000 metrics and 4,000 dimensions from
@@ -142,19 +169,22 @@ the same for the bot, the dashboard and the spreadsheet.
 
 ### Fan-out: why a semantic layer refuses some questions
 
-The most common silent bug in analytics SQL is the *fan-out* (here: a join that multiplies rows;
-other chapters use "fan-out" for sending work out in parallel): you join a "one" table to a "many"
-table and then sum a column of the "one" side. ShopFlow orders have 1.65 line items on average,
-and big orders have more of them, so the damage is worse than 1.65×:
+Defining a metric once is only half the job. The compiler must also refuse to compute it in a
+way that gives the wrong number. The most common silent bug in analytics SQL is the *fan-out*.
+Here the word means a join that multiplies rows; other chapters use "fan-out" for sending work
+out in parallel. You join a "one" table to a "many" table and then sum a column of the "one"
+side. ShopFlow orders have 1.65 line items on average, and big orders have more of them. So the
+damage is worse than 1.65×:
 
 ```
 gross revenue, orders joined to line items: $7,074,224.81
 gross revenue, orders only:                 $3,429,762.40  (2.06x; 1.65 line items per order on average)
 ```
 
-The compiler prevents this structurally. Each entity is aggregated in its own CTE, and a
-dimension is reachable only by following many-to-one arrows from the measure's entity. Ask for
-`gross_revenue` by `category.name` and you get an error that names the metric that *can* do it:
+The join more than doubled revenue. The compiler prevents this by design. Each entity is
+aggregated in its own CTE (a named subquery). A dimension is reachable only by following
+many-to-one arrows from the measure's entity. Ask for `gross_revenue` by `category.name` and you
+get an error that names the metrics that *can* do it:
 
 ```
 metric gross_revenue cannot be split or filtered by category.name without double counting;
@@ -163,9 +193,10 @@ metrics that can: product_revenue, units_sold, product_count, units_in_stock
 
 ### Time grains and the business time zone
 
-ShopFlow stores UTC and runs on New York time. A *time grain* is the bucket size of a time
-series (day, week, month). Both the bucket and the period boundaries must be computed in New
-York time, or "yesterday" starts at 7 PM.
+Fan-out is a bug in *which rows* we count. Time zones cause a bug in *which period* we count.
+ShopFlow stores UTC and runs on New York time. A *time grain* is the bucket size of a time series
+(day, week, month). Both the bucket and the period boundaries must be computed in New York time.
+Otherwise "yesterday" starts at 7 PM.
 
 > [!NOTE]
 > **In the wild:** the big semantic layers still struggle here. MetricFlow's docs say it
@@ -178,10 +209,11 @@ York time, or "yesterday" starts at 7 PM.
 > put Canadian day boundaries an hour late after 2026-11-01 until v1.6.76
 > ([cube#12431](https://github.com/cube-js/cube/issues/12431)).
 
-We resolve periods in Python with `zoneinfo`, then write the bounds into the SQL as literal
+We resolve periods in Python with `zoneinfo`. Then we write the bounds into the SQL as literal
 `timestamptz` values with their UTC offset. The week of Monday Oct 26 → Monday Nov 2, 2026
 crossed the end of daylight saving time, so it was 169 hours long (a unit test pins it). On the
-notebook's run date, last week is an ordinary 168 hours, and "this month" is 721:
+notebook's run date, last week is an ordinary 168 hours, and "this month" is 721. Check the
+offsets and hour counts in the output:
 
 ```
 today         2026-11-09T00:00:00-05:00 -> 2026-11-10T00:00:00-05:00  (24 h)
@@ -197,7 +229,9 @@ last_quarter  2026-07-01T00:00:00-04:00 -> 2026-10-01T00:00:00-04:00  (2208 h)
 
 ### Build or adopt?
 
-Semantic layers are a crowded field in 2026. [dbt MetricFlow](https://docs.getdbt.com/docs/build/metrics-overview)
+Everything so far exists in off-the-shelf products, so we have to ask whether to build at all.
+Semantic layers are a crowded field in 2026.
+[dbt MetricFlow](https://docs.getdbt.com/docs/build/metrics-overview)
 compiles YAML metrics to SQL and became Apache 2.0 in October 2025
 ([dbt Labs](https://www.getdbt.com/blog/dbt-labs-affirms-commitment-to-open-semantic-interchange-by-open-sourcing-metricflow)).
 [Cube](https://docs.cube.dev/docs/data-modeling/cubes.md) serves the same idea over a REST API
@@ -229,10 +263,11 @@ now incubating at Apache as [Ossie](https://github.com/apache/ossie).
 
 ## v0: the six core metrics
 
-v0 exposes only what finance signed off on: the six core metrics and the four helper metrics
-they're built from (`SemanticModel.subset()`), over the full entity and dimension graph. The LLM
-side is short. The model fills a strict JSON schema whose metric and dimension fields are
-**enums generated from the YAML**, so it can't even spell a metric that doesn't exist:
+With the concepts in place, we can build the first version. v0 exposes only what finance signed
+off on: the six core metrics and the four helper metrics they're built from
+(`SemanticModel.subset()`), over the full entity and dimension graph. The LLM side is short. The
+model fills a strict JSON schema. Its metric and dimension fields are **enums generated from the
+YAML**, so it can't even spell a metric that doesn't exist:
 
 ```python
 # ch07/01_main-chapter-code/ch07_semantic/agent.py (excerpt)
@@ -249,9 +284,10 @@ def plan_schema(model: SemanticModel) -> dict:
     })
 ```
 
-`compile_query` turns the `MetricQuery` into SQL with the sqlglot builder: one CTE per entity,
-joined on the requested dimensions, then the metric arithmetic on top. Net revenue and refund
-rate by segment for last month, as compiled (trimmed; from the notebook):
+The model's plan is only half of the pipeline. `compile_query` turns the `MetricQuery` into SQL
+with the sqlglot builder. It makes one CTE per entity, joins them on the requested dimensions,
+and puts the metric arithmetic on top. Here is net revenue and refund rate by segment for last
+month, as compiled (trimmed; from the notebook):
 
 ```sql
 WITH m_order AS (
@@ -292,7 +328,7 @@ LIMIT 1000
 ```
 
 Note what isn't there: no `now()`, no session time zone, no string concatenation. The period is
-two literals; the filter values are literals that sqlglot quotes.
+two literals. The filter values are literals that sqlglot quotes.
 
 > [!IMPORTANT]
 > **Decision: the sqlglot expression builder over SQL templates (Jinja).** Templates are faster
@@ -307,15 +343,17 @@ two literals; the filter values are literals that sqlglot quotes.
 
 ## Measuring v0
 
-v0 (`semantic-core`) on all 45 questions with `openai/gpt-6-luna`:
+v0 looks right on paper. Now we run it on all 45 questions with `openai/gpt-6-luna` and see what
+the small catalog costs. The table below shows v0 (`semantic-core`):
 
 | variant | Chapter 6 answerable (19) | Chapter 6 behavior (11) | metric ambiguity (15) |
 |---|---|---|---|
 | semantic-core | 57.9% | 81.8% | **100%** |
 
-The new questions were perfect. The old ones show the cost of a small catalog: 8 of 19
+The new questions were perfect. The old ones show the cost of a small catalog. 8 of 19
 answerable questions failed, plus two ambiguous ones ("What's our best product?", "Show me the
-big orders from this week"). All ten were *refusals that named the missing piece*:
+big orders from this week"). All ten were *refusals that named the missing piece*. Look at how
+specific they are:
 
 ```
 s3  There is no metric for the total number of customer records. `active_customers` counts customers
@@ -327,23 +365,28 @@ t4  ShopFlow has no governed metric for counting payment attempts. The payment.s
     alone cannot measure failed payment attempts.
 ```
 
-That's the failure mode you want: loud, specific, and a to-do list for the catalog. Look at `s3`:
-the model saw the near-miss metric (`active_customers`) and said why it doesn't fit, instead of
-returning it. That's the risk that remains with a semantic layer: a governed metric that answers
-a *different* question is still a wrong answer, so the descriptions in `metrics.yaml` must say
-what each metric is not, too.
+That's the failure mode you want: loud, specific, and a to-do list for the catalog. Look at
+`s3`. The model saw the near-miss metric (`active_customers`) and said why it doesn't fit,
+instead of returning it. That points to the risk that remains with a semantic layer. A governed
+metric that answers a *different* question is still a wrong answer. So the descriptions in
+`metrics.yaml` must also say what each metric is not.
 
 ## Iterating
 
+v0 failed safely but too often. The next four steps each fix one weakness we measured or saw in
+the output.
+
 ### 1. Grow the catalog from the questions people ask
 
-We added 9 supporting metrics, each with a description written for the model:
+v0's refusals were a list of missing metrics, so the first fix is to add them. We added 9
+supporting metrics, each with a description written for the model:
 `customer_count`, `product_count`, `refund_count`, `product_revenue` (line-item revenue, the one
 that *can* be split by category), `units_sold`, `payment_attempts`, `shipped_orders`,
 `units_in_stock` and `ticket_count`. The entities and dimensions (product, category, payment
 status, carrier, warehouse, ticket labels, each with its allowed values) were already in the
-file; v0 simply had no metric that could use them. (`eval/run_eval.py --variant semantic-core`
-reproduces v0 by exposing only the six core metrics and their building blocks.)
+file; v0 simply had no metric that could use them. Running `eval/run_eval.py --variant
+semantic-core` reproduces v0, because it exposes only the six core metrics and their building
+blocks.
 
 > [!IMPORTANT]
 > **Decision: grow the catalog over falling back to text-to-SQL.** A hybrid (semantic layer
@@ -357,11 +400,13 @@ reproduces v0 by exposing only the six core metrics and their building blocks.)
 
 ### 2. Validation errors the model can act on
 
-`compile_query` validates before it builds, and every error says what would work: unknown
-names list the alternatives, enumerated values list the allowed ones, fan-outs list the metrics
-that support the dimension. The agent sends the error back and the model retries (up to 3
-attempts, as in Chapter 6). To watch it deterministically, the notebook rewrites the model's
-first plan to ask for `gross_revenue` by category:
+A bigger catalog means more names the model can get wrong. So the next step is to make every
+mistake easy to fix. `compile_query` validates before it builds, and every error says what would
+work. Unknown names list the alternatives. Enumerated values list the allowed ones. Fan-outs
+list the metrics that support the dimension. The agent sends the error back and the model
+retries (up to 3 attempts, as in Chapter 6). To watch it happen every time, the notebook
+rewrites the model's first plan to ask for `gross_revenue` by category. The second attempt
+switches to the right metric:
 
 ```
 attempts: 2
@@ -375,8 +420,8 @@ answer: Top categories this month by product revenue—the line-item revenue (qu
 ```
 
 Case is fixed without bothering the model at all: `segment = 'VIP'` compiles to
-`customers.segment = 'vip'` (Chapter 6's naive bot returned 0 rows on exactly this). A value
-that doesn't exist is an error, not an empty result:
+`customers.segment = 'vip'`. Chapter 6's naive bot returned 0 rows on exactly this. A value that
+doesn't exist is an error, not an empty result:
 
 ```
 customer.segment has no value 'gold'; allowed: consumer, business, vip
@@ -384,8 +429,10 @@ customer.segment has no value 'gold'; allowed: consumer, business, vip
 
 ### 3. Time ranges as named periods, resolved by code
 
-The model never computes a date. It picks `today`, `last_week`, `previous_n` (`unit`, `n`),
-`custom` (start/end dates), and so on; `resolve()` turns that into bounds.
+Names and values are now checked. Dates are the other input the model could get wrong, so we take
+them away from it. The model never computes a date. It picks `today`, `last_week`,
+`previous_n` (`unit`, `n`), `custom` (start/end dates), and so on. `resolve()` turns that into
+bounds.
 
 > [!IMPORTANT]
 > **Decision: named periods over model-computed dates.** Letting the model write
@@ -399,17 +446,19 @@ The model never computes a date. It picks `today`, `last_week`, `previous_n` (`u
 
 ### 4. Format numbers in code, not in the model
 
-Chapter 6's phrasing rule says "never invent, estimate or round away numbers", and the model obeys
-it to the letter. From `eval/results/sql-openai_gpt-6-luna.json`:
+With the inputs governed, one problem remains in the output. Chapter 6's phrasing rule says
+"never invent, estimate or round away numbers", and the model obeys it to the letter. Here is a
+reply from `eval/results/sql-openai_gpt-6-luna.json`:
 
 ```
 Refund rate this month is 7.559950877965599%, based on refund dollars created this month divided
 by gross revenue from revenue-eligible orders placed this month, as of 8:41 AM EST.
 ```
 
-We now format every metric value in code by its unit (dollars to the cent, ratios as a percent
-with two decimals, counts with thousands separators) before the phrasing model sees it, and the
-model copies strings. Same question, semantic bot, same eval run:
+No reader wants fifteen decimal places. We now format every metric value in code by its unit
+before the phrasing model sees it: dollars to the cent, ratios as a percent with two decimals,
+counts with thousands separators. The model just copies strings. Here is the same question to
+the semantic bot, in the same eval run:
 
 ```
 This month's refund rate—the share of orders placed this month that were later cancelled or
@@ -417,12 +466,15 @@ refunded, out of orders that were ever paid (not pending)—is 3.01%, as of 8:42
 ```
 
 The answer also carries the metric's definition, because the phrasing step receives it with the
-rows. Users learn the governed definition by reading answers. One more lesson from development:
-our first version of this rule showed example values ("format 0.0423 as 4.23%"), and a small
-local model (`gemma3:4b`) put that example number into an answer about a metric that doesn't
-exist. Rules now describe formats in words, never with sample numbers.
+rows. Users learn the governed definition by reading answers. We learned one more lesson during
+development. Our first version of this rule showed example values ("format 0.0423 as 4.23%"). A
+small local model (`gemma3:4b`) then put that example number into an answer about a metric that
+doesn't exist. Rules now describe formats in words, never with sample numbers.
 
 ## The full pipeline
+
+The four steps fit together into one flow. The diagram follows one question from the user to
+the answer. Note where the retry loop sits and that the database only ever sees compiled SQL:
 
 ```mermaid
 sequenceDiagram
@@ -449,7 +501,8 @@ sequenceDiagram
     A-->>U: answer + MetricQuery + SQL
 ```
 
-Showcase questions, real output from the notebook (`openai/gpt-6-luna`):
+Now let's see the pipeline answer real questions. Here is output from the notebook
+(`openai/gpt-6-luna`), including two requests it must refuse:
 
 ```
 Q: How many transactions are there today?
@@ -489,12 +542,14 @@ A: I can’t delete or modify data. I can only provide read-only metric queries.
 attempts=1 latency=2084 ms tokens=2291 cost=$0.000051
 ```
 
-Every governed number matches the notebook's direct `compile_query` cells. One rough edge: the
-category list isn't sorted, because the question didn't ask for an order and the model didn't add
-an `order_by`. A default sort (by the first metric, descending, when there's a dimension) is a
-one-line compiler change; we left it visible.
+Every governed number matches the notebook's direct `compile_query` cells. One rough edge
+remains: the category list isn't sorted. The question didn't ask for an order, and the model
+didn't add an `order_by`. A default sort (by the first metric, descending, when there's a
+dimension) is a one-line compiler change; we left it visible.
 
 ## Production hardening
+
+The pipeline works in a notebook. Running it for real users needs a few more safeguards:
 
 - **Keep Chapter 6's floor.** The compiler only emits one `SELECT`, but it still runs as
   `shopflow_ro` with a 5-second timeout. The guarantee comes from grants, not from our code
@@ -526,12 +581,15 @@ one-line compiler change; we left it visible.
 
 ## Serving it
 
-From the terminal:
+With the hardening in place, the bot needs a front door. From the terminal:
 
 ```bash
 cd ch07/01_main-chapter-code
 uv run python ask.py "What's our refund rate this month?" --show-sql
 ```
+
+The output shows the answer, then the `MetricQuery` the model chose and the SQL the compiler
+wrote:
 
 ```
 Our refund rate this month is 3.07% — the share of orders placed this month that were later
@@ -548,13 +606,15 @@ DECIMAL)) / NULLIF(COALESCE(paid_orders, 0), 0) AS refund_rate FROM m_order LIMI
 model=openai/gpt-6-luna attempts=1 latency=9312 ms tokens=2653
 ```
 
-We didn't rebuild the Slack app. Chapter 6's `slack_app.py` calls `sqlbot.answer(question)`;
-`ch07_semantic.agent.answer(question)` has the same shape (question in; answer, SQL and latency
-out), so moving the bot onto the semantic layer is an import change. We haven't run that swap
-against a Slack workspace.
+Every part of the answer can be checked. We didn't rebuild the Slack app. Chapter 6's
+`slack_app.py` calls `sqlbot.answer(question)`. `ch07_semantic.agent.answer(question)` has the
+same shape (question in; answer, SQL and latency out). So moving the bot onto the semantic layer
+is an import change. We haven't run that swap against a Slack workspace.
 
 ### Bonus: the same model in Cube
 
+We built our own layer to see how it works. Earlier we said that teams with many tools should
+run Cube instead, so let's check how close the two get.
 [`02_bonus_cube/`](02_bonus_cube/) ports the core metrics to [Cube](https://docs.cube.dev)
 (`cubejs/cube:v1.6.77`, pinned: `latest` points at the 1.6 LTS line today, not the newest
 1.8). It runs as one container on the `shopflow_default` network, connected as `shopflow_ro`,
@@ -578,7 +638,8 @@ The model is the same YAML idea in Cube's dialect:
         type: count_distinct
 ```
 
-The script asks Cube's REST API (`/cubejs-api/v1/load`) and our compiler the same questions:
+The script asks Cube's REST API (`/cubejs-api/v1/load`) and our compiler the same questions.
+Watch the `same?` column:
 
 ```
 question                                             Cube                           compile_query                  same?
@@ -611,9 +672,9 @@ all about *time*, and all three are silent:
   first three weeks agree (the first is $134,625.30 in both). Passing explicit dates computed by
   our `resolve()` makes all rows match.
 
-Pulling the image took over an hour on our shared, saturated network; bringing Cube up after
-that took about 10 minutes. The one surprise: with dev mode off, Cube expects Cube Store for
-its cache and queue and rejects every query until you set
+Getting Cube running took some work. Pulling the image took over an hour on our shared,
+saturated network. Bringing Cube up after that took about 10 minutes. The one surprise: with dev
+mode off, Cube expects Cube Store for its cache and queue. It rejects every query until you set
 `CUBEJS_CACHE_AND_QUEUE_DRIVER=memory` (fine for one container, not for production).
 
 > [!IMPORTANT]
@@ -625,9 +686,11 @@ its cache and queue and rejects every query until you set
 
 ## Results
 
-`eval/run_eval.py` on 45 questions: Chapter 6's 30 (19 answerable, 11 behavioral) plus the 15
-metric-ambiguity questions. `sql` is Chapter 6's v1 bot, copied into
+Now we can check the requirements against measured numbers. `eval/run_eval.py` ran on 45
+questions: Chapter 6's 30 (19 answerable, 11 behavioral) plus the 15 metric-ambiguity questions.
+`sql` is Chapter 6's v1 bot, copied into
 [`previous_chapters.py`](01_main-chapter-code/previous_chapters.py) and re-run on this host.
+Compare each **semantic** row with the `sql` row for the same model:
 
 | variant | model | Ch. 6 answerable (19) | Ch. 6 behavior (11) | metric ambiguity (15) | p50 | p95 | $ / 1k questions |
 |---|---|---|---|---|---|---|---|
@@ -640,29 +703,31 @@ metric-ambiguity questions. `sql` is Chapter 6's v1 bot, copied into
 | semantic-core (v0) | qwen3:8b (Ollama, thinking off) | 57.9% | 63.6% | 86.7% | 1.4 s | 3.1 s | $0 |
 | **semantic** | **qwen3:8b (Ollama, thinking off)** | **89.5%** | 45.5% | **86.7%** | 1.3 s | 2.1 s | $0 |
 
-Accuracy from `eval/results/*.json`. Latency is end to end (plan, compile, query, phrase)
-measured from this host. Cost is OpenRouter's `usage.cost`, prices as of 2026-11:
-gpt-6-luna and claude-haiku-5.5 are both listed at $0.10 / $0.50 per 1M input/output tokens,
-yet Haiku's reported cost was 5× Luna's; OpenRouter also reported about twice as many tokens for
+Accuracy comes from `eval/results/*.json`. Latency is end to end (plan, compile, query, phrase),
+measured from this host. Cost is OpenRouter's `usage.cost`, with prices as of 2026-11.
+gpt-6-luna and claude-haiku-5.5 are both listed at $0.10 / $0.50 per 1M input/output tokens.
+Yet Haiku's reported cost was 5× Luna's. OpenRouter also reported about twice as many tokens for
 Haiku on the same prompts (5,764 vs 2,658 per question on the semantic bot). Check `usage.cost`,
 not the price list. The local rows cost $0 for the bot; the hosted judge cost about $0.03 per
 run. The database fingerprint was unchanged after every run.
 
 **The menu lifts the small model far more than the hosted ones.** On Chapter 6's text-to-SQL
-bot, `qwen3:8b` scored 68.4% on the answerable questions (Chapter 6 measured 63.2% on a Mac) and
-3 of 15 metric-ambiguity questions; picking from the full catalog took it to 89.5% and 13 of 15,
-gains of 21 and 67 points, where the hosted models had little or no room left. What the menu
-doesn't fix is judgment: on the semantic bot qwen asked for clarification on 1 of 4 ambiguous
-questions and declined only 1 of 4 unanswerable ones (behavior 45.5%), and its two
+bot, `qwen3:8b` scored 68.4% on the answerable questions (Chapter 6 measured 63.2% on a Mac). It
+got 3 of 15 metric-ambiguity questions. Picking from the full catalog took it to 89.5% and 13 of
+15. Those are gains of 21 and 67 points, where the hosted models had little or no room left.
+What the menu doesn't fix is judgment. On the semantic bot, qwen asked for clarification on 1 of
+4 ambiguous questions. It declined only 1 of 4 unanswerable ones (behavior 45.5%). Its two
 metric-ambiguity misses were governed metrics used wrongly (`m04`: `active_customers` over last
-week, 816; `m15`: gross revenue split by order status instead of `aov`). Odd detail: the v0 catalog scored *higher* on behavior (63.6%) because, with
-fewer metrics, it refused unanswerable questions instead of approximating them.
+week, 816; `m15`: gross revenue split by order status instead of `aov`). One odd detail: the v0
+catalog scored *higher* on behavior (63.6%). With fewer metrics, it refused unanswerable
+questions instead of approximating them.
 
 ![Accuracy by variant and model](images/07-eval.png)
 
-And the consistency test (`eval/consistency.py`, 2026-11-09): four metric questions, asked
-repeatedly through both bots (Luna 10 runs per question, Haiku 5, qwen3:8b 5). Each cell gives
-the number of distinct answers and how many matched the governed value:
+Accuracy on single runs doesn't show the opening problem: the same question getting different
+answers. So we ran the consistency test (`eval/consistency.py`, 2026-11-09). We asked four metric
+questions repeatedly through both bots (Luna 10 runs per question, Haiku 5, qwen3:8b 5). Each cell
+gives the number of distinct answers and how many matched the governed value:
 
 | question | Luna, sql | Luna, semantic | Haiku, sql | Haiku, semantic | qwen3:8b, sql | qwen3:8b, semantic |
 |---|---|---|---|---|---|---|
@@ -671,22 +736,23 @@ the number of distinct answers and how many matched the governed value:
 | What was net revenue last week? | 1, 10/10 | 1, 10/10 | 1, 5/5 | 1, 5/5 | 1, 5/5 | 1, 5/5 |
 | What was our average order value last month? | 1, 10/10 | 1, 10/10 | 1, 5/5 | 1, 5/5 | 1, 5/5 | 1, 5/5 |
 
-How the cells are counted (`ch07_semantic/consistency.py`, unit-tested in
+Here is how the cells are counted (`ch07_semantic/consistency.py`, unit-tested in
 `tests/test_ch07_consistency.py`). The **answer** is the number the bot stated in its reply,
 because that's what a user reads. The **reference** is the governed value: `compile_query`'s SQL
 run against the database at the time of the run, the same for every model (3.07%, 4,066,
 $123,553.77, $120.38). Two numbers are **equal** if they agree at displayed precision: rates
-within 0.01 percentage points, money within a cent, counts exactly. The stated number and the
-bot's SQL result disagreed once: a qwen3:8b reply said "7.63% (406 refunds out of 5,320 orders)"
-over a `refund_rate_percent` column of 0, because its SQL divided `COUNT(*)` by `COUNT(*)`
-(integer division) before multiplying by 100. The model divided 406 by 5,320 itself and wrote a
-number its query never returned; the table counts 7.63% (still not the governed 3.07%: it's
-refunds over orders, for last month). Whatever you log and evaluate, check the reply, not only
-the SQL result.
+within 0.01 percentage points, money within a cent, counts exactly.
+
+The stated number and the bot's SQL result disagreed once. A qwen3:8b reply said "7.63% (406
+refunds out of 5,320 orders)" over a `refund_rate_percent` column of 0. Its SQL divided
+`COUNT(*)` by `COUNT(*)` (integer division) before multiplying by 100. The model divided 406 by
+5,320 itself and wrote a number its query never returned. The table counts 7.63%, which is still
+not the governed 3.07%: it's refunds over orders, for last month. Whatever you log and evaluate,
+check the reply, not only the SQL result.
 
 ![Share of answers equal to the governed metric](images/07-consistency.png)
 
-What the tables say:
+Putting both tables and the charts together, here is what they say:
 
 - **No regression on Chapter 6's questions.** Both semantic bots answered all 19 answerable
   questions and refused all 3 unsafe and all 4 unanswerable ones. The one behavioral miss (Luna,
@@ -714,13 +780,13 @@ What the tables say:
 - **Our eval is still small**: 45 questions, two hosted models and one local one. 100% means no
   failure found, not no failures.
 
-Run history: the hosted eval rows are from 2026-11-07/08 on the earlier ShopFlow seed (accuracy
-is comparable because gold SQL is evaluated at scoring time); the qwen3:8b rows, the consistency
-table, the Cube comparison and every notebook output quoted above are from the 2026-11-09 seed
-(reseeded 00:26 ET: 30,433 orders, 100 today). The 2026-11-07 consistency files are kept in
-`eval/results/pre-reseed/` and are not pooled.
+Run history: the hosted eval rows are from 2026-11-07/08 on the earlier ShopFlow seed. Accuracy
+is still comparable because gold SQL is evaluated at scoring time. The qwen3:8b rows, the
+consistency table, the Cube comparison and every notebook output quoted above are from the
+2026-11-09 seed (reseeded 00:26 ET: 30,433 orders, 100 today). The 2026-11-07 consistency files
+are kept in `eval/results/pre-reseed/` and are not pooled.
 
-Reproduce one row:
+To reproduce one row:
 
 ```bash
 cd ch07/01_main-chapter-code
@@ -730,6 +796,9 @@ uv run python eval/run_eval.py --variant sql --model qwen3:8b --provider ollama 
 ```
 
 ## Exercises
+
+These exercises push on the edges the results exposed: changed definitions, missing metric
+types, row-level questions and a weaker model.
 
 1. Finance decides refund rate should be measured in dollars after all. Change `refund_rate` in
    `metrics.yaml` and run `uv run pytest ch07`. Which gold tests fail, and is that the test
@@ -742,6 +811,8 @@ uv run python eval/run_eval.py --variant sql --model qwen3:8b --provider ollama 
    extra attempts does validation-and-retry cost?
 
 ## What we learned
+
+Looking back at the refund-rate question we started with:
 
 - Text-to-SQL with a glossary gets the *precisely documented* metrics right (net revenue, AOV:
   every run) and invents the rest: refund rate came back as 6.26%, 3.01%, 2.53% or 0% in 15
@@ -762,6 +833,10 @@ uv run python eval/run_eval.py --variant sql --model qwen3:8b --provider ollama 
 - Format numbers in code; let the model copy strings.
 - Compare tools by their exact period boundaries, not their labels: Cube's "last 90 days" and
   ours differ by one day and one customer.
+
+Everything in this chapter assumed the data was already in clean tables. Much of a company's data
+arrives as documents instead: PDFs and scans. Chapter 8 builds ShopFlow's invoice reader, which
+turns those documents into validated rows in Postgres and sends anything doubtful to a human.
 
 ## References
 

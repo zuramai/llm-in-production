@@ -15,7 +15,26 @@ chapters.
 - Show the **thought process**: what we tried, what broke, what the numbers said, what we chose
   and why. A chapter that only shows the final answer has failed.
 - Short paragraphs. One idea per paragraph. Prefer concrete numbers to adjectives.
+- **Easy language.** Short sentences (aim under ~25 words), active voice, everyday words. Write
+  complete sentences instead of telegraphic fragments or stacked parentheticals. Define jargon at
+  its first use in each chapter, even if an earlier chapter defined it.
 - No marketing ("blazing fast", "game-changing"), no filler ("In this section we will...").
+
+## Flow
+
+The book is read front to back, so the reader should never feel a sudden change of topic.
+
+- **Chapter openings** keep the hook, then bridge from the previous chapter: what we built there
+  and why it leads to this problem. Phrase it as a bridge, not a prerequisite, so the chapter
+  still stands alone. Say so when a chapter starts a new Part.
+- **Chapter endings** follow the `What we learned` bullets with a short paragraph that hands
+  over to the next chapter's problem.
+- **Every `##` and `###` section** opens with a sentence or two that links back to what the
+  reader just saw and says why the next step is needed. Transitions carry content ("v0
+  answered, but we don't know whether it answered well"), never announcements.
+- **Tables, outputs and diagrams** get a sentence before (what to look for) and after (what it
+  means).
+- Each iteration starts from the measured weakness of the previous one.
 
 ## Chapter skeleton
 
@@ -26,7 +45,7 @@ chapters.
 Opening hook: a real scenario + what is happening in the industry right now (dated, sourced).
 
 ## The problem
-## Requirements                              functional / non-functional table with numbers
+## Requirements                              plain bullets: what it must do, how well (numbers)
 ## The data                                  schema (Mermaid ER), seed commands, sample rows
 ## Concepts                                  the theory needed, in plain language, with visuals
 ## v0: the naive solution

@@ -6,29 +6,36 @@
 > Bedrock, Vertex and SageMaker: **not executed** (no `OPENAI_API_KEY`, no cloud accounts; see
 > [Serving it](#serving-it))
 
-In [Chapter 18](../ch18/README.md) we fine-tuned a small model on our own GPU. The first thing
-the platform team asked afterwards was: *"Can't we just upload the JSONL to a cloud and get an
-endpoint back? Nobody here wants to babysit a GPU."* In 2024 that was a five-line script against
-OpenAI's fine-tuning API. In 2026 it's a different question. On May 7, 2026 OpenAI told
-customers it was winding down self-serve fine-tuning: no new jobs for organisations that haven't
-run a fine-tuned model in the last 60 days, none for anyone after January 6, 2027, and every
-tunable base model shuts down on January 14, 2027
-([OpenAI deprecations](https://developers.openai.com/api/docs/deprecations)). AWS and Google
-still sell managed fine-tuning, but both retired tunable models in the same months.
+In [Chapter 18](../ch18/README.md) we fine-tuned a small model on our own GPU. The first thing the
+platform team asked afterwards was: *"Can't we just upload the JSONL to a cloud and get an
+endpoint back? Nobody here wants to babysit a GPU."* This chapter, the last one in Part V on
+models and compute, answers that question.
 
-This chapter takes Chapter 18's triage dataset to three managed providers. We convert it to each
-provider's format and validate it, price every option, and write the launch scripts. Along the
-way our validators found that the split as first published was 19% exact duplicates, and that
-43 supposedly unseen test tickets were in the training set word for word. Chapter 18 fixed its
-split as a result. The one thing that survives a provider shutting down is the part we build
-here: a clean dataset, a converter and an eval.
+In 2024 the answer was a five-line script against OpenAI's fine-tuning API. In 2026 it's a
+different question. On May 7, 2026 OpenAI told customers it was winding down self-serve
+fine-tuning. Organisations that haven't run a fine-tuned model in the last 60 days can't start
+new jobs, and nobody can after January 6, 2027. Every tunable base model shuts down on
+January 14, 2027 ([OpenAI deprecations](https://developers.openai.com/api/docs/deprecations)).
+AWS and Google still sell managed fine-tuning, but both retired tunable models in the same
+months.
+
+So this chapter takes Chapter 18's triage dataset to three managed providers. We convert it to
+each provider's format and validate it, price every option, and write the launch scripts. Along
+the way our validators found two problems in the split as first published. 19% of it was exact
+duplicates, and 43 supposedly unseen test tickets were in the training set word for word.
+Chapter 18 fixed its split as a result. The part we build here is the one thing that survives a
+provider shutting down: a clean dataset, a converter and an eval.
+
+The picture below sums up the idea: one dataset, wrapped four different ways.
 
 ![One dataset, four managed envelopes](images/19-one-dataset-four-clouds.svg)
 
 ## The problem
 
-ShopFlow's support desk routes every ticket with the triage model from Chapter 2: category,
-priority, sentiment, order id, a one-line summary. One request and one answer look like this:
+Before we look at any provider, let's pin down the job we want a tuned model to take over.
+ShopFlow's support desk routes every ticket with the triage model from Chapter 2. It assigns a
+category, a priority, a sentiment, an order id and a one-line summary. Here is one request and
+the answer we expect:
 
 ```text
 <ticket>
@@ -43,37 +50,51 @@ body: I keep getting promo emails even though I unsubscribed. Please remove me f
  "summary": "The customer continues receiving promotional emails after unsubscribing and asks to be removed from the mailing list."}
 ```
 
-Today that runs on `openai/gpt-6-luna` with Chapter 2's rulebook plus 22 labelled examples in
-the prompt. On the 173 *headline* test tickets (the ones whose text the model can't have seen
-in training; defined in [The data](#the-data)), that scores 98.8% category accuracy and 85.5%
-priority accuracy at $0.0744 per 1,000 tickets. Chapter 18 showed that a fine-tuned small model
-can learn the labelling policy instead of reading it every time. The ask for this chapter: *get
-a fine-tuned model without running GPUs, and know what we sign up for.*
+Today that runs on `openai/gpt-6-luna`. Its prompt holds Chapter 2's rulebook plus 22 labelled
+examples. We score it on the 173 *headline* test tickets: the ones whose text the model can't
+have seen in training (defined in [The data](#the-data)). There it reaches 98.8% category
+accuracy and 85.5% priority accuracy, at $0.0744 per 1,000 tickets. Chapter 18 showed that a
+fine-tuned small model can learn the labelling policy instead of reading it every time. The ask
+for this chapter: *get a fine-tuned model without running GPUs, and know what we sign up for.*
 
 ## Requirements
 
-| Type | Requirement | Target |
-|---|---|---|
-| Functional | Training files accepted by each provider's checks | 0 errors before upload |
-| Functional | One dataset, several providers | OpenAI, Bedrock and Vertex formats from one source; SageMaker too |
-| Functional | A tuned model must beat the prompt it replaces | category ≥ 98.8%, priority > 85.5% on the 173 headline tickets; identical-text tickets reported separately |
-| Non-functional | Training cost | < $5 per run |
-| Non-functional | Serving cost | ≤ $0.08 per 1,000 tickets (today's prompt) |
-| Non-functional | Model lifetime | ≥ 12 months of serving after training, or a re-training plan |
-| Non-functional | Eval hygiene | no test ticket's text in the training data, or scored separately |
+That ask is vague, so let's turn it into checks we can run. First, what the pipeline must do:
+
+- **Pass every provider's checks.** Our training files produce 0 errors before we upload
+  anything.
+- **One dataset, several providers.** We build the OpenAI, Bedrock and Vertex formats from one
+  source, and SageMaker reads one of them too.
+- **Beat the prompt it replaces.** A tuned model must reach at least 98.8% category accuracy
+  and more than 85.5% priority accuracy on the 173 headline tickets. Tickets whose text also
+  appears in training are reported separately.
+
+Then, what it may cost and how long it must last:
+
+- **Cheap to train.** Under $5 per training run.
+- **Cheap to serve.** At most $0.08 per 1,000 tickets, which is what today's prompt costs.
+- **Live long enough.** At least 12 months of serving after training, or a plan for
+  re-training when the model goes away.
+- **Keep the exam honest.** No test ticket's text appears in the training data. If some does,
+  those tickets are scored separately.
+
+We come back to this list when we price the options in [Results](#results).
 
 ## The data
 
-Chapter 18 snapshotted the `support_tickets` table into JSONL. The current split (Chapter 18's
-*v2*, the one that exists after the fix described in [Measuring v0](#measuring-v0)) has 844
-train, 150 validation and 210 test tickets. All 60 hand-written "hard" tickets are in test only;
-the rest come from 30 templates. Train and validation rows carry the gold routing labels plus a
-teacher-written `sentiment` and `summary`. We copy the three files, plus the first published
-training file (`ch18_split_v1_train.jsonl`, for the before/after), into
-[`01_main-chapter-code/data/`](01_main-chapter-code/data) so this chapter stands alone.
+The accuracy and eval targets are measured on Chapter 18's tickets, so we start from its data.
+Chapter 18 snapshotted the `support_tickets` table into JSONL. The current split is Chapter 18's
+*v2*: the version that exists after the fix described in [Measuring v0](#measuring-v0). It has
+844 train, 150 validation and 210 test tickets. All 60 hand-written "hard" tickets are in test
+only; the rest come from 30 templates. Train and validation rows carry the gold routing labels
+plus a teacher-written `sentiment` and `summary`. We copy the three files into
+[`01_main-chapter-code/data/`](01_main-chapter-code/data) so this chapter stands alone. We also
+copy the first published training file (`ch18_split_v1_train.jsonl`) to show the before and
+after.
 
-The 210 test tickets fall into three segments, exactly as Chapter 18's
-`results/test_segments.json` defines them (the notebook checks that our computation matches):
+Not every test ticket measures the same thing, so we split the 210 test tickets into three
+segments. They match Chapter 18's `results/test_segments.json` exactly, and the notebook checks
+that our computation agrees. The table says what each segment tells us:
 
 | segment | tickets | what it measures |
 |---|---|---|
@@ -81,6 +102,12 @@ The 210 test tickets fall into three segments, exactly as Chapter 18's
 | hard | 60 | hand-written, never in train: traffic that doesn't look like the training data |
 | **headline** = unseen + hard | **173** | the number every table leads with |
 | identical text | 37 | 8 templates with no order number or product name produce the same text every time, so these tickets are in train word for word; a model can answer them from memory |
+
+The headline row is the one to watch. It's the only score a model can't raise by remembering
+training text.
+
+Here is how the data moves through the chapter. One converter feeds every provider, and one
+eval scores every model on the same 210 tickets:
 
 ```mermaid
 flowchart LR
@@ -96,7 +123,8 @@ flowchart LR
     S -->|test.jsonl| E[evaluate.py<br/>same 210 tickets for every model]
 ```
 
-A training row, as Chapter 18 wrote it (from the notebook):
+Each training row is a flat record, not a conversation. Here is one, as Chapter 18 wrote it
+(from the notebook):
 
 ```json
 {"id": 1, "subject": "Unsubscribe from marketing emails",
@@ -107,12 +135,17 @@ A training row, as Chapter 18 wrote it (from the notebook):
  "text_labels_by": "openai/gpt-6-luna"}
 ```
 
+The converter turns rows like this into each provider's format with one command:
+
 ```bash
 cd ch19/01_main-chapter-code
 uv run python -m ch19_ft.convert        # writes formats/{openai,bedrock,vertex}/{train,val}.jsonl
 ```
 
 ## Concepts
+
+Before we convert anything, it helps to know what a provider actually does with our file and
+what we get back.
 
 ### What "managed" fine-tuning hands over
 
@@ -124,17 +157,20 @@ mostly train small adapters on top of a frozen base model, the LoRA idea from Ch
 (Vertex even exposes the adapter size as a parameter). The base model stays theirs, so the
 adapter only works on their servers.
 
-Two things follow:
+This has two practical consequences:
 
 - **Billing is tokens × epochs.** An *epoch* is one pass over the training set. OpenAI, Bedrock
   and Vertex all bill training as the number of tokens in your file times the number of epochs.
   Duplicate rows aren't free; you pay for them on every pass.
-- **Serving comes in two shapes.** *Per token* on shared infrastructure (OpenAI, Bedrock
-  on-demand, Vertex), where an idle model costs nothing or a small storage fee. Or a *dedicated
-  GPU per hour* (SageMaker endpoints, Together, Fireworks), which costs the same at 10 requests a
-  month as at 10 million.
+- **Serving comes in two shapes.** The first is *per token* on shared infrastructure (OpenAI,
+  Bedrock on-demand, Vertex). There an idle model costs nothing or a small storage fee. The
+  second is a *dedicated GPU per hour* (SageMaker endpoints, Together, Fireworks). That costs
+  the same at 10 requests a month as at 10 million.
 
 ### A job's life
+
+Knowing what we get back is half the picture. The other half is how long it takes to get it.
+A job goes through these steps (step 7 is OpenAI only):
 
 ```mermaid
 sequenceDiagram
@@ -155,40 +191,43 @@ sequenceDiagram
     D->>M: evaluate.py on the 210 test tickets, same system prompt as training
 ```
 
-Steps 4 and 5 are where practitioners lose days, on every platform: OpenAI jobs stuck in
-"validating files" for weeks in October 2026
-([OpenAI community](https://community.openai.com/t/fine-tuning-is-stuck-in-validating-files/1406992)),
-Vertex jobs "Queuing for capacity" for hours
-([Google forum](https://discuss.google.dev/t/fine-tuning-queue-jobs-taking-several-hours-to-start-with-gemini-vertex-ai/180327)),
-and Bedrock Nova jobs at `trainingDetails = NotStarted` for 14 hours
+Steps 4 and 5 are where practitioners lose days, on every platform. In October 2026 OpenAI jobs
+sat in "validating files" for weeks
+([OpenAI community](https://community.openai.com/t/fine-tuning-is-stuck-in-validating-files/1406992)).
+Vertex jobs waited in "Queuing for capacity" for hours
+([Google forum](https://discuss.google.dev/t/fine-tuning-queue-jobs-taking-several-hours-to-start-with-gemini-vertex-ai/180327)).
+Bedrock Nova jobs stayed at `trainingDetails = NotStarted` for 14 hours
 ([re:Post](https://repost.aws/questions/QU71n1MTIGQNakWhIWelgQOg/nova-pro-finetune-job-keeps-stuck)).
-Training belongs in a background job with alerts, never in a deploy pipeline that waits for it.
+So training belongs in a background job with alerts. Never put it in a deploy pipeline that
+waits for it to finish.
 
 ### A tuned model is a lease
+
+Slow queues cost days. The bigger risk is that the tuned model itself has an end date.
 
 > [!NOTE]
 > **In the wild:** OpenAI is winding down its fine-tuning platform. Since July 2, 2026, "Creating
 > fine-tuning jobs is no longer available to organizations that have not run inference on a
-> fine-tuned model in the past 60 days," and on January 6, 2027 existing customers lose it too.
+> fine-tuned model in the past 60 days." On January 6, 2027 existing customers lose it too.
 > `gpt-4.1`, `gpt-4.1-mini`, `gpt-4o` and `gpt-4o-mini`, and every model tuned from them, shut
 > down on January 14, 2027 ([OpenAI deprecations](https://developers.openai.com/api/docs/deprecations)).
 > A model trained on the day of our run would serve for 67 days. OpenAI's model pages list
 > fine-tuning as "Not supported" for every GPT-5 and GPT-6 model.
 
-The other clouds have the same clock, just slower. On Bedrock, Claude 3 Haiku (the only Anthropic
-model you could tune there) reached end of life on September 10, 2026, and every Llama 3.x model
-went *Legacy* on September 30, 2026, which means "you cannot create new fine-tuning jobs on that
-model" ([AWS model lifecycle](https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle-legacy.html)).
+The other clouds have the same clock, just slower. On Bedrock, Claude 3 Haiku (the only
+Anthropic model you could tune there) reached end of life on September 10, 2026. Every Llama 3.x
+model went *Legacy* on September 30, 2026, which means "you cannot create new fine-tuning jobs
+on that model" ([AWS model lifecycle](https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle-legacy.html)).
 On Vertex, Gemini 2.5 Pro, Flash and Flash-Lite retired on October 20, 2026
 ([Google model versions](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/model-versions)).
 When the base model goes, your adapter goes with it, and you re-train on whatever is still
-tunable. Plan for that from day one: keep the dataset, the converter and the eval, and treat
-the tuned model as disposable.
+tunable. Plan for that from day one. Keep the dataset, the converter and the eval, and treat the
+tuned model as disposable.
 
 ## v0: upload Chapter 18's rows as they are
 
-The first attempt is to point a provider at `train.jsonl`. Our validators (next sections) say what
-every provider would say:
+With that in mind, let's try the simplest thing: point a provider at Chapter 18's `train.jsonl`
+as it is. Our validators (described in the next sections) give the answer every provider would:
 
 ```text
 openai   errors=  844  first: line 1: unknown_key: row has unknown keys ['body', 'category', 'channel', 'hard',...
@@ -196,16 +235,18 @@ bedrock  errors=  844  first: line 1: unknown_key: row has unknown keys ['body',
 vertex   errors=  844  first: line 1: unknown_key: row has unknown keys ['body', 'category', 'channel', 'hard',...
 ```
 
-Fair enough: the rows are records, not conversations. So we wrap each one as a three-turn chat
-(Chapter 18's one-line system prompt, the delimited ticket, the JSON answer) and validate again.
-Zero errors on all three formats. That looks done. It wasn't, the first time.
+Fair enough: the rows are records, not conversations. So we wrap each one as a three-turn chat:
+Chapter 18's one-line system prompt, the delimited ticket, and the JSON answer. Then we validate
+again and get zero errors on all three formats. That looks done. The first time we ran it, it
+wasn't.
 
 ## Measuring v0
 
-Provider-side validation checks the *shape* of a file. Ours also checks what's in it. When we
-first ran it, on the 1,200-row training split Chapter 18 had published (v1), it flagged 333
-warnings in a file every provider would have accepted. We reported them to Chapter 18, which
-fixed its split (v2). The notebook keeps the v1 file so the before/after is reproducible:
+Zero errors only tells us the files have the right *shape*. Provider-side validation stops
+there, but ours also checks what's in the file. We first ran it on the 1,200-row training split
+that Chapter 18 had published (v1). It flagged 333 warnings in a file every provider would have
+accepted. We reported them to Chapter 18, which fixed its split (v2). The notebook keeps the v1
+file so the before and after are reproducible. Watch the duplicate and overlap rows:
 
 ```text
                     v1 (first published)  v2 (ch18 fix)
@@ -219,16 +260,18 @@ val text in train                     41             37
 templates                             30             30
 ```
 
-What v1 contained:
+Here is what those warnings were about in v1:
 
 - **228 exact duplicates.** Templates without an order number or product name produce identical
-  tickets, and identical labels. The 1,200 rows held 867 distinct tickets. The worst offender,
+  tickets with identical labels. The 1,200 rows held 867 distinct tickets. The worst offender,
   "Do you accept PayPal?", appeared 21 times. Every copy is billed on every epoch.
-- **105 conflicts.** The same ticket with a different answer. None disagreed on category,
-  priority or order id. They differed in the teacher-written summary (and in one group,
-  "Payment keeps failing", in sentiment).
+- **105 conflicts.** These are the same ticket with a different answer. None disagreed on
+  category, priority or order id. They differed in the teacher-written summary, and in one group
+  ("Payment keeps failing") in sentiment.
 - **43 test and 41 validation tickets present word for word in train.** Chapter 18 had split by
   ticket id, not by text, so a tuned model could score on those by memory.
+
+The notebook also lists the most repeated tickets and what Chapter 18's fix did:
 
 ```text
 v1: most repeated tickets
@@ -244,23 +287,29 @@ identical-text templates kept once each: ['Change my email address', 'Delete my 
 ```
 
 Chapter 18's fix dropped every training row whose text also appears in validation or test (364
-rows), then put back one row for each of the 8 placeholder-free templates. Without that, those 8
-templates would vanish from training. Their text is the same every time, so their 37 test tickets
-can't be made unseen; they form the separate *identical text* segment. The v2 training set has
-no exact duplicates and 28% fewer tokens per epoch, and the 4 remaining conflicts are summary
-wording again.
+rows). It then put back one row for each of the 8 placeholder-free templates; without that,
+those 8 templates would vanish from training. Their text is the same every time, so their 37
+test tickets can't be made unseen. They form the separate *identical text* segment. The v2
+training set has no exact duplicates and 28% fewer tokens per epoch. The 4 remaining conflicts
+are summary wording again.
+
+The chart puts both splits side by side, with the v2 test segments next to them:
 
 ![Training split v1 vs v2, and the v2 test segments](images/19-dataset-quality.png)
 
 ### The "before" number
 
-A fine-tuned model is called with the short training prompt, not the rulebook. So the honest
-baseline is what a base model does with that same prompt. We ran it once on `gpt-6-luna` through
-OpenRouter ($0.10 / $0.50 per 1M input/output tokens, as of 2026-11), 210 tickets at concurrency
-8 in 88 s, for $0.01568. The test set didn't change in v2, so the run stands; we only re-scored
-it into the v2 segments. The two rulebook rows are Chapter 18's runs on the same tickets with the
-same scorer. Its few-shot prompt now holds 22 examples: one per template, never a row whose
-text appears in validation or test. The 8 identical-text templates therefore have no example:
+With a clean split, we need a number to compare a tuned model against. A fine-tuned model is
+called with the short training prompt, not the rulebook. So the honest baseline is what a base
+model does with that same prompt. We ran it once on `gpt-6-luna` through OpenRouter ($0.10 /
+$0.50 per 1M input/output tokens, as of 2026-11). The run sent 210 tickets at concurrency 8,
+took 88 s and cost $0.01568. The test set didn't change in v2, so the run stands; we only
+re-scored it into the v2 segments.
+
+The two rulebook rows are Chapter 18's runs on the same tickets with the same scorer. Its
+few-shot prompt now holds 22 examples: one per template, and never a row whose text appears in
+validation or test. So the 8 identical-text templates have no example. Read the **headline**
+rows first, then the segments below each one:
 
 | prompt (gpt-6-luna) | segment | n | category % | priority % | in tok | out tok | $/1k | p50 ms | p95 ms |
 |---|---|---|---|---|---|---|---|---|---|
@@ -279,8 +328,11 @@ text appears in validation or test. The 8 identical-text templates therefore hav
 
 Order-id accuracy and JSON validity were 100% in every run except one hard ticket with the
 few-shot prompt (99.4% valid on headline). Latency is end to end through OpenRouter, so it
-measures the provider and the network, not this host. All 210 tickets together: one-line
-86.7% / 68.1%, rulebook 86.7% / 65.2%, few-shot 99.0% / 80.0% (category / priority).
+measures the provider and the network, not this host. Over all 210 tickets together, category /
+priority accuracy was 86.7% / 68.1% for the one-line prompt, 86.7% / 65.2% for the rulebook and
+99.0% / 80.0% for few-shot.
+
+The chart shows the same accuracy numbers by prompt and segment:
 
 ![gpt-6-luna accuracy by prompt and segment](images/19-baseline.png)
 
@@ -290,40 +342,45 @@ Four things stand out:
   68.2% vs 65.9% priority). Chapter 2's rules don't teach Luna ShopFlow's priority policy.
   Examples do: priority jumps to 85.5%.
 - **Examples teach exactly what they cover.** With the few-shot prompt, priority is 93.8% on
-  unseen templated tickets, whose templates all have an example, and 54.1% on the
+  unseen templated tickets, whose templates all have an example. It is 54.1% on the
   identical-text tickets, whose 8 templates have none. That's lower than the one-line prompt
   (67.6%) on the same tickets.
-- **Identical-text tickets are easy on category even without memory** (100% with the one-line
-  prompt vs 79.6% on unseen). They're short, unambiguous templates. A score that mixes them in
-  flatters any model, which is why the headline excludes them.
+- **Identical-text tickets are easy on category even without memory.** They score 100% with the
+  one-line prompt vs 79.6% on unseen tickets, because they're short, unambiguous templates. A
+  score that mixes them in flatters any model, which is why the headline excludes them.
 - **Hard-ticket priority stays around 70%**: 71.7% with the one-line prompt, 70.0% with 22
   examples. That is the gap a fine-tuned model would have to close. The training data has no
   hard tickets at all, so whether any tuned model closes it is an open question until we run one.
 
-The few-shot prompt is 1,919 tokens and still the cheapest of the three on the headline ($0.0744
-per 1,000 tickets, vs $0.0961 for the 486-token rulebook). The repeated prefix is billed at a
-cached rate: 1,919 input tokens at the full $0.10 per million would cost $0.19 per 1,000 tickets
-on their own. Chapter 15 covers caching.
+Cost tells a surprising story too. The few-shot prompt is 1,919 tokens and still the cheapest of
+the three on the headline: $0.0744 per 1,000 tickets, vs $0.0961 for the 486-token rulebook.
+The reason is that the repeated prefix is billed at a cached rate. At the full $0.10 per
+million, 1,919 input tokens alone would cost $0.19 per 1,000 tickets. Chapter 15 covers caching.
 
 ## Iterating
+
+Measuring v0 gave us a bar to beat and a list of problems in the data. We fix them one at a
+time, starting with the data itself, then the formats, then the launch.
 
 ### 1. Fix the split at the source, keep a dedupe guard
 
 The duplicates cost money, the conflicts cost consistency, and the overlap made the test score
-meaningless. Options: drop exact duplicates in our converter (v1 → 972 rows, but the 43 test
-tickets stay in train), drop every training row whose text is in validation or test, or
-re-split from scratch by template.
+meaningless. We had three options. We could drop exact duplicates in our converter (v1 → 972
+rows), but the 43 test tickets would stay in train. We could drop every training row whose text
+is in validation or test. Or we could re-split from scratch by template.
 
 > [!IMPORTANT]
 > **Decision: fix the split where it's made (Chapter 18), and keep `dedupe` in the converter as
 > a guard.** A converter that silently repairs data hides the problem from everyone else who
-> uses the split, and here that was Chapter 18's own LoRA eval and its few-shot baseline
-> (8 of its 30 examples were test tickets). Chapter 18 dropped the 364 overlapping rows and kept
-> one copy of each placeholder-free template: 1,200 → 844 rows, 178,227 → 127,781 training
-> tokens per epoch (28% off every training bill), 228 → 0 duplicates. On v2 our `dedupe` drops
-> nothing, which is the point of a guard. A full re-split by template would give a cleaner exam,
-> but it would change every number Chapter 18 has published; we'd do it before collecting
+> uses the split. Here that was Chapter 18's own LoRA eval and its few-shot baseline (8 of its
+> 30 examples were test tickets). Chapter 18 dropped the 364 overlapping rows and kept one copy
+> of each placeholder-free template. That took 1,200 → 844 rows, 178,227 → 127,781 training
+> tokens per epoch (28% off every training bill) and 228 → 0 duplicates. On v2 our `dedupe`
+> drops nothing, which is the point of a guard. A full re-split by template would give a cleaner
+> exam, but it would change every number Chapter 18 has published. We'd do it before collecting
 > production data, not mid-book.
+
+The guard itself is short. It compares whole training examples, prompt and answer together:
 
 ```python
 # ch19/01_main-chapter-code/ch19_ft/convert.py (excerpt)
@@ -340,9 +397,11 @@ def dedupe(records: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], int]:
 
 ### 2. One canonical example, three envelopes
 
-Every format carries the same three strings: system prompt, ticket, answer. Only the wrapping
-differs. Bedrock wants `content` as a list of `{"text"}` blocks and a `schemaVersion`. Vertex
-calls the assistant `model`, the content `parts` and the system prompt `systemInstruction`:
+With clean data, the next step is to write each provider's format without three copies of the
+logic. Every format carries the same three strings: system prompt, ticket, answer. Only the
+wrapping differs. Bedrock wants `content` as a list of `{"text"}` blocks and a `schemaVersion`.
+Vertex calls the assistant `model`, the content `parts` and the system prompt
+`systemInstruction`:
 
 ```python
 # ch19/01_main-chapter-code/ch19_ft/convert.py (excerpt)
@@ -368,14 +427,14 @@ def to_vertex(record: dict[str, Any]) -> dict[str, Any]:
                          {"role": "model", "parts": [{"text": assistant}]}]}
 ```
 
-`_parts` is Chapter 18's `to_example`, copied into `previous_chapters.py`, so the cloud models
+`_parts` is Chapter 18's `to_example`, copied into `previous_chapters.py`. So the cloud models
 would train on exactly the tokens Chapter 18's LoRA saw. Each validator parses its format *back*
-into `(system, [(role, text), ...])`, and the shared rules run on that: turns alternate, the
-user goes first, the assistant goes last, the answer is a valid `TicketTriage` with no code
+into `(system, [(role, text), ...])`, and the shared rules run on that. Turns alternate, the
+user goes first and the assistant goes last. The answer is a valid `TicketTriage` with no code
 fence, and the example fits the token limit. A unit test round-trips every format to the same
 three strings.
 
-The converted files, validated:
+Here are the converted files after validation. Check the errors column first, then the tokens:
 
 ```text
 provider split  examples  errors  warnings  tokens_total  tokens_mean  tokens_max  file_kb
@@ -387,24 +446,26 @@ provider split  examples  errors  warnings  tokens_total  tokens_mean  tokens_ma
  vertex   val       143       0        12         21435        149.9         170    108.6
 ```
 
-Tokens are counted with `o200k_base` plus OpenAI's per-message overhead. Nova and Gemini use
-their own tokenizers, so for them it's an estimate. The envelopes add 8% (Bedrock) and 6%
-(Vertex) to the file size, not to the billed tokens. The validation file is Chapter 18's, which
-v2 left unchanged: the guard drops its 7 exact duplicates (150 → 143), and 12 conflicts remain.
+All three formats pass with 0 errors and carry the same tokens. Tokens are counted with
+`o200k_base` plus OpenAI's per-message overhead. Nova and Gemini use their own tokenizers, so for
+them it's an estimate. The envelopes add 8% (Bedrock) and 6% (Vertex) to the file size, not to
+the billed tokens. The validation file is Chapter 18's, which v2 left unchanged. The guard drops
+its 7 exact duplicates (150 → 143), and 12 conflicts remain.
 
 > [!IMPORTANT]
 > **Decision: our own converter and validators over each provider's tooling.** OpenAI had a
-> data-prep cookbook (its token limit is stale: 16,385 vs the documented 65,536), AWS publishes a
-> Nova dataset-validation script, and Together's SDK checks files on upload. That's three tools,
-> three sets of rules, and three places for a dataset to drift. Our 420-line `convert.py` has one
-> canonical form, 30 unit tests, and runs in 2 seconds before anything leaves the building. If
-> you only ever use one provider, its own validator is enough. Run it as well, because the
-> provider's rules change and ours won't notice.
+> data-prep cookbook, though its token limit is stale (16,385 vs the documented 65,536). AWS
+> publishes a Nova dataset-validation script, and Together's SDK checks files on upload. That's
+> three tools, three sets of rules, and three places for a dataset to drift. Our 420-line
+> `convert.py` has one canonical form and 30 unit tests, and it runs in 2 seconds before
+> anything leaves the building. If you only ever use one provider, its own validator is enough.
+> Run it as well, because the provider's rules change and ours won't notice.
 
 ### 3. Provider-specific rules
 
-Some rules exist on one platform only. We broke one row five ways and ran all three validators
-(real output from the notebook):
+Our shared rules catch mistakes every platform cares about. Some rules, though, exist on one
+platform only. To find them, we broke one row five ways and ran all three validators (real
+output from the notebook):
 
 ```text
                                      openai        bedrock        vertex
@@ -415,28 +476,31 @@ answer in a code fence           bad_answer     bad_answer    bad_answer
 ends on the user turn          no_assistant   no_assistant  no_assistant
 ```
 
+Read across a row to see which platform's rules catch that mistake. Three rows need a note:
+
 - **Nova's reserved words.** The Nova data-prep guide lists `User:`, `Bot:`, `Assistant:`,
-  `System:`, `<image>`, `<video>` and `[EOS]`; any of them anywhere in a prompt fails the job
+  `System:`, `<image>`, `<video>` and `[EOS]`. Any of them anywhere in a prompt fails the job
   ([Nova user guide](https://docs.aws.amazon.com/nova/latest/userguide/fine-tune-prepare-data-understanding.md)).
   A customer who pastes a chat transcript into a ticket ("Assistant: we will refund you") is
   ordinary data for OpenAI and a failed Bedrock job. None of the 1,204 tickets in the v2 split
-  contains one today; a validator is how we keep it that way.
-- **`model`, not `assistant`, on Vertex.** Copying an OpenAI row into Vertex and renaming keys
-  by hand is the classic mistake. Our error message says so: `unsupported role 'assistant'
+  contains one today. A validator is how we keep it that way.
+- **`model`, not `assistant`, on Vertex.** The classic mistake is to copy an OpenAI row into
+  Vertex and rename keys by hand. Our error message says so: `unsupported role 'assistant'
   (Vertex calls it 'model')`.
-- **Fenced answers are accepted by every provider** and would teach the model to wrap its JSON in
-  markdown. That's our rule, not theirs: the training answer must parse as a `TicketTriage` with
-  no leniency.
+- **Fenced answers are accepted by every provider.** They would teach the model to wrap its JSON
+  in markdown. That's our rule, not theirs: the training answer must parse as a `TicketTriage`
+  with no leniency.
 
 > [!IMPORTANT]
 > **Decision: validate stricter than the providers.** We reject unknown keys, fenced answers and
 > answers outside the schema, which every provider would happily train on. A rejected upload
 > costs a minute. A model trained on bad answers costs a training run, a queue wait (hours, on a
 > bad day), and an eval to find out. We'd relax a rule only when a provider adds a field we
-> want, such as OpenAI's per-message `weight`, which our parser already accepts.
+> want. One example is OpenAI's per-message `weight`, which our parser already accepts.
 
 ### 4. A launcher that refuses to waste money
 
+Valid files are half of a safe launch. The other half is not spending money by accident.
 [`openai_ft.py`](01_main-chapter-code/ch19_ft/openai_ft.py) validates the files and prices the
 job *before* it uploads anything. It refuses if the estimate is over `--max-usd` (default $5),
 and it warns when the base model will shut down soon. The dry run needs no key, so it ran here:
@@ -469,24 +533,25 @@ WARNING: gpt-4.1-mini-2025-04-14 and every model tuned from it shut down on 2027
 }
 ```
 
-Without `--dry-run`, it stops at the key:
+The estimate is $1.92, under the $5 limit, and the warning shows only 67 days of service left.
+Without `--dry-run`, the launcher stops at the key:
 
 ```text
 OPENAI_API_KEY is not set in .env. Fine-tuning needs a direct OpenAI key: OpenRouter (LLM_API_KEY) has no fine-tuning API.
 ```
 
 The book's only key is an OpenRouter key, and OpenRouter has no fine-tuning API. Its
-documentation never mentions one, and asking for the OpenAI endpoint through the OpenAI SDK
-returns 404, while the files endpoint next to it answers:
+documentation never mentions one. Through the OpenAI SDK, the fine-tuning endpoint returns 404,
+while the files endpoint next to it answers:
 
 ```text
 files.list: 0 files
 fine_tuning.jobs.list: 404 {'message': 'Not Found', 'code': 404}
 ```
 
-(OpenRouter's Enterprise plan can *route* to a model you fine-tuned elsewhere, through
+OpenRouter's Enterprise plan can *route* to a model you fine-tuned elsewhere, through
 ["Private Endpoints"](https://openrouter.ai/blog/announcements/private-endpoints/), launched on
-2026-10-14. It can't train one.)
+2026-10-14. It can't train one.
 
 > [!CAUTION]
 > **Not executed by the author** — `openai_ft.py launch`, `poll` and `eval` on a fine-tuned model
@@ -495,6 +560,9 @@ fine_tuning.jobs.list: 404 {'message': 'Not Found', 'code': 404}
 > and https://developers.openai.com/api/reference/resources/fine_tuning (accessed 2026-11-08) and
 > checked with `python -m py_compile` and `check_cloud_sdks.py` (job request vs the `openai`
 > 3.46 signature). The dry run, the key check and `eval --provider openrouter` were executed.
+
+The real launch path uploads both files, waits for them to be processed, and creates the job.
+If OpenAI refuses, the error explains the 60-day rule:
 
 ```python
 # ch19/01_main-chapter-code/ch19_ft/openai_ft.py (excerpt of cmd_launch)
@@ -513,13 +581,16 @@ except openai.APIStatusError as e:
                      "model in the last 60 days can create jobs.") from e
 ```
 
-`poll` prints new job events oldest first, saves `fine_tuned_model` and the checkpoints (OpenAI
-keeps the last three epochs). `eval` runs the same 210 tickets through
+`poll` prints new job events oldest first. It saves `fine_tuned_model` and the checkpoints
+(OpenAI keeps the last three epochs). `eval` runs the same 210 tickets through
 [`evaluate.py`](01_main-chapter-code/ch19_ft/evaluate.py) with the training system prompt and
-strict `json_schema`, priced at the tuned model's rates. With `--provider openrouter` it is the
+strict `json_schema`, priced at the tuned model's rates. With `--provider openrouter`, it is the
 command that produced the baseline above.
 
 ## Production hardening
+
+The launcher stops the obvious mistakes. A tuned model in production meets less obvious ones,
+and the most common is also the simplest:
 
 > [!WARNING]
 > Call the tuned model with **exactly** the system prompt it was trained with. A Bedrock user
@@ -529,13 +600,15 @@ command that produced the baseline above.
 > Every launcher here imports `FT_RULES + FORMAT_HINT` from the same place the training files
 > were built from.
 
+Beyond the prompt, these are the traps we found across the platforms:
+
 - **Write the shutdown date next to the model id.** `openai_ft.py` records it in
   `results/openai_job.json` and warns under 90 days. Put the re-training date in the team
   calendar the day you ship.
 - **Quotas start at zero or one.** Vertex runs one tuning job per project by default, shared
-  across regions. Bedrock's no-commitment Provisioned Throughput quota for custom models is 0,
-  and a new AWS account can have a quota of 0 GPU instances on SageMaker. Request increases
-  before the project, not during it.
+  across regions. Bedrock's no-commitment Provisioned Throughput quota for custom models is 0.
+  A new AWS account can have a quota of 0 GPU instances on SageMaker. Request increases before
+  the project, not during it.
 - **Regions are pinned.** Nova fine-tuning runs in us-east-1 only, and S3 data must be in the
   job's region. Gemini 3.x tunes only on the `us` and `eu` multi-region endpoints. If your
   tickets must stay in Europe, half the table below is gone.
@@ -543,36 +616,38 @@ command that produced the baseline above.
   can block deployment. A dental team saw its dataset flagged, probably for the word "oral",
   while estimating $33,000 for the full run
   ([OpenAI community](https://community.openai.com/t/dataset-flagged-for-sexual-content/1310016)).
-  Support tickets contain angry, sometimes abusive text; test with a small job first.
+  Support tickets contain angry, sometimes abusive text, so test with a small job first.
 - **No structured output on tuned Gemini.** Google's tuning docs warn that controlled generation
-  (`response_schema`) on a tuned model can lower quality, so `vertex_ft.py eval` parses the JSON
+  (`response_schema`) on a tuned model can lower quality. So `vertex_ft.py eval` parses the JSON
   the model learned to write instead.
-- **SDKs move under you.** SageMaker SDK v3 dropped `Estimator` and `JumpStartEstimator`, and
-  importing its `SFTTrainer` already creates a boto3 client: without `AWS_DEFAULT_REGION` the
-  *import* fails with `NoRegionError`. `vertexai.tuning` is deprecated in favour of
+- **SDKs move under you.** SageMaker SDK v3 dropped `Estimator` and `JumpStartEstimator`.
+  Importing its `SFTTrainer` already creates a boto3 client, so without `AWS_DEFAULT_REGION`
+  the *import* fails with `NoRegionError`. `vertexai.tuning` is deprecated in favour of
   `google-genai`. Google's own Gemini tuning sample passes `TuningDataset` as the validation
-  set; google-genai 3.0.0 declares `TuningValidationDataset` and only *prints* "Type mismatch"
-  instead of raising. [`check_cloud_sdks.py`](01_main-chapter-code/check_cloud_sdks.py) caught
-  that in our own Vertex script.
+  set, but google-genai 3.0.0 declares `TuningValidationDataset`. It only *prints* "Type
+  mismatch" instead of raising.
+  [`check_cloud_sdks.py`](01_main-chapter-code/check_cloud_sdks.py) caught that in our own
+  Vertex script.
 - **Customer text leaves your boundary.** Uploading tickets to a provider is a data transfer
-  like any other: check your data-processing agreement, and strip what you don't need. Our
+  like any other. Check your data-processing agreement, and strip what you don't need. Our
   training answers keep order ids (needed) and no emails or names.
 
 > [!NOTE]
 > **In the wild:** Together's case study with XY.AI Labs reports training runs of "10–20 minutes
-> at roughly $10 per run" and parsing accuracy up from 77% to 87%, and credits Together's
+> at roughly $10 per run" and parsing accuracy up from 77% to 87%. It credits Together's
 > "Managed multi-LoRA serverless capability"
 > ([Together](https://www.together.ai/customers/xy-ai-labs)). Together has since discontinued
 > serverless LoRA inference, including multi-LoRA
-> ([Together docs](https://docs.together.ai/docs/fine-tuning/lora-vs-full.md)): tuned models now
+> ([Together docs](https://docs.together.ai/docs/fine-tuning/lora-vs-full.md)). Tuned models now
 > need a dedicated endpoint, billed per minute while it runs. The serving model you design
 > around can change under a case study that's still online.
 
 ## Serving it
 
-None of the cloud scripts ran: they need an AWS account, a GCP project or an eligible OpenAI
-organisation. What did run is an offline check of every call against the real SDKs, in a
-chapter-local venv (the cloud SDKs are not in the book's `pyproject.toml`):
+Everything so far assumes a job actually runs. Here we hit our own limit. None of the cloud
+scripts ran, because they need an AWS account, a GCP project or an eligible OpenAI organisation.
+What did run is an offline check of every call against the real SDKs. It runs in a
+chapter-local venv, because the cloud SDKs are not in the book's `pyproject.toml`:
 
 ```bash
 uv venv ch19/01_main-chapter-code/.venv-cloud --python 3.12
@@ -600,8 +675,11 @@ ok  google-genai CreateTuningJobConfig(epoch_count=3, adapter_size=ADAPTER_SIZE_
 ok  sagemaker SFTTrainer(model, training_type, model_package_group, training_dataset, validation_dataset, s3_output_path, accept_eula).train(dry_run=...)
 ```
 
-The check proves that every operation, parameter and status we use exists in the shipped SDK.
-It can't prove the cloud accepts the job.
+Every line reads `ok`. The check proves that every operation, parameter and status we use exists
+in the shipped SDK. It can't prove the cloud accepts the job.
+
+Once a job does finish, the four platforms differ in where the data goes, what you can watch,
+and how you serve the result:
 
 | | OpenAI | Bedrock (Nova) | Vertex (Gemini) | SageMaker (open weights) |
 |---|---|---|---|---|
@@ -610,7 +688,12 @@ It can't prove the cloud accepts the job.
 | serve | same API, model `ft:...` | on-demand deployment ARN, or Provisioned Throughput | tuned endpoint (copy to `global` for base price) | SageMaker endpoint, Bedrock import, or download |
 | you get the weights | no | no | no | yes (in your account) |
 
+Only SageMaker leaves the weights in your account, which matters given the lease problem above.
+The next three subsections show each launcher.
+
 ### Bedrock: Nova Micro, on demand
+
+We start with Bedrock, because a tuned Nova Micro can be served per token, like a base model.
 
 > [!CAUTION]
 > **Not executed by the author** — requires an AWS account with Bedrock access in us-east-1, an
@@ -619,6 +702,8 @@ It can't prove the cloud accepts the job.
 > https://docs.aws.amazon.com/bedrock/latest/userguide/deploy-custom-model-on-demand.md (accessed
 > 2026-11-08) and checked with `python -m py_compile` and `check_cloud_sdks.py` (botocore
 > 1.43.126 service model).
+
+The launcher creates the customization job and, once it finishes, an on-demand deployment:
 
 ```python
 # ch19/01_main-chapter-code/ch19_ft/bedrock_ft.py (excerpt)
@@ -641,13 +726,16 @@ dep = bedrock.create_custom_model_deployment(modelDeploymentName="shopflow-triag
 per-token pricing at the base model's rates, plus $1.95 a month to store the custom model.
 
 > [!NOTE]
-> **In the wild:** Parcel Perform fine-tuned Nova Micro on training sets of 1,300 and 4,900 samples for
-> data extraction. The tuned model reached "up to 94.77% extraction accuracy", 16.6 points above
-> the baseline, cut latency by more than 30% and halved costs compared with its previous model
+> **In the wild:** Parcel Perform fine-tuned Nova Micro for data extraction, on training sets of
+> 1,300 and 4,900 samples. The tuned model reached "up to 94.77% extraction accuracy", 16.6
+> points above the baseline. It also cut latency by more than 30% and halved costs compared with
+> its previous model
 > ([AWS Machine Learning Blog](https://aws.amazon.com/blogs/machine-learning/fine-tune-amazon-nova-models-for-accurate-email-data-extraction/)).
 > That's a dataset the size of ours, and a task like ours: fixed labels, short inputs.
 
 ### Vertex: Gemini Flash-Lite through google-genai
+
+Google's managed option follows the same pattern, with Gemini Flash-Lite as the base model.
 
 > [!CAUTION]
 > **Not executed by the author** — requires a GCP project with the Vertex AI API and a Cloud
@@ -656,6 +744,8 @@ per-token pricing at the base model's rates, plus $1.95 a month to store the cus
 > and https://docs.cloud.google.com/gemini-enterprise-agent-platform/machine-learning/python-sdk/sdk-migration
 > (accessed 2026-11-08) and checked with `python -m py_compile` and `check_cloud_sdks.py`
 > (google-genai 3.0.0).
+
+The script builds a google-genai client for Vertex and starts the tuning job:
 
 ```python
 # ch19/01_main-chapter-code/ch19_ft/vertex_ft.py (excerpt)
@@ -677,18 +767,21 @@ job = client(args.project, args.location).tunings.tune(
 
 > [!IMPORTANT]
 > **Decision: the Google Gen AI SDK (`google-genai`) over `vertexai.tuning`.** The old
-> `vertexai.tuning.sft.train()` in `google-cloud-aiplatform` is deprecated (Google's migration
-> page gives June 24, 2026 as the removal date, though 2.7.0 still ships it). `client.tunings`
-> is the documented path for Gemini tuning. The one trap is the client constructor: leave out
+> `vertexai.tuning.sft.train()` in `google-cloud-aiplatform` is deprecated. Google's migration
+> page gives June 24, 2026 as the removal date, though 2.7.0 still ships it. `client.tunings` is
+> the documented path for Gemini tuning. The one trap is the client constructor. Leave out
 > `vertexai=True` and you're on the Gemini Developer API, where `gcs_uri` fails with "not
 > supported in Gemini API"
 > ([python-genai #1324](https://github.com/googleapis/python-genai/issues/1324)). We'd still use
 > `vertexai.tuning` for Vertex's *open-model* tuning, whose docs haven't moved yet.
 
 The poll loop treats `JOB_STATE_QUEUED` as running too. Google's sample loops only while the
-state is `PENDING` or `RUNNING`, and the SDK's state enum has a `QUEUED` member.
+state is `PENDING` or `RUNNING`, but the SDK's state enum has a `QUEUED` member.
 
 ### SageMaker: the same LoRA, on AWS's GPU, weights in your account
+
+Bedrock and Vertex both keep the tuned model on their side. SageMaker is different: it trains
+the same kind of LoRA as Chapter 18 on AWS's GPUs and leaves the weights in our account.
 
 > [!CAUTION]
 > **Not executed by the author** — requires an AWS account, an S3 bucket and an execution role
@@ -698,6 +791,9 @@ state is `PENDING` or `RUNNING`, and the SDK's state enum has a `QUEUED` member.
 > (https://github.com/aws/sagemaker-python-sdk/blob/master/v3-examples/model-customization-examples/serverless/sft_finetuning_example_notebook_pysdk_prod_v3.ipynb,
 > accessed 2026-11-08) and checked with `python -m py_compile` and `check_cloud_sdks.py`
 > (sagemaker 3.29.0).
+
+The trainer takes our files, a base model and a place to register the adapter. With no
+`compute=` argument it runs serverless:
 
 ```python
 # ch19/01_main-chapter-code/ch19_ft/sagemaker_ft.py (excerpt)
@@ -717,27 +813,31 @@ if args.dry_run:
     trainer.train(dry_run=True)  # checks IAM, data paths and hyperparameters, no job
 ```
 
-It reads `formats/openai/` as is: SageMaker's serverless SFT takes OpenAI-style `messages` with
-the system message first.
+It reads `formats/openai/` as is, because SageMaker's serverless SFT takes OpenAI-style
+`messages` with the system message first.
 
 > [!IMPORTANT]
 > **Decision: SDK v3's serverless `SFTTrainer` over `JumpStartEstimator` or a custom training
 > container.** `JumpStartEstimator` only exists in `sagemaker==2.*`, which v3 replaced. A custom
 > `ModelTrainer` running Chapter 18's script would work, but then we own the container, the
 > instance choice and the GPU quota. The serverless trainer takes our chat JSONL, bills $0.50
-> per 1M training tokens for an 8B LoRA, and leaves the adapter in our account. That's the one
-> managed option here where a provider's retirement schedule can't take the model away. Pick
-> the custom container when you need a model the serverless list doesn't have, or Chapter 18's
-> exact training code.
+> per 1M training tokens for an 8B LoRA, and leaves the adapter in our account. That makes it
+> the one managed option here where a provider's retirement schedule can't take the model away.
+> Pick the custom container when you need a model the serverless list doesn't have, or Chapter
+> 18's exact training code.
 
 ## Results
 
+We now have checked files, launchers and SDK calls for every platform, but no trained model. So
+the results are prices, and the decision they support.
+
 ### What the providers charge (researched, 2026-11-08)
 
-Training cost is for the v2 training set (127,781 tokens per epoch) at each provider's default
-epochs. $/1k tickets uses the tokens measured with the one-line prompt on `gpt-6-luna` on the
-headline tickets (254 in, 101 out); other tokenizers will differ by a few percent. Nothing in
-this table was run.
+Start with what each provider charges. Training cost is for the v2 training set (127,781 tokens
+per epoch) at each provider's default epochs. The $/1k tickets column uses the tokens we
+measured on the headline tickets with the one-line prompt on `gpt-6-luna`: 254 in, 101 out.
+Other tokenizers will differ by a few percent. Nothing in this table was run. Compare the
+training run column with the $/1k tickets column:
 
 | provider · model | train $/1M | epochs | our training run | tuned serving $/1M in / out | $/1k tickets | fixed $/month | limits | status (2026-11-08) |
 |---|---|---|---|---|---|---|---|---|
@@ -765,18 +865,23 @@ Sources: [OpenAI pricing](https://developers.openai.com/api/docs/pricing),
 [Together fine-tuning pricing](https://docs.together.ai/docs/fine-tuning/pricing.md),
 [Fireworks pricing](https://fireworks.ai/pricing), all accessed 2026-11-08. "Fixed $/month" for
 dedicated endpoints is 730 hours always on. The table lives in
-[`pricing.py`](01_main-chapter-code/ch19_ft/pricing.py), so the notebook recomputes every number
-from it.
+[`pricing.py`](01_main-chapter-code/ch19_ft/pricing.py), and the notebook recomputes every
+number from it.
+
+The same training costs as a chart:
 
 ![Training cost per provider](images/19-training-cost.png)
 
 ### Training is cheap, serving decides
 
-Every training run on this dataset costs between $0.06 and $10. That's less than an hour of an
-engineer's time, so the training price shouldn't drive the choice. Serving does, because it's
-paid every month:
+The training column is small everywhere. Every training run on this dataset costs between $0.06
+and $10, which is less than an hour of an engineer's time. So the training price shouldn't drive
+the choice. Serving does, because it's paid every month:
 
 ![Serving cost per month vs tickets per month](images/19-serving-cost.png)
+
+The table compares each option with today's prompt. The last column is the monthly volume where
+the option starts to cost less:
 
 | option | $/1k tickets | fixed $/month | cheaper than today's prompt above |
 |---|---|---|---|
@@ -788,35 +893,36 @@ paid every month:
 | SageMaker endpoint (ml.g5.2xlarge, always on) | flat | 1,105.95 | 14.9M tickets/month |
 | Together dedicated H100 | flat | 4,007.70 | 53.9M tickets/month |
 
-(Break-evens from `pricing.breakeven`, in the notebook. The dedicated rows assume one GPU absorbs
-the volume; capacity isn't modelled.)
+The break-evens come from `pricing.breakeven`, in the notebook. The dedicated rows assume one
+GPU absorbs the volume; capacity isn't modelled.
 
 What the tables say:
 
 - **A tuned OpenAI or Gemini model costs 2.7× to 27× more per ticket than prompting Luna.** The
-  tunable models are older and dearer than the newest small model, and tuning doubles OpenAI's
-  price (tuned gpt-4.1-mini is $0.80 / $3.20, base is $0.40 / $1.60). The few-shot prompt is
+  tunable models are older and dearer than the newest small model. Tuning also doubles OpenAI's
+  price: tuned gpt-4.1-mini is $0.80 / $3.20, base is $0.40 / $1.60. The few-shot prompt is
   1,919 tokens long and *still* wins, because caching makes repeated prefixes cheap.
-- **Nova Micro is the one tuned option that's cheaper per ticket**, 3.2× below today's prompt,
-  and it pays back its $1.95 storage fee above 37,938 tickets a month. At ShopFlow's volume, the
+- **Nova Micro is the one tuned option that's cheaper per ticket**, 3.2× below today's prompt.
+  It pays back its $1.95 storage fee above 37,938 tickets a month. At ShopFlow's volume, the
   whole difference is a few dollars a month either way.
 - **Dedicated GPUs only make sense at millions of tickets a month**, or when the weights must be
-  yours. At low volume, Chapter 18's approach (adapters on a GPU you already run for other
-  models) is the cheap way to own the weights.
+  yours. At low volume, Chapter 18's approach is the cheap way to own the weights: adapters on a
+  GPU you already run for other models.
 - **We have not measured a single tuned model's accuracy in this chapter.** The tables price an
-  option; only an eval on the 210 tickets, and especially on the 60 hard ones, can justify one.
+  option. Only an eval on the 210 tickets, and especially on the 60 hard ones, can justify one.
+
+Put together with the requirements, that leads to a clear call for now:
 
 > [!IMPORTANT]
 > **Decision: keep prompting `gpt-6-luna` with 22 examples for now, over managed fine-tuning.**
 > On the 173 headline tickets it scores 98.8% category and 85.5% priority for $0.0744 per 1,000
-> tickets, and it has no shutdown date we know of. No tuned option is both cheaper and available
-> beyond January 2027 except Nova Micro, and nothing tells us a tuned Nova Micro beats 85.5%
-> priority on tickets it has never seen. Two gaps would justify a training run: hard-ticket
-> priority (70.0% with examples, 71.7% with the one-line prompt), and the 8 templates the
-> few-shot prompt has no example for (54.1% priority). Then the next step is a Nova Micro job
-> ($0.26) evaluated with `evaluate.py`-equivalent scoring, or
-> Chapter 18's local adapter. We would not start a new project on OpenAI fine-tuning in
-> November 2026.
+> tickets, and it has no shutdown date we know of. Nova Micro is the only tuned option that is
+> both cheaper and available beyond January 2027. Nothing tells us a tuned Nova Micro beats
+> 85.5% priority on tickets it has never seen. Two gaps would justify a training run:
+> hard-ticket priority (70.0% with examples, 71.7% with the one-line prompt), and the 8
+> templates the few-shot prompt has no example for (54.1% priority). Then the next step is a
+> Nova Micro job ($0.26) evaluated with `evaluate.py`-equivalent scoring, or Chapter 18's local
+> adapter. We would not start a new project on OpenAI fine-tuning in November 2026.
 
 > [!NOTE]
 > **In the wild:** NextNet tuned Gemini on Vertex: "We were able to leverage Gemini fine-tuning
@@ -827,7 +933,7 @@ What the tables say:
 > put it as "LLMs got a *lot* cheaper but fine tuning didn't"
 > ([HN](https://news.ycombinator.com/item?id=44242737)).
 
-Reproduce:
+To reproduce every number in this chapter:
 
 ```bash
 cd ch19/01_main-chapter-code
@@ -837,10 +943,13 @@ uv run jupyter nbconvert --to notebook --execute --inplace ch19.ipynb
 uv run pytest ch19
 ```
 
-The chapter spent $0.01568 on OpenRouter (the one 210-ticket eval). Every other number comes
+The chapter spent $0.01568 on OpenRouter, for the one 210-ticket eval. Every other number comes
 from local computation and published price lists.
 
 ## Exercises
+
+The exercises extend the converter, the dedupe and the pricing model. One of them runs a real
+tuning job, if you have an AWS account.
 
 1. Together and Fireworks both take OpenAI chat JSONL. Add a `"together"` entry to `LIMITS`
    (minimum 1 example per its SDK) and run `validate_file("together", ...)` on
@@ -878,6 +987,12 @@ from local computation and published price lists.
   pins, OpenAI's safety screening, SDKs that drop classes between major versions. Encode each
   one as a validator rule or a static check, so you find it before a job does.
 - Plan for queues of hours to days. Training is a background job with alerts.
+
+This chapter closes Part V. We can now run, speed up and tune models, on our own GPU or on a
+provider's. Chapter 20 opens Part VI on scale and turns to shipping: it deploys Chapter 1's
+support bot and Chapter 6's data bot with containers, Kubernetes, an eval gate in CI and a
+canary for new prompts. A prompt or model change can alter behaviour without any code diff,
+and Chapter 20 shows how to catch that before every customer sees it.
 
 ## References
 

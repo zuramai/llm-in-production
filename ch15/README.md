@@ -16,20 +16,27 @@ because the image pins its dependencies
 chapter that recommends LiteLLM, and it's deliberate: an LLM gateway holds every provider key you
 own and sees every prompt. It's the most valuable box in the stack, so we run it like one.
 
-Why have one at all? Because by the time a company has three LLM features, it has three copies of
-the provider key, no idea which feature spends what, no limit on what a buggy loop can spend
-overnight, and an outage plan that reads "wait for OpenAI". This chapter puts ShopFlow's LLM
-traffic behind a gateway, then attacks the bill four ways: exact caching, semantic caching,
-provider prompt caching and a cheap→strong cascade. We measure what each one saves and what
-each one costs in quality.
+In Chapter 14 we traced every model call and saw what each one cost, down to the cached tokens.
+Seeing the bill is the first step. Controlling it is the next, and that is the job of this
+chapter, the last one in Part IV on hardening.
+
+Why have a gateway at all? By the time a company has three LLM features, it usually has three
+copies of the provider key. Nobody knows which feature spends what. Nothing limits what a buggy
+loop can spend overnight. And the outage plan reads "wait for OpenAI". This chapter puts
+ShopFlow's LLM traffic behind a gateway. Then it attacks the bill in four ways: exact caching,
+semantic caching, provider prompt caching and a cheap→strong cascade. For each one we measure
+what it saves and what it costs in quality.
+
+The diagram shows where each of these savings happens on the way from app to model.
 
 ![Where each saving happens](images/15-gateway-architecture.svg)
 
 ## The problem
 
-ShopFlow now runs three LLM features: the support bot from Chapter 1, the data bot from
-Chapter 6 and a nightly batch job that tags support tickets. Each one reads `LLM_API_KEY` from
-its own `.env` and calls OpenRouter directly. Finance asks three questions nobody can answer:
+Here is where ShopFlow stands today. It runs three LLM features: the support bot from Chapter 1,
+the data bot from Chapter 6 and a nightly batch job that tags support tickets. Each one reads
+`LLM_API_KEY` from its own `.env` and calls OpenRouter directly. Finance asks three questions
+nobody can answer:
 
 > *Which feature spent last month's bill?*
 > *What stops a bug from spending a month's budget overnight?*
@@ -40,21 +47,38 @@ times a day, and pays full price every time. Can we stop that without serving wr
 
 ## Requirements
 
-| Type | Requirement | Target |
-|---|---|---|
-| Functional | Apps call stable aliases (`fast`, `smart`, `local`), never a provider directly | 100% of traffic |
-| Functional | One key per app, with its own budget, rate limit and model allow-list | over budget or over limit → refused |
-| Functional | If the hosted `fast` model fails, answer from our own GPU | no error reaches the app |
-| Functional | Identical requests are served from a cache | 0 tokens billed on a hit |
-| Functional | Paraphrased questions served from a semantic cache | false hits **0** on our probe set |
-| Non-functional | Quality of a cost-saving strategy vs always using `smart` | ≤ 5 points lower pass rate |
-| Non-functional | Cost per 1,000 support questions | ≥ 50% below always-`smart` |
-| Non-functional | Gateway overhead and cache latency | cache hit < 50 ms; lookup < 100 ms |
-| Non-functional | Supply chain | gateway image pinned to a release tag, secrets only from env |
+Finance's three questions and engineering's fourth turn into a list of things the gateway setup
+must do:
+
+- **One door for all traffic.** Apps call stable aliases (`fast`, `smart`, `local`) and never a
+  provider directly. This holds for 100% of traffic.
+- **A key per app.** Each app gets its own key, with its own budget, rate limit and list of
+  allowed models. A request over budget or over the limit is refused.
+- **Keep answering in an outage.** If the hosted `fast` model fails, we answer from our own GPU.
+  No error reaches the app.
+- **Don't pay twice for the same request.** Identical requests come from a cache, with 0 tokens
+  billed on a hit.
+- **Reuse answers for reworded questions, safely.** A *semantic cache* (one that matches by
+  meaning, explained below) serves paraphrased questions. It must give **0** wrong answers
+  (*false hits*) on our probe set.
+
+It also has to save real money without hurting the product:
+
+- **Keep quality close to `smart`.** Any cost-saving strategy may score at most 5 points
+  lower pass rate than always using `smart`.
+- **Cut the bill in half.** Cost per 1,000 support questions must be at least 50% below
+  always-`smart`.
+- **Stay fast.** A cache hit returns in under 50 ms, and a cache lookup takes under 100 ms. The
+  gateway itself should add little overhead.
+- **Be safe to run.** The gateway image is pinned to a release tag (the supply-chain lesson from
+  the opening), and secrets come only from environment variables.
+
+The Results section checks each item against measured numbers.
 
 ## The data
 
-No new business data. The support bot answers from the ShopFlow FAQ
+To check those targets we need test questions with known answers. There is no new business data.
+The support bot answers from the ShopFlow FAQ
 ([`datasets/shopflow/docs/faq.md`](../datasets/shopflow/docs/faq.md)), and we add two test sets.
 Their labels (which probe each cached answer is right for, and the reference answers) were written
 against the FAQ by the AI tooling used to write this chapter, not by a human reviewer; read them
@@ -70,8 +94,10 @@ before you trust the false-hit rates built on them:
   need a small inference ("My cart is $70 and I have a $10 coupon. Is shipping free?"), 8 the FAQ
   doesn't cover, 4 off-topic or manipulative.
 
-Two new stores: the gateway's own Postgres (keys, budgets, spend logs; port 5435) and Redis (exact
-cache; port 6385). The semantic cache is one table in the ShopFlow database:
+Besides the test sets, the setup adds two new stores: the gateway's own Postgres (keys, budgets,
+spend logs; port 5435) and Redis (exact cache; port 6385). The semantic cache is one table in the
+ShopFlow database. The diagram lists its columns; note the `namespace`, which we come back to in
+iteration 5:
 
 ```mermaid
 erDiagram
@@ -85,6 +111,8 @@ erDiagram
     }
 ```
 
+These commands start the gateway stack and run the notebook, which also creates the cache table:
+
 ```bash
 docker compose -f ch15/01_main-chapter-code/docker-compose.yml up -d     # LiteLLM + Postgres + Redis
 cd ch15/01_main-chapter-code
@@ -92,6 +120,10 @@ uv run jupyter nbconvert --to notebook --execute --inplace ch15.ipynb    # creat
 ```
 
 ## Concepts
+
+Before we build anything, four ideas carry the whole chapter: the gateway itself, the kinds of
+cache, prompt caching and the cascade. We start with the gateway, because everything else plugs
+into it.
 
 ### A gateway is a reverse proxy that speaks the OpenAI API
 
@@ -108,8 +140,11 @@ Redis for a shared cache (with more than one instance, also for shared rate-limi
 
 ### Four caches, four different things
 
-"Caching" means four different mechanisms here. They differ in what counts as "the same request",
-and that decides how wrong each one can be:
+A gateway gives us one place to put a cache. But "cache" can mean very different things, and
+some of them can serve wrong answers.
+
+"Caching" covers four different mechanisms here. They differ in what counts as "the same
+request", and that decides how wrong each one can be. Look at the last column:
 
 | Cache | Where | Same request means | Saves | Can be wrong? |
 |---|---|---|---|---|
@@ -118,6 +153,9 @@ and that decides how wrong each one can be:
 | Provider prompt cache | provider | the same token *prefix* as a recent request | ~90% of the prefix's input price | no: the model still runs on the full prompt |
 | Cascade | app | — (not a cache; a routing decision) | the expensive model on easy questions | yes, if the verifier passes a bad draft |
 
+Only the exact cache and the provider cache are safe by design. The other two trade some risk
+for savings, and the chapter measures how much.
+
 An *embedding* is a list of numbers (here 768) that places a text in space so that texts with
 similar meaning land close together. *Cosine similarity* measures how close: 1.0 is the same
 direction, 0 is unrelated. "Close in meaning" isn't "same answer", and that gap is what the
@@ -125,10 +163,13 @@ semantic-cache section measures.
 
 ### Prompt caching is about prefixes
 
-A model processes the prompt left to right. If a provider has just processed the same first
-11,000 tokens for someone, it can keep that work and bill it at a fraction of the price. So the
+The table says the provider prompt cache is never wrong. That is because it only reuses work on
+the prompt, not the answer.
+
+A model processes the prompt left to right. Say a provider has just processed the same first
+11,000 tokens for someone. It can keep that work and bill it at a fraction of the price. So the
 rule is: **static content first** (instructions, documents, tools), **variable content last**
-(the user's question). One timestamp at the top of the system prompt makes every request a
+(the user's question). A single timestamp at the top of the system prompt makes every request a
 different prefix and turns the discount off.
 
 > [!NOTE]
@@ -141,8 +182,11 @@ different prefix and turns the discount off.
 
 ### A cascade spends the strong model only where it matters
 
-A *cascade* asks the cheap model first and escalates to the expensive one only when needed. The
-whole difficulty is deciding "when needed" without paying the expensive model to decide. We use a
+Caches save money on repeated work. A cascade saves money on new questions, by not sending the
+easy ones to the expensive model.
+
+A *cascade* asks the cheap model first and moves to the expensive one only when needed. The hard
+part is deciding "when needed" without paying the expensive model to decide. We use a
 *verifier*: a second cheap call that checks the draft against the same FAQ.
 
 > [!NOTE]
@@ -155,8 +199,9 @@ whole difficulty is deciding "when needed" without paying the expensive model to
 
 ## v0: the naive solution
 
-Every app does what the Chapter 1 bot does: read the OpenRouter key from its own `.env`, put a
-model name in code, call the provider.
+With the ideas in place, let's look at where ShopFlow starts. Every app does what the Chapter 1
+bot does: read the OpenRouter key from its own `.env`, put a model name in code and call the
+provider.
 
 ```python
 # ch15/01_main-chapter-code/ch15.ipynb, "v0"
@@ -167,7 +212,8 @@ c = chat(direct, settings.llm_model, [{"role": "system", "content": SYSTEM_PROMP
 
 ## Measuring v0
 
-The same question, three times, from the notebook:
+v0 works, so the question is what it costs. We send the same question three times from the
+notebook and watch the tokens, price and time of each call:
 
 ```
 call 1: 1156 prompt tokens, 1153 cached, $0.000033, 1236 ms | 'Refunds are sent to your original payment method within 5–7 business d'
@@ -181,7 +227,7 @@ prompt, because OpenAI caches long prefixes automatically and this prompt had be
 before. v0 benefits from provider caching by accident. We'll make it deliberate in
 [iteration 6](#6-provider-prompt-caching).
 
-What v0 can't do at all is the more serious list:
+Cost and speed are only part of it. The more serious problems are the things v0 can't do at all:
 
 | Question | v0's answer |
 |---|---|
@@ -191,13 +237,22 @@ What v0 can't do at all is the more serious list:
 | Can we switch `gpt-6-luna` for something cheaper? | Edit and deploy every app. |
 | Revoke a leaked key? | Rotate the one key every app uses. |
 
+Each row of that table is one of Finance's questions without an answer. The iterations below
+close them one by one, then go after the bill.
+
 ## Iterating
+
+We build in seven steps. The first three answer Finance (who spends what, what stops a runaway,
+what happens in an outage). The last four go after the bill: exact
+caching, semantic caching, provider prompt caching and the cascade.
 
 ### 1. One gateway, three aliases
 
-We start LiteLLM, its Postgres and Redis with
+Everything else depends on having one place where traffic flows, so we start there. We start
+LiteLLM, its Postgres and Redis with
 [`docker-compose.yml`](01_main-chapter-code/docker-compose.yml). The model list lives in
-[`config.yaml`](01_main-chapter-code/config.yaml):
+[`config.yaml`](01_main-chapter-code/config.yaml). Each alias maps to one real model, with its
+price and limits:
 
 ```yaml
 # ch15/01_main-chapter-code/config.yaml (excerpt)
@@ -227,7 +282,8 @@ model_list:
 ```
 
 The app changes three strings: `base_url` becomes `http://127.0.0.1:4015/v1`, the key becomes a
-gateway key, the model becomes an alias. The notebook's first gateway calls:
+gateway key, and the model becomes an alias. Here are the notebook's first calls through the
+gateway; each alias reports which real model served it:
 
 ```
 aliases: ['fast', 'smart', 'fast-alt', 'local', 'local-strong', 'fast-outage-drill']
@@ -241,7 +297,8 @@ Every response now carries headers the app never had: `x-litellm-response-cost`,
 and `x-litellm-overhead-duration-ms`. We measured the gateway's own overhead at 32 ms on a normal
 call and 620 ms on the first call after a restart.
 
-Two provider quirks moved into the config, out of every app. Both cost us an hour while writing:
+Two provider quirks also moved into the config, out of every app. Each cost us an hour while
+writing:
 
 > [!WARNING]
 > `claude-sonnet-5.5` always reasons through OpenRouter: asking for `reasoning_effort: "none"`
@@ -251,6 +308,9 @@ Two provider quirks moved into the config, out of every app. Both cost us an hou
 > `low` it spent 0 reasoning tokens and $0.0018. `gpt-6-luna` reasons by default too: with
 > `max_tokens=30`, a one-field JSON answer came back **empty** (`finish_reason="length"`, 30 of 30
 > tokens spent on reasoning).
+
+Keeping these settings in one reviewed file is the point. That raises the question of why we
+chose this gateway at all.
 
 > [!IMPORTANT]
 > **Decision: the LiteLLM proxy over a client-side SDK or a hosted gateway.** A routing library
@@ -267,8 +327,10 @@ Two provider quirks moved into the config, out of every app. Both cost us an hou
 
 ### 2. A key per app, with a budget and a rate limit
 
-*Virtual keys* are gateway-issued keys that map to the real provider key, stored (hashed) in the
-gateway's Postgres, each with its own model allow-list, budget and limits:
+The gateway now sees all traffic, but every app still shares one key. That answers none of
+Finance's questions yet. *Virtual keys* fix that. They are keys issued by the gateway that map to
+the real provider key. They are stored (hashed) in the gateway's Postgres, and each one has its
+own model allow-list, budget and limits:
 
 ```python
 # ch15/01_main-chapter-code/ch15_gateway/gateway.py (excerpt)
@@ -278,8 +340,8 @@ def generate_key(alias, models, max_budget=None, rpm_limit=None, tpm_limit=None,
     return _admin("POST", "/key/generate", json={k: v for k, v in body.items() if v is not None})["key"]
 ```
 
-A key limited to 3 requests per minute, hit five times in a loop, then used for a model it isn't
-allowed:
+To test the limits, we take a key allowed 3 requests per minute and call it five times in a loop.
+Then we use it for a model it isn't allowed:
 
 ```
 rpm key, request 1: 200 OK
@@ -290,8 +352,11 @@ rpm key, request 5: 429 Error code: 429 - Rate limit exceeded for api_key: 140b4
 rpm key asking for smart: 403 Error code: 403 - The requested model 'smart' is not available for this API key, ...
 ```
 
-Budgets were less obvious. A key with `max_budget=0.0002`, hammered with the support prompt and
-`max_tokens=400`:
+Rate limits and the allow-list behave exactly as configured: requests 4 and 5 get a 429, and the
+wrong model gets a 403.
+
+Budgets were less obvious. Here is a key with `max_budget=0.0002`, called in a tight loop with
+the support prompt and `max_tokens=400`:
 
 ```
 request  1: 200 OK   | cost of successful calls so far $0.000164
@@ -299,15 +364,15 @@ request  2: 422 Error code: 422 - Budget has been exceeded! Key=ch15-support-bud
 key spend recorded by the gateway: $0.000000 (max_budget $0.0002)
 ```
 
-The key spent 82% of its budget and was cut off, and when we read its spend back a moment later
-the gateway still showed $0 (in the previous run: 15% spent, $0.000030 recorded). We read the
+The key spent 82% of its budget and was cut off. When we read its spend back a moment later, the
+gateway still showed $0 (in the previous run: 15% spent, $0.000030 recorded). We read the
 gateway's source to find out why
-(`litellm/proxy/spend_tracking/budget_reservation.py` in the image): at admission LiteLLM 1.108
-**reserves the worst-case cost** of the request (input estimate plus `max_tokens` × output price,
-here about $0.00032) and shrinks that reservation to whatever budget is left. It settles to the
-real cost when the response is logged, asynchronously. In a tight loop, request 2 arrives before
-request 1 has settled and sees the full reservation. In an earlier run with `max_budget=0.0005`,
-the gateway's log shows the opposite end: the 13th request was refused at
+(`litellm/proxy/spend_tracking/budget_reservation.py` in the image). At admission, LiteLLM 1.108
+**reserves the worst-case cost** of the request: the input estimate plus `max_tokens` × output
+price, here about $0.00032. It shrinks that reservation to whatever budget is left. Later, when
+the response is logged, it settles to the real cost, asynchronously. In a tight loop, request 2
+arrives before request 1 has settled, so it sees the full reservation. An earlier run with
+`max_budget=0.0005` shows the opposite end in the gateway's log: the 13th request was refused at
 `Current cost: 0.00050165, Max budget: 0.0005`, an overshoot of 0.3%.
 
 > [!NOTE]
@@ -326,6 +391,10 @@ the gateway's log shows the opposite end: the 13th request was refused at
 
 ### 3. Fallbacks, tested with a game day
 
+Keys and budgets protect us from our own bugs. The third question from Finance is about the
+provider's failures: what happens when OpenRouter is down? The gateway can route a failed
+request to another model:
+
 ```yaml
 # ch15/01_main-chapter-code/config.yaml (excerpt)
 router_settings:
@@ -336,9 +405,10 @@ router_settings:
 ```
 
 A fallback you've never seen fire is a hope, not a feature. LiteLLM used to accept a
-`mock_testing_fallbacks` flag; since 1.85 the proxy strips it from requests. So the config has a
-*game-day* alias: `fast-outage-drill` is `fast` pointed at `http://127.0.0.1:9`, where nothing
-listens, with the configured fallback to `local` (qwen3:8b on Ollama):
+`mock_testing_fallbacks` flag, but since 1.85 the proxy strips it from requests. So the config
+has a *game-day* alias, for practicing an outage on purpose. `fast-outage-drill` is `fast`
+pointed at `http://127.0.0.1:9`, where nothing listens, with the configured fallback to `local`
+(qwen3:8b on Ollama). Compare the two lines, especially the `attempted-fallbacks` header:
 
 ```
 fast                -> served by openrouter/openai/gpt-6-luna               2412 ms 'Paris' {'attempted-retries': '0', 'attempted-fallbacks': '0'}
@@ -350,12 +420,12 @@ The app got its answer from a model on our own GPU, about as fast as the healthy
 happened in a header. Without `RUN_LOCAL=1` the notebook overrides the fallback per request
 (`fallbacks: ["fast-alt"]`, claude-haiku-5.5); in the previous run that drill answered in 3.4 s.
 
-It wasn't always this easy. On an earlier day the GPU was held by another workload and Ollama ran
-qwen3:8b on CPU: a "Capital of France? One word." request through `local` took **493 s**, and the
+It wasn't always this easy. On an earlier day, another workload held the GPU and Ollama ran
+qwen3:8b on CPU. A "Capital of France? One word." request through `local` took **493 s**. The
 drill to `local` failed with `Fallback to local also failed: litellm.Timeout ... timeout
 value=60.0` (copied from the gateway log). That is the lesson of this section: **a fallback
-target is only as good as its spare capacity**. A local model that is busy, cold or CPU-bound
-turns a provider outage into a timeout; drill it on the day, not once.
+target is only as good as its spare capacity**. A local model that is busy, cold or stuck on CPU
+turns a provider outage into a timeout. Drill it on the day, not once.
 
 > [!WARNING]
 > A request-level `fallbacks` list overrides the configured one. Any caller with a key can do
@@ -363,6 +433,10 @@ turns a provider outage into a timeout; drill it on the day, not once.
 > `router_settings` alone: restrict which aliases each key may call (the 403 in iteration 2).
 
 ### 4. Exact cache in Redis
+
+Finance's three questions now have answers. Engineering's question is next: stop paying full
+price for the same refund question a few hundred times a day. The safest saving is an exact
+cache, so we turn it on in the gateway:
 
 ```yaml
 # ch15/01_main-chapter-code/config.yaml (excerpt)
@@ -373,7 +447,8 @@ litellm_settings:
     ttl: 3600                              # seconds; answers change when policies change
 ```
 
-Same request twice, then the same question with one extra space:
+To see what counts as "the same", we send the same request twice, then the same question with
+one extra space:
 
 ```
 first        cache hit: False cost header $0.000036  1171.1 ms
@@ -381,9 +456,10 @@ repeat       cache hit: True  cost header $0.000000    15.1 ms
 extra space  cache hit: False cost header $0.000036  1182.3 ms
 ```
 
-A hit takes 15 ms and costs nothing; one space makes it a miss. Exact caching is safe (it can
-only replay an answer to the identical request) and useless for paraphrases. It shines for
-retries, batch re-runs, evals and many users clicking the same suggested question.
+A hit takes 15 ms and costs nothing, but one space makes it a miss. Exact caching is safe,
+because it can only replay an answer to the identical request. It is also useless for
+paraphrases. It shines for retries, batch re-runs, evals and many users clicking the same
+suggested question.
 
 > [!WARNING]
 > Your cost benchmark measures your cache. Re-running an eval through a caching gateway "costs"
@@ -393,8 +469,9 @@ retries, batch re-runs, evals and many users clicking the same suggested questio
 
 ### 5. A semantic cache with pgvector
 
-A semantic cache embeds the question and serves the nearest stored answer if it's similar
-enough. Ours is ~100 lines in
+Real customers rarely type the same question byte for byte, so the exact cache misses most of
+them. A semantic cache tries to catch the paraphrases. It embeds the question and serves the
+nearest stored answer if it's similar enough. Ours is ~100 lines in
 [`ch15_gateway/semcache.py`](01_main-chapter-code/ch15_gateway/semcache.py):
 
 ```python
@@ -420,7 +497,8 @@ def lookup(self, prompt: str) -> Hit | None:
 The `namespace` is the model plus the prompt version (`support-bot|fast|faq-v1`): when either
 changes, old answers must stop being served. We fill the cache with 20 FAQ questions answered by
 `fast`, then run the 52 probes. A median lookup (embedding plus HNSW query) takes 15 ms, with the
-embeddings served by a CPU-only Ollama instance on this run.
+embeddings served by a CPU-only Ollama instance on this run. The table sweeps the similarity
+threshold. Watch how the false hits and the hit rate fall together:
 
 ```
  threshold  served  correct  false hits  hit rate (of 32)  false-hit rate (of served)
@@ -436,8 +514,8 @@ embeddings served by a CPU-only Ollama instance on this run.
 ![Semantic cache threshold sweep](images/15-semcache-sweep.png)
 
 There is no good threshold. To get zero false hits we need 0.88, and then the cache answers 3 of
-32 paraphrases. At 0.85, a common default, it answers 9 and serves one wrong answer per ten. The
-near misses that score highest are exactly the dangerous ones:
+32 paraphrases. At 0.85, a common default, it answers 9 and serves one wrong answer in ten. The
+near misses that score highest are exactly the dangerous ones. Here are three:
 
 ```
 0.869  'How much does shipping to Canada cost?'
@@ -453,11 +531,11 @@ near misses that score highest are exactly the dangerous ones:
        would serve: 'Go to **Account → Orders → Return items**, choose the items and a reason, then print the prepaid label. ...'
 ```
 
-Meanwhile true paraphrases score as low as 0.616 ("Do you ship with UPS or FedEx?" vs "Which
-carriers do you use?"). Similarity measures *topic*; the cache needs *same answer*. A cost
+Meanwhile, true paraphrases score as low as 0.616 ("Do you ship with UPS or FedEx?" vs "Which
+carriers do you use?"). Similarity measures *topic*, but the cache needs *same answer*. A cost
 question and a time question about Canada share a topic.
 
-The threshold isn't even portable. nomic-embed-text expects task prefixes; adding `clustering: `
+The threshold isn't even portable. nomic-embed-text expects task prefixes. Adding `clustering: `
 to every text, with nothing else changed, moves the whole curve: at 0.88 it serves 16 correct
 and **6 false hits** instead of 3 and 0. Change the embedding model, its version or its prefix,
 and the threshold you tuned means something else.
@@ -471,7 +549,8 @@ and the threshold you tuned means something else.
 > `cache_params.max_messages` after its semantic cache replayed the turn-1 answer on every later
 > turn of an agent loop ([BerriAI/litellm#43878](https://github.com/BerriAI/litellm/pull/43878)).
 
-Two fixes that do work. First, decide what may be cached at all:
+So a plain threshold won't do. Two fixes do work. First, decide what may be cached at all. Here
+is the rule applied to four questions:
 
 ```
 True  | How long do refunds take?
@@ -481,8 +560,9 @@ False | And for VIPs?
 ```
 
 `is_cacheable` admits only single-turn questions with no email, order number or amount, so one
-customer can never receive another's answer. Second, a *second opinion*: retrieve at a loose
-0.75, then ask `fast` whether the cached question and the new one have the same answer:
+customer can never receive another's answer. Second, get a *second opinion*: retrieve at a loose
+0.75, then ask a model whether the cached question and the new one have the same answer. We try
+`fast` and `local` as the confirmer, and compare with simply answering fresh:
 
 ```
 retrieve at 0.75 + fast confirms: served 8, correct 8, false hits 0, hit rate 0.250; 20 confirmation calls, median 3059 ms, $0.000947 total
@@ -493,9 +573,9 @@ fresh answer from fast: median 1195 ms over 5 questions
 fresh answer from local: median 1413 ms over 5 questions
 ```
 
-With `fast` confirming: zero false hits and 8 of 32 paraphrases answered, 2.7× the safe
-threshold's 3. And it is **pointless here**: the confirmation (gpt-6-luna reasons first) takes a
-median 3.1 s and $0.000047, while a fresh answer takes 1.2 s and, with provider prompt caching,
+With `fast` confirming, we get zero false hits and 8 of 32 paraphrases answered, 2.7× the safe
+threshold's 3. And it is **pointless here**. The confirmation (gpt-6-luna reasons first) takes a
+median 3.1 s and $0.000047. A fresh answer takes 1.2 s and, with provider prompt caching, costs
 about $0.000035. The semantic cache's whole value is skipping an expensive generation. Our
 generation isn't expensive.
 
@@ -517,10 +597,13 @@ strict brings back the false hits the confirmation step was there to remove.
 
 ### 6. Provider prompt caching
 
-The cheapest cache is the one the provider runs. We send a long system prompt (FAQ plus all 13
-policies, ~11k tokens for OpenAI's tokenizer and ~17k for Anthropic's) with five different short
-questions, straight to OpenRouter, in five variants. A tag unique to the notebook run sits at the
-top of the prompt so that every run starts cold.
+The semantic cache failed because our answers are already cheap. Part of the reason they are
+cheap is a cache we haven't looked at yet: the one the provider runs.
+
+To measure it, we send a long system prompt (FAQ plus all 13 policies, ~11k tokens for OpenAI's
+tokenizer and ~17k for Anthropic's) with five different short questions, straight to OpenRouter,
+in five variants. A tag unique to the notebook run sits at the top of the prompt, so that every
+run starts cold. The key column is "warm saving", the price drop on calls 2–5:
 
 ```
                                    prompt tokens  1st call $  calls 2-5 avg $  warm cached share  1st call s  calls 2-5 avg s  warm saving
@@ -532,6 +615,8 @@ claude-sonnet-5.5 + cache_control        16967.0    0.043170         0.002300   
 ```
 
 ![Provider prompt caching](images/15-prompt-caching.png)
+
+Reading the table row by row:
 
 - **OpenAI caches by itself**: calls 2–5 cost 91% less. The first call paid a cache *write*
   (11,137 tokens, 1.25× the input price on gpt-6-luna).
@@ -556,8 +641,8 @@ claude-sonnet-5.5 + cache_control        16967.0    0.043170         0.002300   
 > the verifier and the judge prompts were reordered to put the FAQ first and the question last for
 > the same reason.
 
-LiteLLM computes its own cost header from `config.yaml` prices, and logged this at startup for
-every custom-priced model:
+One trap remains on the gateway side. LiteLLM computes its own cost header from the prices in
+`config.yaml`, and logged this at startup for every custom-priced model:
 
 ```
 register_model: model=openrouter/openai/gpt-6-luna has custom pricing but not in built-in cost map ...;
@@ -569,6 +654,10 @@ Cached tokens would have been booked at $0, so budgets and spend logs would unde
 
 ### 7. A cheap → strong cascade with a verifier
 
+Caching makes repeated prompts cheap. The answer itself still comes from whichever model we pick,
+and `smart` costs far more than `fast`. The cascade sends most questions to `fast` and only the
+doubtful ones to `smart`. The diagram shows the flow, with the escalation rates we measured:
+
 ```mermaid
 flowchart LR
     Q[customer question] --> D["fast drafts an answer<br/>(gpt-6-luna)"]
@@ -577,6 +666,9 @@ flowchart LR
     V -- "no (2%)" --> S["smart answers<br/>(claude-sonnet-5.5)"]
     S --> A
 ```
+
+The code is a short loop over the tiers. Each tier drafts an answer, and the verifier decides
+whether to stop or move up:
 
 ```python
 # ch15/01_main-chapter-code/ch15_gateway/cascade.py (excerpt)
@@ -592,19 +684,24 @@ for i, model in enumerate(tiers):
 ```
 
 The verifier returns `{"supported": bool, "answers": bool, "reason": str}` under a strict JSON
-schema, and `parse_verdict` fails closed: a string `"true"`, a missing key or an HTML error page
-all mean "escalate" (unit-tested). [`eval/run_cascade.py`](01_main-chapter-code/eval/run_cascade.py)
+schema. `parse_verdict` fails closed: a string `"true"`, a missing key or an HTML error page all
+mean "escalate" (unit-tested). [`eval/run_cascade.py`](01_main-chapter-code/eval/run_cascade.py)
 runs four hosted strategies on the 40 questions (six with `--local`, which adds `local only` and
-`local → smart (local verifies)`), and `smart` grades each answer against the reference and the FAQ.
+`local → smart (local verifies)`). `smart` then grades each answer against the reference and the
+FAQ.
 
-Our first grading run was wrong, and it's worth showing why. The judge saw only the short
-reference, so it failed any answer that added a true detail the reference didn't mention: the
-support email, the 30-day window. Sonnet "scored" 37.5% in that first run (its outputs were
-overwritten when we re-ran; the failure reasons above are quoted from it). We gave the judge the
-FAQ as its source of truth (as a cached prefix: 88% of `smart`'s prompt tokens in the eval were
-cache reads) and the rubric "key facts of the reference; everything else supported by the FAQ".
-Re-grading three of the cases that had failed, the two with true extra details passed and the
-invented-price answer still failed.
+Before trusting any scores, we had to fix the grader. Our first grading run was wrong, and it's
+worth showing why. The judge saw only the short reference, so it failed any answer that added a
+true detail the reference didn't mention, such as the support email or the 30-day window. Sonnet
+"scored" 37.5% in that first run (its outputs were overwritten when we re-ran; the failure
+reasons above are quoted from it). We gave the judge the FAQ as its source of truth, as a cached
+prefix: 88% of `smart`'s prompt tokens in the eval were cache reads. We also gave it the rubric
+"key facts of the reference; everything else supported by the FAQ". We then re-graded three of
+the cases that had failed. The two with true extra details passed, and the invented-price answer
+still failed.
+
+With a fair judge, here are the six strategies. Compare pass rate with cost per 1,000 questions
+and p95 latency (the time 95% of answers stay under):
 
 ```
                                  pass rate direct combine not covered off topic escalated $ / 1k questions p50 s p95 s saving vs smart
@@ -617,7 +714,8 @@ local → smart (local verifies)       57.5%  13/15    5/13         1/8       4/
 ```
 
 Local latencies (`local only`, `local → smart`) were measured with the GPU shared with other
-workloads using ~15 GB during this run; read them as an upper bound, not a comparison with hosted.
+workloads using ~15 GB during this run. Read them as an upper bound, not as a comparison with
+hosted models. Here is what the table tells us:
 
 - **`fast` checking itself is worse than no check.** It escalated 12% of questions, cost 7× more
   than `fast` alone, and caught none of `fast`'s three failures (c05, n03, n07). On n03 ("How
@@ -660,6 +758,9 @@ workloads using ~15 GB during this run; read them as an upper bound, not a compa
 
 ## Production hardening
 
+The iterations proved each layer works on a test bench. Running them for real traffic adds a few
+rules, most of them learned the hard way above:
+
 - **Pin and verify the gateway.** Pin a release tag (`v1.108.2-lts`, which is also on Docker Hub
   as `litellm/litellm` with the same index digest `sha256:d8b4ac35…`; we pulled from there when the
   ghcr.io blob CDN served this host at ~50 KB/s). Never `:latest`, never an unpinned `pip install
@@ -681,12 +782,14 @@ workloads using ~15 GB during this run; read them as an upper bound, not a compa
 
 ## Serving it
 
+With those rules in place, here is how to run the stack and point an app at it.
+
 ```bash
 docker compose -f ch15/01_main-chapter-code/docker-compose.yml up -d
 curl -s localhost:4015/health/liveliness                  # "I'm alive!"
 ```
 
-Any OpenAI client works against it; this is the whole app-side change:
+Any OpenAI client works against it. This is the whole app-side change:
 
 ```python
 # ch15/01_main-chapter-code/ch15_gateway/gateway.py (excerpt)
@@ -694,6 +797,9 @@ def client(api_key: str = MASTER_KEY, timeout: float = 120, max_retries: int = 0
     return openai.OpenAI(base_url=f"{GATEWAY_URL}/v1", api_key=api_key,
                          timeout=timeout, max_retries=max_retries)
 ```
+
+The sequence diagram puts the pieces together. Follow one request from the support bot through
+limits, cache, provider and fallback:
 
 ```mermaid
 sequenceDiagram
@@ -729,6 +835,8 @@ sequenceDiagram
     end
 ```
 
+Note that only a cache miss reaches OpenRouter, and only a provider failure reaches Ollama.
+
 The host runs the gateway with `network_mode: host` because Ollama listens on `127.0.0.1` only.
 On Docker Desktop, drop host networking, publish `4015:4015` and point `local` at
 `http://host.docker.internal:11434/v1` (comment in `docker-compose.yml`).
@@ -747,7 +855,8 @@ Stop the stack when you're done: `docker compose -f ch15/01_main-chapter-code/do
 
 ## Results
 
-What each layer bought on the ShopFlow support workload, all from the notebook's saved outputs
+Now we can add up what each layer bought on the ShopFlow support workload. All numbers come from
+the notebook's saved outputs
 (2026-11-09, `RUN_LOCAL=1`). Prices as of 2026-11 on OpenRouter: gpt-6-luna and claude-haiku-5.5
 $0.10 / $0.50, claude-sonnet-5.5 $2 / $10 per 1M input/output tokens; `local` is qwen3:8b on
 Ollama 0.40.15, and its latencies were measured with the GPU shared with other workloads using
@@ -765,12 +874,13 @@ Ollama 0.40.15, and its latencies were measured with the GPU shared with other w
 | Cascade, cross-family verifier | 92.5% pass at $0.18 / 1k vs Sonnet's 97.5% at $1.34 / 1k (−86%) | p95 2.1 s → 6.6 s; matched Sonnet on 2026-11-08, not on 2026-11-09 |
 | Local model (qwen3:8b) | $0 per call; `local only` 55% pass, `local → smart` 57.5% | invents policy; as verifier accepted 16 of 17 failed drafts |
 
-Measured against our requirements: the gateway, keys, limits, both fallbacks (hosted and local)
-and exact cache meet them. The semantic cache meets "0 false hits" only at a threshold where it
-barely hits, so we don't deploy it for this bot. The cascade meets the cost bar (−86%) and, only
-just, the quality bar (≤ 5 points below `smart`): 0 points below in the 2026-11-08 run, exactly 5
-points (2 questions) below in this one. qwen3:8b met the fallback requirement (no error reached
-the app) but, at 55%, is no substitute for the hosted models on this bot's quality bar.
+Measured against our requirements, the gateway, keys, limits, both fallbacks (hosted and local)
+and the exact cache meet them. The semantic cache meets "0 false hits" only at a threshold where
+it barely hits, so we don't deploy it for this bot. The cascade meets the cost bar (−86%). It
+meets the quality bar (≤ 5 points below `smart`) only just: 0 points below in the 2026-11-08 run,
+exactly 5 points (2 questions) below in this one. qwen3:8b met the fallback requirement (no
+error reached the app). But at 55%, it is no substitute for the hosted models on this bot's
+quality bar.
 
 The notebook's own hosted calls cost $0.0751 and the cascade eval $0.2564 (OpenRouter
 `usage.cost` and the gateway's cost header).
@@ -780,6 +890,8 @@ Run history: written and measured on 2026-11-08 (hosted only); re-run on 2026-11
 replaced every notebook output and the cascade results quoted above.
 
 ## Exercises
+
+The exercises push on the weak spots we found: budget sizing, near misses and the verifier.
 
 1. Add `budget_duration: "1d"` and `tpm_limit` to the support key. Write a test that hammers the
    key with `max_tokens=4000` and one with `max_tokens=100`. How many requests get through
@@ -815,6 +927,11 @@ replaced every notebook output and the cascade results quoted above.
   drafts. A verifier has to be competent, not just different.
 - Judges need the source of truth. Grading against a short reference alone made Sonnet look
   37.5% correct; grading against the FAQ, 97.5%.
+
+Our gateway now has a local model behind it, and this chapter showed how much depends on that one
+card: a 60 s timeout on a day the GPU was busy, a 2.6 s answer on a day it was free. Chapter 16
+opens Part V on models and compute and takes self-hosting seriously. It puts one model on one GPU
+behind four serving engines and measures how many users each can actually serve.
 
 ## References
 

@@ -19,11 +19,18 @@ doesn't invent refund policies, doesn't stall for eight seconds, and survives it
 limit is the actual job. That is this chapter.
 
 We build ShopFlow's customer-support chatbot. We start from a single API call and finish with a
-streaming web app with memory, cost estimates and failure handling, and we measure every step.
+streaming web app with memory, cost estimates and failure handling. We measure every step.
+
+This is the first chapter of Part I, Foundations. The later chapters build on what we do here:
+calling a model, reading what it costs, and keeping it standing when the network misbehaves. So
+we begin with the simplest useful system we can think of and make it production-ready one
+measured step at a time.
 
 ![The chat UI we build in this chapter, answering three real questions](images/01-chat-ui.png)
 
 ## The problem
+
+First, who wants this bot, and what questions must it answer?
 
 ShopFlow's support team answers the same questions all day: *how long do I have to return
 this? who pays for return shipping? why was my card charged when the payment failed?* The
@@ -36,23 +43,38 @@ polite when people try to break it (they will, see below).
 
 ## Requirements
 
-| Type | Requirement | Target |
-|---|---|---|
-| Functional | Answer questions covered by the FAQ, in the customer's language | 4/4 in-scope test questions correct |
-| Functional | Decline out-of-scope requests and say what it *can* help with | 1/1 |
-| Functional | Ignore prompt-injection attempts; never promise refunds or discounts | 1/1 |
-| Functional | Remember the conversation within a session | follow-up questions work |
-| Non-functional | Time to first token (TTFT) | p95 < 2 s |
-| Non-functional | Cost | < $1 per 1,000 answers |
-| Non-functional | Resilience | timeouts, retries, and a fallback model |
+Next, let's agree on what "done" means. The support lead's wish turns into four things the bot
+must do:
+
+- **Answer from the FAQ, and only the FAQ.** Questions the FAQ covers get a correct answer in the
+  customer's own language. We test this with four in-scope questions and expect all four
+  right (4/4).
+- **Say no politely.** When a request is outside the FAQ, the bot declines and says what it *can*
+  help with (one test, must pass: 1/1).
+- **Hold its ground.** It ignores attempts to override its instructions and never promises
+  refunds or discounts (one prompt-injection test, must pass: 1/1).
+- **Remember the conversation.** Follow-up questions within a session work.
+
+It also has to behave like a real product:
+
+- **Start answering fast.** The first token appears in under 2 s for 95% of questions (p95 < 2 s).
+  We call this *time to first token* (TTFT) and measure it below.
+- **Stay cheap.** Under $1 per 1,000 answers.
+- **Survive a bad day.** Timeouts, retries and a fallback model keep it answering when the
+  provider has problems.
+
+At the end of the chapter we check every item on this list against measured numbers.
 
 ## The data
 
-The only data is the FAQ. It covers orders, shipping (times, $5.99 standard, free over $75 or
-for VIPs), returns (30 days from delivery), refunds (to the original payment method in 5–7
-business days), payments and support hours. We inject the whole FAQ into the system prompt. At
-about 1,150 tokens (the measured size of the full system prompt) it's far smaller than any modern context window, so retrieval (Chapter 4)
-would be over-engineering at this size.
+With the targets set, let's look at what the bot will know. The only data is the FAQ. It covers
+orders, shipping (times, $5.99 standard, free over $75 or for VIPs), returns (30 days from
+delivery), refunds (to the original payment method in 5–7 business days), payments and support
+hours. We put the whole FAQ into the system prompt. The full system prompt measures about 1,150
+tokens. That is far smaller than any modern context window, so retrieval (Chapter 4) would be
+over-engineering at this size.
+
+You don't need the database for this chapter. Opening the notebook is enough:
 
 ```bash
 docker compose -f datasets/shopflow/docker-compose.yml up -d   # not needed for this chapter
@@ -61,13 +83,20 @@ uv run jupyter lab                                             # open ch01/01_ma
 
 ## Concepts
 
+The data is small, but the system around it has moving parts. Before we build anything, we need a
+few ideas about how a model API behaves, because they decide our cost, speed and memory design.
+
 ### An LLM API is a function from text to text, billed in tokens
 
-A chat model takes a list of **messages** and returns the next one. `system` messages set the
-rules, `user` messages are the customer, `assistant` messages are the model's earlier replies.
-Under the hood, all of that is flattened into one long sequence of **tokens**. A token is a
-chunk of text: a short word, part of a long word, a punctuation mark. The model predicts the
-next token, appends it, and repeats. It is autocomplete with a very large brain.
+Let's start with what actually happens when we call a model. A chat model takes a list of
+**messages** and returns the next one. `system` messages set the rules, `user` messages are the
+customer, and `assistant` messages are the model's earlier replies. Under the hood, all of that
+is flattened into one long sequence of **tokens**. A token is a chunk of text: a short word, part
+of a long word, or a punctuation mark. The model predicts the next token, appends it, and repeats.
+It is autocomplete with a very large brain.
+
+The diagram shows one chat turn in the system we build. Note that the whole history travels to
+the provider on every turn, and the answer comes back in small pieces:
 
 ```mermaid
 sequenceDiagram
@@ -87,7 +116,7 @@ sequenceDiagram
     A-->>B: SSE data: {"done": true, "usage": {...}}
 ```
 
-Three consequences shape everything else in this chapter:
+Three consequences of this design shape everything else in this chapter:
 
 1. **You pay per token, in both directions.** Input tokens (everything you send, *every turn*)
    and output tokens (everything generated) have separate prices. Output is usually 3–5× more
@@ -107,8 +136,10 @@ Three consequences shape everything else in this chapter:
 
 ### Tokens are not words, and not the same everywhere
 
-Every tokenizer splits text differently, and non-English text usually costs more tokens per
-character. From the notebook, with OpenAI's `o200k_base` and the older `cl100k_base` tokenizers:
+Since we pay per token, we need to know how many tokens our text really is. Every tokenizer splits
+text differently, and non-English text usually costs more tokens per character. Here are counts
+from the notebook, with OpenAI's `o200k_base` and the older `cl100k_base` tokenizers. Compare the
+character column with the token columns:
 
 | text | characters | `o200k_base` tokens | `cl100k_base` tokens |
 |---|---|---|---|
@@ -122,8 +153,8 @@ The Japanese sentence has less than half the characters of the English one but c
 tokens. Six emoji cost as much as a whole English sentence.
 
 Our own counts are only estimates. The provider's `usage` field is the number you are billed for.
-It includes the chat format's wrapper tokens and the provider's own tokenizer. Here is the same
-English sentence sent to three models:
+It includes the wrapper tokens of the chat format and uses the provider's own tokenizer. Here is
+the same English sentence sent to three models. Watch how far the billed counts drift from 12:
 
 ```
 tiktoken o200k_base counts 12 tokens for the bare text
@@ -133,25 +164,31 @@ anthropic/claude-haiku-5.5   usage.prompt_tokens = 28
 qwen/qwen3.8-flash           usage.prompt_tokens = 73
 ```
 
+Across these three models, the same text is billed as 18 to 73 tokens.
+
 > [!TIP]
 > Use a local tokenizer (`tiktoken`) for *budgeting*, such as trimming history, and the
 > provider's `usage` for *billing and monitoring*. Never mix them up in a dashboard.
 
 ### Context window, and why we set a smaller budget
 
-The **context window** is the model's working memory: the maximum number of tokens (prompt plus
-answer) one request can hold. Our hosted models have windows of 1,000,000 to 1,050,000 tokens (see
-the landscape table below). We still cap our conversations at 8,000 tokens, because every
-token in the window is paid for on every turn and makes the first token slower.
+Tokens also fill up a fixed amount of space. The **context window** is the model's working
+memory: the maximum number of tokens (prompt plus answer) one request can hold. Our hosted models
+have windows of 1,000,000 to 1,050,000 tokens (see the landscape table below). We still cap our
+conversations at 8,000 tokens. Every token in the window is paid for on every turn, and every
+token makes the first token slower.
+
+The figure shows the idea: the oldest turns fall out first, so the conversation fits the budget.
 
 ![Trimming a conversation into a token budget](images/01-token-budget.svg)
 
 ### Sampling and temperature
 
-The model doesn't output *a* token; it outputs a probability for every possible token, and a
+So far we've looked at what goes into the model. Now let's look at how it picks what comes out.
+The model doesn't output *a* token. It outputs a probability for every possible token, and a
 **sampler** picks one. **Temperature** controls how adventurous the pick is. At 0 it (almost)
-always takes the most likely token; at 1 it samples in proportion to the probabilities. We
-asked for a loyalty-program name, 5 times at each temperature:
+always takes the most likely token. At 1 it samples in proportion to the probabilities. We asked
+for a loyalty-program name 5 times at each temperature. Count the distinct names in each row:
 
 ```
 qwen3.8-flash via OpenRouter   T=0: 2 distinct -> ['Flow Rewards', 'FlowRewards', 'FlowRewards', 'FlowRewards', 'FlowRewards']
@@ -160,16 +197,18 @@ qwen3:8b via Ollama            T=0: 1 distinct -> ['LoyaltyFlow', 'LoyaltyFlow',
 qwen3:8b via Ollama            T=1: 4 distinct -> ['FlowPoints', 'LoyaltyFlow', 'LoyaltyFlow', 'LoyaltyLoop', 'PointsFlow']
 ```
 
-Two lessons. Temperature 0 makes outputs *more* repeatable, but providers don't guarantee
-identical outputs: look at the lone `'Flow Rewards'` with a space in the T=0 row. Batching and
-floating-point non-determinism on the GPU leak through (Chapter 22). And temperature is a dial
-for *tasks*: 0–0.3 for extraction, classification and support answers, higher for brainstorming.
+Two lessons. First, temperature 0 makes outputs *more* repeatable, but providers don't guarantee
+identical outputs. Look at the lone `'Flow Rewards'` with a space in the T=0 row. Batching and
+floating-point non-determinism on the GPU leak through (Chapter 22). Second, temperature is a
+dial for *tasks*. Use 0–0.3 for extraction, classification and support answers, and higher
+values for brainstorming.
 
 The local qwen3:8b on Ollama (`RUN_LOCAL=1`, `reasoning_effort="none"`) shows the dial most
-clearly: at T=0 it gave the same name five times out of five, at T=1 four distinct names in five
-runs. A single server running one request at a time has no batching to perturb the arithmetic,
-so greedy decoding came out fully repeatable here, which the hosted route didn't. Five runs on
-one prompt is an illustration, not a determinism guarantee.
+clearly. At T=0 it gave the same name five times out of five. At T=1 it gave four distinct names
+in five runs. A single server running one request at a time has no batching to disturb the
+arithmetic. So greedy decoding (always taking the top token) came out fully repeatable here,
+which the hosted route didn't. Five runs on one prompt is an illustration, not a determinism
+guarantee.
 
 > [!WARNING]
 > **Reasoning models may not accept `temperature` at all.** OpenAI's API rejects it for
@@ -201,10 +240,12 @@ one prompt is an illustration, not a determinism guarantee.
 
 ### Latency: TTFT and the rest
 
-Two numbers matter for a chat UI. **Time to first token (TTFT)** is how long the user stares at
+Tokens, windows and sampling decide cost and quality. Users, though, mostly notice speed. Two
+numbers matter for a chat UI. **Time to first token (TTFT)** is how long the user stares at
 nothing. **Total latency** is when the answer is complete. In between, the model emits tokens at
 some rate (time per output token, TPOT). We measured the support question ("How long do I have
-to return an item?", with the full FAQ prompt) 5 times per configuration after one warm-up call:
+to return an item?", with the full FAQ prompt) 5 times per configuration after one warm-up call.
+p50 is the median run and p95 is the slow end:
 
 | configuration | TTFT p50 | TTFT p95 | total p50 | total p95 |
 |---|---|---|---|---|
@@ -236,7 +277,8 @@ Four things stand out:
 
 ### Cost napkin math
 
-`estimate_cost` is four lines and goes into every chapter:
+Speed is one half of the product requirements. Cost is the other, and it's easy to estimate
+before we ship. `estimate_cost` is four lines and goes into every chapter:
 
 ```python
 # ch01/01_main-chapter-code/ch01.ipynb
@@ -245,8 +287,8 @@ def estimate_cost(prompt_tokens: int, completion_tokens: int,
     return (prompt_tokens * usd_per_m_in + completion_tokens * usd_per_m_out) / 1_000_000
 ```
 
-For 10,000 customers × 5 chats a month × (1,200 input + 300 output tokens per chat), with prices
-as of 2026-11:
+Here is what the formula gives for 10,000 customers × 5 chats a month × (1,200 input + 300
+output tokens per chat), with prices as of 2026-11:
 
 | model | $ / month |
 |---|---|
@@ -255,14 +297,14 @@ as of 2026-11:
 | anthropic/claude-sonnet-5.5 | 270.00 |
 | qwen/qwen3.8-flash | 16.05 |
 
-Our real support answers averaged 1,166 input and 53 output tokens, because the FAQ rides
-along with every request. That works out to about **$0.143 per 1,000 answers** on
-`openai/gpt-6-luna`, comfortably under the $1 target.
+The table uses guessed token counts. Our real support answers averaged 1,166 input and 53 output
+tokens, because the FAQ rides along with every request. That works out to about **$0.143 per
+1,000 answers** on `openai/gpt-6-luna`, comfortably under the $1 target.
 
 ### The model landscape (as of 2026-11-09)
 
-OpenRouter's public catalog listed 461 models on the day we ran the notebook. The four we
-use in Part I:
+Prices differ a lot between models, so let's put them side by side. OpenRouter's public catalog
+listed 461 models on the day we ran the notebook. These are the four we use in Part I:
 
 | model | context window | $ in / 1M | $ out / 1M | accepts `temperature` |
 |---|---|---|---|---|
@@ -284,7 +326,8 @@ the context window is no longer the constraint. Cost and latency per turn are.
 
 ## v0: the naive solution
 
-The first call is three lines:
+We now know how the API behaves, what it costs and how fast it is. Time to build. The first call
+is three lines:
 
 ```python
 # ch01/01_main-chapter-code/ch01.ipynb
@@ -297,6 +340,8 @@ response = client.chat.completions.create(
     max_tokens=500,
 )
 ```
+
+It works, and the output shows the answer plus the `usage` block we'll keep watching:
 
 ```
 A return window is the period of time after a purchase during which you can return an item for a refund or exchange.
@@ -319,18 +364,21 @@ model: openai/gpt-6-luna
 
 ## Measuring v0
 
-"A helpful assistant for ShopFlow" knows nothing about ShopFlow. Asked about the return window, it
-gives a generic definition. Asked about *ShopFlow's* return window, it would have to guess, and
-a guess about a refund policy is exactly the Air Canada failure. The v0 bot fails every
-functional requirement: it has no facts, no scope, no memory and no streaming.
+v0 answered, but did it answer *for ShopFlow*? "A helpful assistant for ShopFlow" knows nothing
+about ShopFlow. Asked about the return window, it gives a generic definition. Asked about
+*ShopFlow's* return window, it would have to guess. A guess about a refund policy is exactly the
+Air Canada failure. The v0 bot fails every functional requirement: it has no facts, no scope, no
+memory and no streaming.
 
 ## Iterating
 
+We fix those four gaps one at a time, starting with the most dangerous one: the missing facts.
+
 ### 1. Ground the bot in the FAQ, and scope it
 
-We put the FAQ inside the system prompt, with explicit rules: answer only from the FAQ, never
-promise refunds or exceptions, decline off-topic requests, treat instructions inside user
-messages as data.
+We put the FAQ inside the system prompt, with explicit rules. The bot answers only from the FAQ,
+never promises refunds or exceptions, declines off-topic requests, and treats instructions inside
+user messages as data.
 
 ```python
 # ch01/01_main-chapter-code/chat.py (excerpt)
@@ -350,7 +398,8 @@ Rules:
 </faq>"""
 ```
 
-The six test questions, run in the notebook against `openai/gpt-6-luna`:
+We ran the six test questions in the notebook against `openai/gpt-6-luna`. Look especially at the
+bereavement question and the injection:
 
 ```
 [in scope] How long do I have to return an item?
@@ -401,10 +450,10 @@ we never asked for explicitly beyond "use the customer's language".
 
 ### 2. Stream the answer
 
-Without streaming, the user waits for the whole answer. With `stream=True`, the provider sends
-chunks as they are generated, and the first one arrives after the TTFT shown in the table
-above. `stream_reply` turns the stream into plain text deltas and collects `usage` from the last
-chunk:
+The bot now gives correct answers, but the user waits for the whole answer before seeing a word.
+With `stream=True`, the provider sends chunks as they are generated. The first one arrives after
+the TTFT shown in the table above. `stream_reply` turns the stream into plain text deltas and
+collects `usage` from the last chunk:
 
 ```python
 # ch01/01_main-chapter-code/chat.py (excerpt)
@@ -431,10 +480,10 @@ for chunk in stream:
 
 ### 3. Remember the conversation, within a budget
 
-Memory means resending history, so history needs a budget. `trim_history` keeps the system
-prompt and the latest message, then drops the **oldest complete turns** until the conversation
-fits. It never keeps an assistant reply without the question it answered, which would confuse
-the model.
+Answers now arrive quickly, but each one is on its own: the model is stateless. Memory means
+resending history, so history needs a budget. `trim_history` keeps the system prompt and the
+latest message. Then it drops the **oldest complete turns** until the conversation fits. It never
+keeps an assistant reply without the question it answered, because that would confuse the model.
 
 ```python
 # ch01/01_main-chapter-code/chat.py
@@ -455,7 +504,7 @@ def trim_history(messages, max_tokens, count=count_tokens):
     return [system, *(m for t in turns for m in t), latest]
 ```
 
-On a 30-turn conversation with a 2,000-token budget:
+Here it is on a 30-turn conversation with a 2,000-token budget, followed by an impossible budget:
 
 ```
 before: 62 messages, 4453 tokens
@@ -478,17 +527,19 @@ budget raises.
 
 ### 4. Survive the network: timeouts, retries, fallbacks
 
-LLM APIs fail in boring ways: rate limits (429), overloaded providers (5xx), slow responses.
-The OpenAI SDK already retries 429s and 5xx with exponential backoff (`max_retries=2` by
-default) and honors `retry-after`. We proved it against a fake server that fails twice:
+The bot is now correct, fast and has memory, as long as the provider behaves. It won't always.
+LLM APIs fail in boring ways: rate limits (429), overloaded providers (5xx) and slow responses.
+The OpenAI SDK already retries 429s and 5xx with exponential backoff (`max_retries=2` by default)
+and honors `retry-after`. We proved it against a fake server that fails twice:
 
 ```
 3 HTTP calls, waits between them: ['1.00s', '1.00s'] -> OK
 max_retries=0: RateLimitError after 1 call -> Error code: 429 - Rate limit exceeded
 ```
 
-The default timeout, though, is **10 minutes**, far too long for a chat UI. `chat_client()`
-sets 60 seconds, and the fallback below uses 10. A 1-second budget on a long answer:
+Retries are handled for us. The default timeout, though, is **10 minutes**, far too long for a
+chat UI. `chat_client()` sets 60 seconds, and the fallback below uses 10. Here is a 1-second
+budget on a long answer:
 
 ```
 APITimeoutError after 1.49s
@@ -498,8 +549,9 @@ The SDK's timeout applies to each phase of the request (connect, then each read)
 budget fired after 1.49 s. Treat client timeouts as approximate and keep a hard deadline at
 your load balancer too.
 
-Finally, a fallback: on timeout, rate limit, connection error or server error, answer from the
-local model instead of failing:
+Retries and timeouts only decide *when* we give up. The last piece decides what happens next. On
+a timeout, rate limit, connection error or server error, we answer from the local model instead of
+failing:
 
 ```python
 # ch01/01_main-chapter-code/ch01.ipynb (excerpt)
@@ -517,6 +569,8 @@ def answer_with_fallback(messages, primary_timeout=10.0):
                                            reasoning_effort="none")
         return "qwen3:8b (fallback)", r.choices[0].message.content
 ```
+
+We forced a failure to see it work. The first line is the normal answer; the rest is the fallback:
 
 ```
 [openai/gpt-6-luna] No. VIP members always get free standard shipping.
@@ -537,6 +591,9 @@ in the [latency table](#latency-ttft-and-the-rest), so failing over costs the us
 > you pass it through `extra_body`.
 
 ## Production hardening
+
+The iterations covered the four gaps from v0. A public endpoint needs a few more limits around
+them, and each one is small:
 
 - **Input limits.** The API rejects empty messages and anything over 4,000 characters with a
   422 before it reaches the model. Long inputs are a cost and prompt-injection vector.
@@ -561,8 +618,10 @@ in the [latency table](#latency-ttft-and-the-rest), so failing over costs the us
 
 ## Serving it
 
-The service is about 90 lines of FastAPI ([`app.py`](01_main-chapter-code/app.py)) plus a
-single HTML file ([`static/index.html`](01_main-chapter-code/static/index.html)):
+With the bot hardened, we can put it behind a web page. The service is about 90 lines of FastAPI
+([`app.py`](01_main-chapter-code/app.py)) plus a single HTML file
+([`static/index.html`](01_main-chapter-code/static/index.html)). The diagram shows how a request
+flows from the browser to the provider and back:
 
 ```mermaid
 flowchart LR
@@ -575,6 +634,8 @@ flowchart LR
     P --> OL[Ollama]
 ```
 
+Start the server, then open the page or call the endpoint directly:
+
 ```bash
 cd ch01/01_main-chapter-code
 uv run uvicorn app:app --port 8001
@@ -585,6 +646,8 @@ uv run uvicorn app:app --port 8001
 curl -N -X POST localhost:8001/chat -H 'content-type: application/json' \
   -d '{"session_id":"t1","message":"How long do I have to return an item?"}'
 ```
+
+The response is a stream of small SSE events, ending with a `done` event that carries `usage`:
 
 ```
 data: {"delta": "You"}
@@ -610,6 +673,8 @@ provider served it from its **prompt cache**, at 10% of the normal input price f
 gpt-6-luna. An earlier request had paid to write it (`cache_write_tokens: 1157`). That's
 a free win from putting the stable part of the prompt first and the variable part last.
 Chapter 15 measures it properly.
+
+Joined together, the deltas form the answer the user sees:
 
 ```text
 (concatenated deltas) You can return most items within 30 days of delivery. Items must be unused
@@ -639,6 +704,8 @@ unless they arrived damaged or defective.
 
 ## Results
 
+Now we can go back to the Requirements list and check each item against what we measured:
+
 | Requirement | Target | Measured |
 |---|---|---|
 | In-scope answers grounded in the FAQ | 4/4 | 4/4 |
@@ -649,6 +716,9 @@ unless they arrived damaged or defective.
 | Cost per 1,000 answers (`openai/gpt-6-luna`) | < $1 | $0.143 |
 | Timeout + retry + fallback | handled | ✅ (section 4) |
 
+On this run, every row meets its target. TTFT p95 of 1.20 s is under the 2 s target, and $0.143
+per 1,000 answers is well under $1.
+
 Run history: first run 2026-11-08 on hosted models only; rerun 2026-11-09 with local qwen3:8b
 (Ollama 0.40.15 on the RTX 3090) against the 2026-11-09 seed of the ShopFlow database.
 
@@ -656,6 +726,9 @@ Six test questions are a smoke test, not an evaluation. Chapter 3 builds a prope
 and turns them into a regression test that runs on every prompt change.
 
 ## Exercises
+
+These exercises push on the limits we found above: partial answers, memory budgets, reasoning
+effort and the local fallback.
 
 1. Add a seventh test question that the FAQ answers only partially (for example, "Can I return
    an opened lipstick that gave me a rash?"). Does the bot combine the two FAQ rules correctly?
@@ -667,6 +740,9 @@ and turns them into a regression test that runs on every prompt change.
    the app, and repeat the injection test. Remember `reasoning_effort`.
 
 ## What we learned
+
+We started from a three-line API call and ended with a streaming, grounded, budgeted bot that
+survives provider failures. Along the way:
 
 - An LLM API is stateless text-in, text-out, billed per token in both directions. Memory,
   grounding and safety are all things *we* add around it.
@@ -685,6 +761,10 @@ and turns them into a regression test that runs on every prompt change.
   correctly, and warm it streams in 0.02 s. Measure it on the hardware you'll actually fail over to.
 - SSE plus a few lines of `fetch` is a complete, proxy-friendly streaming contract, as long as
   the proxies don't buffer it.
+
+Our bot answers in free text, which is right for a customer reading a chat window. Many
+production uses need something else: answers a program can read and trust. Chapter 2 picks up
+that problem. It turns support tickets into validated JSON and compares four ways to get it.
 
 ## References
 

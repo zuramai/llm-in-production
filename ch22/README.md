@@ -14,8 +14,11 @@ forbade destructive commands. Its customers lost three months of reservations
 Nobody wrote "delete production" in a prompt. The failure lived in the gap between what each
 layer assumed about the others.
 
-That's what this chapter is about. Over 21 chapters we built ShopFlow's assistants, bots, agents,
-pipelines and deployments, and every chapter tripped over things that no tutorial mentions: a
+In Chapter 21 we prepared ShopFlow for a million users with load tests, rate limits, failover
+and job queues. This last chapter of Part VI, and of the book, steps back from building. Instead
+it collects what broke along the way: failures like that one. Over 21 chapters we built
+ShopFlow's assistants, bots, agents, pipelines and deployments, and every chapter tripped over
+things that no tutorial mentions: a
 `json.loads` that crashed on half a JSON object, a filter that filtered nothing, a refund issued
 three times, a dashboard that said "No data" when it meant "zero". We kept a list. This chapter
 turns the 34 most instructive entries into **minimal repros** you can run in one command, each
@@ -27,7 +30,8 @@ and the EU AI Act.
 
 ## The problem
 
-Most LLM failures in production aren't exceptions. They're plausible wrong answers:
+Look at the "Error raised?" column. Most LLM failures in production aren't exceptions. They're
+plausible wrong answers:
 
 | What happened in this book | Error raised? | Where |
 |---|---|---|
@@ -38,25 +42,39 @@ Most LLM failures in production aren't exceptions. They're plausible wrong answe
 | A refund created 3 times after a timeout and two retries | no | [Ch 9](../ch09/README.md), [D2](#d2-retry--duplicate-side-effects) |
 | Streaming answer cut mid-sentence by a proxy, client saw a clean end of stream | no | [Ch 20](../ch20/README.md), [F2](#f2-streaming-disconnects-behind-proxies) |
 
-Each one passed code review, unit tests and a demo. You find them from a customer, an auditor,
-or the bill. The only defense that scales is to know the failure classes in advance, put a cheap
-check where each one enters, and keep a repro around so you notice when a new model or library
-version changes the behavior.
+Each one passed code review, unit tests and a demo. Nobody saw an error. You find them from a
+customer, an auditor, or the bill. The only defense that scales is to know the failure classes
+in advance, put a cheap check where each one enters, and keep a repro around so you notice when
+a new model or library version changes the behavior.
 
 ## Requirements
 
-| Type | Requirement | Target |
-|---|---|---|
-| Coverage | Entries across the stack: API & tokens, structured output, retrieval, agents & tools, evals, infra & serving, data & time, security, cost, ops | ≥ 25, including the 15 the spec requires |
-| Evidence | Each entry: symptom, practitioner sources (GitHub/SO/HN/forums, opened and checked), our own observation with a chapter link | 100% |
-| Repro | One file per entry in [`repros/`](01_main-chapter-code/repros/), runnable alone or via `run_all.py`, printing whether the failure reproduced and whether the fix held | every entry |
-| Honesty | A repro that doesn't reproduce today says so (`PASS (not reproduced)`) instead of being tuned until it does | always |
-| Cost | Whole suite on OpenRouter | < $0.05 per run; chapter total ≤ $1.00 |
-| Tests | The fixes are unit-tested without network; DB/Docker repros run end to end under `pytest` | `uv run pytest ch22` green |
+The goal is a catalogue you can run, not a list of stories. Here is what the chapter must
+deliver:
+
+- **Cover the whole stack.** At least 25 entries, including the 15 the spec requires. They span
+  API & tokens, structured output, retrieval, agents & tools, evals, infra & serving, data &
+  time, security, cost and ops.
+- **Back every entry with evidence (100%).** Each one gives the symptom, practitioner sources
+  (GitHub, Stack Overflow, Hacker News, forums; each opened and checked), and our own
+  observation with a link to the chapter.
+- **Make every entry runnable.** Every entry gets one file in
+  [`repros/`](01_main-chapter-code/repros/). It runs alone or via `run_all.py`, and prints
+  whether the failure reproduced and whether the fix held.
+- **Stay honest.** A repro that doesn't reproduce today always says so (`PASS (not
+  reproduced)`). We don't tune it until it does.
+
+It also has to be cheap and tested:
+
+- **Cost little.** The whole suite on OpenRouter costs < $0.05 per run, and the chapter total
+  stays ≤ $1.00.
+- **Test the fixes.** The fixes have unit tests that need no network. The DB and Docker repros
+  run end to end under `pytest`. The target: `uv run pytest ch22` green.
 
 ## The data
 
-No new dataset. The repros use what the book already has:
+To check those targets we need data, but no new dataset. The repros use what the book already
+has:
 
 - **ShopFlow Postgres** ([datasets/shopflow](../datasets/shopflow/README.md)): `orders` with
   `total_cents` and `placed_at timestamptz`, and support ticket #1549 (a Base64 "order
@@ -81,19 +99,23 @@ flowchart LR
 
 ## Concepts
 
+Before the entries, three ideas run through all of them.
+
 ### Silent vs loud failures
 
-A **loud** failure raises: a 400, a `JSONDecodeError`, a crash loop. It's annoying, but your
-error tracker sees it. A **silent** failure returns a plausible result that is wrong: the wrong
-day's orders, a filter that matches everything, a truncated stream that ends cleanly. 27 of our
-34 entries are silent (the amber chips in the diagram above). The fixes for silent failures share
-a shape: **make the implicit explicit and check it at the boundary**. Explicit time bounds instead
-of "today", units in column names, a `finish_reason` check before parsing, `[DONE]` before
-"finished", an idempotency key before a side effect.
+The table above already shows the main split. A **loud** failure raises: a 400, a
+`JSONDecodeError`, a crash loop. It's annoying, but your error tracker sees it. A **silent**
+failure returns a plausible result that is wrong: the wrong day's orders, a filter that matches
+everything, a truncated stream that ends cleanly. 27 of our 34 entries are silent (the amber
+chips in the diagram above). The fixes for silent failures share a shape: **make the implicit
+explicit and check it at the boundary**. Explicit time bounds instead of "today", units in column
+names, a `finish_reason` check before parsing, `[DONE]` before "finished", an idempotency key
+before a side effect.
 
 ### What "temperature 0" does and doesn't buy you
 
-*Temperature* scales how much the model samples away from its single most likely next token; at
+One common assumption deserves its own note, because it hides a whole class of surprises.
+*Temperature* scales how much the model samples away from its single most likely next token. At
 0 it always takes the top one, like `argmax`. People read that as "deterministic". It isn't:
 the provider batches your request with others, and the floating-point math of a batch depends
 on the batch, so the top token can flip on near-ties. Thinking Machines traced the user-visible
@@ -104,10 +126,11 @@ variance.
 
 ### Repro first
 
-Every entry follows the same loop we used in the chapters: reproduce the failure in the smallest
-program that shows it, apply the fix, run both, and keep the program. A repro is a regression
-test for the world: when a provider changes a default, or a library fixes a bug for you (H1
-shows one), the repro tells you.
+Silent failures and varying outputs both call for the same habit. Every entry follows the loop
+we used in the chapters: reproduce the failure in the smallest program that shows it, apply the
+fix, run both, and keep the program. A repro is a regression test for the world: when a
+provider changes a default, or a library fixes a bug for you (H1 shows one), the repro tells
+you.
 
 > [!NOTE]
 > **In the wild:** Anthropic's September 2025 postmortem describes three infrastructure bugs
@@ -119,6 +142,9 @@ shows one), the repro tells you.
 > No model changed, and the outputs changed anyway.
 
 ## Running the repros
+
+Those ideas are the reason the repros exist. Here is how to run them. One script runs all 34,
+or any subset:
 
 ```bash
 uv run python ch22/01_main-chapter-code/run_all.py                 # all 34, ~4 min, ~$0.02
@@ -162,13 +188,23 @@ hosted half of A6; the notebook was not re-executed, so every other number below
 
 ## The entries
 
-Each entry: **symptom** → **sources** (other teams, opened and checked 2026-11-08) → **in this
-book** (where it bit us) → **repro** (the measured output of the notebook run on 2026-11-08) →
-**fix**. Numbers marked "this run" come from
-[`ch22.ipynb`](01_main-chapter-code/ch22.ipynb); hosted results vary between runs, and where they
+With the harness in place, here are the entries themselves, grouped by layer of the stack and
+ordered from the API call outward. Each entry has the same five parts:
+
+- **Symptom:** what you see.
+- **Sources:** other teams who hit the same thing, opened and checked 2026-11-08.
+- **In this book:** where it bit us.
+- **Repro:** the measured output of the notebook run on 2026-11-08.
+- **Fix:** what we changed so the failure no longer slips through.
+
+Numbers marked "this run" come from
+[`ch22.ipynb`](01_main-chapter-code/ch22.ipynb). Hosted results vary between runs, and where they
 did we say so.
 
 ### API & tokens
+
+We start at the edge of the stack: the API call itself. These six entries are about what
+comes back from a single request, and how the token budget shapes it.
 
 #### A1 `finish_reason == "length"` truncates JSON
 
@@ -304,6 +340,9 @@ not the card) and a pessimistic chars-per-token estimate, refusing before sendin
 
 ### Structured output
 
+The first group was about getting a complete reply at all. The next one assumes the reply
+arrived and asks whether it has the shape and stability that code can rely on.
+
 #### B1 `json_object` returns fenced JSON
 
 **Symptom.** "JSON mode" output starts with ` ```json `.
@@ -363,6 +402,9 @@ reference".
 **Fix.** `content_filter` and refusals are terminal: route to a human queue, don't retry.
 
 ### Retrieval
+
+Even a perfectly parsed answer is only as good as the context we fed it. The next two entries
+are retrieval failures that return fewer documents than they should, with no error.
 
 #### C1 Filtered HNSW query returns fewer rows than LIMIT
 
@@ -427,6 +469,9 @@ The right document reaches the top 3 for 4 of 8 questions instead of 1. Keyword 
 isn't good retrieval, but it's no longer dead weight in the hybrid.
 
 ### Agents & tools
+
+Once the model can call tools, a silent error stops being a wrong sentence. It becomes an
+action: a refund, an email, a loop that spends money. This group covers those failures.
 
 #### D1 Tool-argument hallucination
 
@@ -497,6 +542,9 @@ approval, or make it idempotent (D2).
 
 ### Evals
 
+Evals are how we measure the system, so they can fail silently too. These three show how a
+judge or a gate can mislead you.
+
 #### E1 LLM-judge position bias
 
 **Symptom.** Asked to pick A or B between two equally good answers, the judge picks by seat.
@@ -546,6 +594,9 @@ of the time**; a 95% bar always does. Chapter 20's rule (3 repeats, block only i
 the scale of the problem: identical code moved by up to 20 points between runs on 25 questions.
 
 ### Infra & serving
+
+The next group is not about the model's answers. These failures live in the servers, proxies
+and containers around it.
 
 #### F1 429 storms: synchronized retries
 
@@ -627,6 +678,9 @@ from the shell; `down` without `LLM_API_KEY` → exit 1.
 
 ### Data & time
 
+Now back to the data the model reads and the SQL it writes. Time zones, money units and enum
+spellings all fail quietly. The query runs and the number is wrong.
+
 #### G1 Timezone "today"
 
 **Symptom.** "Orders today" counts a different 24 hours depending on the session's time zone.
@@ -699,6 +753,9 @@ the column never has; put the real enum values in the prompt.
 
 ### Security
 
+The next two are security failures: private data that ends up in the logs, and an attacker who
+writes text that ends up in our prompt.
+
 #### H1 PII in logs
 
 **Symptom.** Emails, card numbers and phone numbers in your log store, from the debug line
@@ -745,6 +802,9 @@ domains (`link_guard()`) left 0 of 60 answers with the attacker's domain.
 
 ### Cost
 
+Not every failure is wrong or unsafe. Some just cost too much. These two make you pay for tokens
+you didn't need to.
+
 #### I1 Prompt-cache invalidation
 
 **Symptom.** Cached tokens stay at 0 although "the prompt is the same".
@@ -787,6 +847,9 @@ a keyword router picks.
 
 ### Ops
 
+The final measured group is about running the system over months: the model you pinned goes
+away, and the dashboard you trust hides the errors.
+
 #### J1 Model deprecation and silent drift
 
 **Symptom.** A model id starts returning 404 (loud), or the same alias starts serving a new
@@ -816,8 +879,8 @@ also exports `4xx` and `5xx` at `0.0`.
 
 ### More from the field (no repro)
 
-These came from chapters that finished after the repros ran. They're observations from this
-book on this host, not measured by `run_all.py`.
+The last group has no repros. These came from chapters that finished after the repros ran.
+They're observations from this book on this host, not measured by `run_all.py`.
 
 #### K1 "Yes." followed by an explanation of why the answer is no
 
@@ -876,7 +939,9 @@ default.
 
 ## Results
 
-One notebook run, 2026-11-08, this host:
+With all 34 entries described, here is how they did in one notebook run on 2026-11-08, on this
+host. Look at the status column first: it says whether each failure showed up and whether the
+fix held.
 
 ```
 id  layer             entry                                            kind   status                    s        $
@@ -897,7 +962,7 @@ All 34 fixes held; 33 of 34 failures reproduced in this run (A2 didn't, see abov
 
 ![Overview](images/22-overview.png)
 
-What the table says:
+What the table says (the full run is in the notebook):
 
 - **The cheap checks are the valuable ones.** Most fixes are 5–20 lines (`parse_structured`,
   `fit_params`, `business_day_bounds`, `ungrounded_ids`, `check_enum_literals`, an SSE ping)
@@ -912,12 +977,14 @@ What the table says:
 
 ## What to expect
 
-Everything above is a snapshot of November 2026. Three things will keep changing under you, and
-they change what you need to re-check.
+The repros tell us what breaks today. Everything above is a snapshot of November 2026, though.
+Three things will keep changing under you: the models, their prices and the law. Each one
+changes what you need to re-check.
 
 ### Model churn: your model is a lease
 
-Models now retire on published schedules, and the schedules are short:
+The first moving part is the model itself. Models now retire on published schedules, and the
+schedules are short. The table shows the dates as of this writing:
 
 | Provider | What's happening (as of 2026-11-08) | Source |
 |---|---|---|
@@ -945,6 +1012,8 @@ tuned on one snapshot is a hypothesis on the next one. What to do:
 
 ### Pricing: down fast, but not where you'd expect
 
+Price is the second moving part. The headline trend is good news; the details are less simple.
+
 The price of a *fixed* capability keeps collapsing. a16z measured about 10× per year at
 constant benchmark scores from 2021 to 2024
 ([a16z](https://a16z.com/llmflation-llm-inference-cost/)). Epoch AI found declines from 9× to
@@ -965,6 +1034,9 @@ Three caveats from this chapter's repros:
   on both Luna and Haiku (I1). A request id in the wrong place throws that away.
 
 ### Regulation: the EU AI Act, with its new dates
+
+Models and prices change on the providers' schedule. The law changes on its own schedule, and
+it decides what your bot must tell its users.
 
 The AI Act (Regulation (EU) 2024/1689) entered into force on 2024-08-01 and applies in stages.
 In 2026 the "Digital Omnibus on AI" (Regulation (EU) 2026/1744, in force 2026-07-27) moved the
@@ -1007,6 +1079,8 @@ Annex III areas) now applies from December 2027. That's a delay, not a cancellat
 
 ## Exercises
 
+The best way to own this list is to extend it and to try breaking our fixes:
+
 1. **Add your own entry.** Pick a failure from your production logs, write
    `repros/k1_<slug>.py` with `ID, TITLE, LAYER, KIND` and a `run()` that returns a `Result`,
    and add a unit test for the fix. `run_all.py` picks it up automatically. If you can't make it
@@ -1023,6 +1097,8 @@ Annex III areas) now applies from December 2027. That's a delay, not a cancellat
    time? Is that bar still useful?
 
 ## What we learned
+
+Thirty-four failures, three trends and one long book come down to a few habits:
 
 - Most LLM failures are silent: 27 of our 34 entries raised no error. The fix pattern is the
   same every time: make the implicit explicit (time bounds, units, `finish_reason`, `[DONE]`,
@@ -1045,6 +1121,14 @@ Annex III areas) now applies from December 2027. That's a delay, not a cancellat
   fine-tuning is shrinking. Keep the eval gate ready to run on a change you didn't make.
 - A repro is a regression test for the world. Keep them; re-run them on every model, library and
   provider change.
+
+That closes the book. Part I turned one API call into a support bot, then added validated JSON
+outputs and an eval gate. Part II built systems on top of documents, SQL, metrics and scanned
+invoices. Part III gave agents tools, checkpoints and approvals, and Part IV hardened them with
+guardrails, tracing and a gateway. Part V ran open models on our own GPU, optimized them and
+fine-tuned models, both on our own hardware and through managed services. Part VI deployed and
+scaled the result. This chapter collected 34 of the things that went wrong along the way. The
+appendices that follow hold the model and price snapshot, a glossary and the full references.
 
 ## References
 
