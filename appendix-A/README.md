@@ -1,6 +1,6 @@
 # Appendix A: Model selection and pricing snapshot
 
-> **Tested on:** 2026-11-07 · macOS (Apple M2 Pro) · Python 3.12 · OpenRouter public models API
+> **Tested on:** 2026-11-07 · Ubuntu 22.04 · Python 3.12 · OpenRouter public models API
 > (no key needed) · [`fetch_models.py`](fetch_models.py) · raw data: [`models-2026-11-07.csv`](models-2026-11-07.csv)
 
 Any table of models and prices goes stale within weeks. On the day of this snapshot, the newest
