@@ -1,0 +1,56 @@
+# Test double for the LLM provider, used for load, rollout and autoscaling experiments so they
+# cost nothing and don't depend on a provider's latency. Streams 40 tokens in about 2.3 s.
+# Two replicas and a PDB, so draining a node doesn't take the "provider" down with it.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fakellm
+  namespace: shopflow
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: fakellm}
+  template:
+    metadata:
+      labels: {app: fakellm}
+    spec:
+      containers:
+        - name: fakellm
+          image: shopflow-fakellm:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - {name: FAKE_TOKENS, value: "40"}
+            - {name: FAKE_TOKEN_DELAY_MS, value: "50"}
+            - {name: FAKE_TTFT_MS, value: "300"}
+          readinessProbe:
+            httpGet: {path: /healthz, port: 8080}
+            periodSeconds: 5
+          resources:
+            requests: {cpu: 100m, memory: 96Mi}
+            limits: {memory: 256Mi}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fakellm
+  namespace: shopflow
+spec:
+  selector: {app: fakellm}
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: fakellm
+  namespace: shopflow
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: {app: fakellm}

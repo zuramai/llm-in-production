@@ -1,0 +1,85 @@
+# The support chatbot, hardened. Config comes from the generated `chat-config` ConfigMap
+# (kustomization.yaml) and the `chat-secrets` Secret (created from .env, never committed).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat
+  labels: {app: chat}
+spec:
+  replicas: 2                      # the HPA owns this number once it exists
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels: {app: chat}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: {maxSurge: 1, maxUnavailable: 0}
+  template:
+    metadata:
+      labels: {app: chat}
+    spec:
+      # preStop sleep (15 s) + in-flight streams finishing + uvicorn's graceful shutdown (25 s)
+      terminationGracePeriodSeconds: 45
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: {app: chat}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: chat
+          image: shopflow-chat:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - {name: http, containerPort: 8080}
+          envFrom:
+            - configMapRef: {name: chat-config}
+            - secretRef: {name: chat-secrets}
+          resources:
+            requests: {cpu: 100m, memory: 192Mi}
+            limits: {memory: 384Mi}
+          startupProbe:            # up to 60 s to import and load prompts before liveness starts
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 2
+            failureThreshold: 30
+          readinessProbe:          # dependencies (session DB) checked here, not in liveness
+            httpGet: {path: /readyz, port: http}
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 2
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              # Keep serving while the endpoint removal propagates to every node, and let
+              # in-flight streams finish before SIGTERM reaches uvicorn.
+              sleep: {seconds: 15}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chat
+  labels: {app: chat}
+spec:
+  type: NodePort
+  selector: {app: chat}
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      nodePort: 30120

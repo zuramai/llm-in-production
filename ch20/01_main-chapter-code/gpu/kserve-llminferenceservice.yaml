@@ -1,0 +1,31 @@
+# KServe LLMInferenceService: the same Qwen3-8B on one GPU, managed by KServe's llm-d based
+# controller (Gateway API ingress, KV-cache-aware scheduler, model download).
+#
+#   kubectl apply -f ch20/01_main-chapter-code/gpu/kserve-llminferenceservice.yaml
+#
+# NOT EXECUTED (needs a GPU node and the KServe LLM stack). Validated server-side against the
+# KServe v0.20 CRD with `kubectl apply --dry-run=server`.
+# Written against https://kserve.github.io/website/docs/model-serving/generative-inference/llmisvc/llmisvc-overview
+apiVersion: serving.kserve.io/v1alpha1
+kind: LLMInferenceService
+metadata:
+  name: qwen3-8b
+  namespace: llm
+spec:
+  model:
+    uri: hf://Qwen/Qwen3-8B
+    name: Qwen/Qwen3-8B
+  replicas: 1
+  template:
+    containers:
+      - name: main
+        image: vllm/vllm-openai:v0.33.0
+        resources:
+          limits:
+            nvidia.com/gpu: "1"
+            cpu: "6"
+            memory: 24Gi
+  router:
+    gateway: {}
+    route: {}
+    scheduler: {}

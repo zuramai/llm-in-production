@@ -1,0 +1,90 @@
+# The data bot (/ask). Reads the database only through the read-only role (DATABASE_URL_RO in
+# the `sqlbot-secrets` Secret) and the `shopflow-db` Service (external-db.yaml).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sqlbot
+  labels: {app: sqlbot}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: sqlbot}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: {maxSurge: 1, maxUnavailable: 0}
+  template:
+    metadata:
+      labels: {app: sqlbot}
+    spec:
+      terminationGracePeriodSeconds: 60   # one /ask can take up to ~30 s (3 plan attempts)
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: {app: sqlbot}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: sqlbot
+          image: shopflow-sqlbot:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - {name: http, containerPort: 8080}
+          envFrom:
+            - configMapRef: {name: sqlbot-config}
+            - secretRef: {name: sqlbot-secrets}
+          resources:
+            requests: {cpu: 100m, memory: 160Mi}
+            limits: {memory: 320Mi}
+          startupProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 2
+            failureThreshold: 30
+          readinessProbe:
+            httpGet: {path: /readyz, port: http}
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 2
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              sleep: {seconds: 15}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sqlbot
+  labels: {app: sqlbot}
+spec:
+  type: NodePort
+  selector: {app: sqlbot}
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      nodePort: 30020
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: sqlbot
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels: {app: sqlbot}

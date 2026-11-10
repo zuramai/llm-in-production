@@ -1,0 +1,51 @@
+# vLLM production-stack Helm values: self-host Qwen3-8B on one 24 GB GPU behind the stack's
+# router, as an OpenAI-compatible endpoint the chat service can point LLM_BASE_URL at.
+#
+#   helm repo add vllm https://vllm-project.github.io/production-stack
+#   helm install shopflow-llm vllm/vllm-stack --version 0.1.14 -n llm --create-namespace \
+#     -f ch20/01_main-chapter-code/gpu/production-stack-values.yaml
+#
+# NOT EXECUTED on the book's kind cluster (see the chapter): rendered with `helm template` and
+# validated server-side with `kubectl apply --dry-run=server`.
+# Keys from https://github.com/vllm-project/production-stack/blob/main/helm/values.yaml
+servingEngineSpec:
+  runtimeClassName: nvidia            # needs the NVIDIA GPU Operator or container toolkit
+  modelSpec:
+    - name: qwen3-8b
+      repository: vllm/vllm-openai
+      tag: v0.33.0                    # pin the engine like any other dependency
+      modelURL: Qwen/Qwen3-8B
+      replicaCount: 1
+      requestCPU: 6
+      requestMemory: 24Gi
+      requestGPU: 1
+      pvcStorage: 40Gi                # weights are downloaded once and survive restarts
+      vllmConfig:
+        enablePrefixCaching: true     # the FAQ system prompt is a shared prefix
+        maxModelLen: 16384
+        dtype: bfloat16
+        tensorParallelSize: 1
+        maxNumSeqs: 32
+        gpuMemoryUtilization: 0.90
+      hf_token:
+        secretName: hf-token
+        secretKey: token
+      # Scale on queue depth (vllm:num_requests_waiting) rather than CPU; needs KEDA.
+      keda:
+        enabled: false
+  # A 16 GB model takes minutes to download and load: give the startup probe 10 minutes so
+  # liveness doesn't kill the pod mid-load (kserve#5062, vllm#58544).
+  startupProbe:
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    failureThreshold: 60
+    httpGet: {path: /health, port: 8000}
+
+routerSpec:
+  enableRouter: true
+  repository: lmcache/lmstack-router
+  tag: v0.1.14                     # matches the chart version
+  replicaCount: 2
+  routingLogic: prefixaware           # send requests with the same prompt prefix to one engine
+  resources:
+    requests: {cpu: 400m, memory: 1000Mi}

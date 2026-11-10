@@ -1,0 +1,13 @@
+# The ShopFlow Postgres runs outside the cluster (the shopflow-db container on the host, or a
+# managed database in production). A Service without a selector gives it a stable in-cluster
+# name, `shopflow-db:5433`; the EndpointSlice that points it at the real address is applied at
+# deploy time (ch20_ops.apply_external_db), because that address differs per environment.
+apiVersion: v1
+kind: Service
+metadata:
+  name: shopflow-db
+spec:
+  ports:
+    - name: postgres
+      port: 5433
+      targetPort: 5433

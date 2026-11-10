@@ -1,0 +1,16 @@
+# The hardened stack with the chatbot pointed at the in-cluster fake LLM, for load, rollout and
+# autoscaling experiments that should cost nothing.
+#   kubectl apply -k ch20/01_main-chapter-code/k8s/overlays/fakellm
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: shopflow
+resources:
+  - ../../base
+  - ../../testing
+configMapGenerator:
+  - name: chat-config
+    behavior: merge
+    literals:
+      - LLM_BASE_URL=http://fakellm:8080/v1
+      - LLM_MODEL=fake
+      - REASONING_EFFORT=

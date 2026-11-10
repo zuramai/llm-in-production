@@ -1,0 +1,35 @@
+# Autoscaling and voluntary-disruption policy for the chatbot.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: chat
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: chat
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: {type: Utilization, averageUtilization: 60}   # % of the 100m request
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - {type: Pods, value: 2, periodSeconds: 15}
+    scaleDown:
+      stabilizationWindowSeconds: 60      # default is 300; shortened so the demo fits a notebook
+      policies:
+        - {type: Pods, value: 1, periodSeconds: 30}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: chat
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: {app: chat}

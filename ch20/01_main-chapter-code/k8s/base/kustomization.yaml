@@ -1,0 +1,18 @@
+# kubectl apply -k ch20/01_main-chapter-code/k8s/base
+# configMapGenerator appends a content hash to each ConfigMap name, so changing any setting
+# (for example CANARY_PERCENT) changes the Deployment's pod template and triggers a rolling
+# update, with a revision that `kubectl rollout undo` can go back to.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: shopflow
+resources:
+  - namespace.yaml
+  - external-db.yaml
+  - chat.yaml
+  - chat-scaling.yaml
+  - sqlbot.yaml
+configMapGenerator:
+  - name: chat-config
+    envs: [chat.env]
+  - name: sqlbot-config
+    envs: [sqlbot.env]

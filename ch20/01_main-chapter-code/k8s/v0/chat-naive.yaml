@@ -1,0 +1,47 @@
+# v0: the first manifest that "works". Three replicas of Chapter 1's chatbot, in-memory sessions,
+# no probes, no resource requests, no disruption budget, no graceful shutdown.
+# Chapter 20 measures what goes wrong with it. Talks to the fake LLM (k8s/testing/fakellm.yaml).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chat-naive-config
+  namespace: shopflow
+data:
+  LLM_BASE_URL: http://fakellm:8080/v1
+  LLM_MODEL: fake
+  SESSION_STORE: memory
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat
+  namespace: shopflow
+spec:
+  replicas: 3
+  selector:
+    matchLabels: {app: chat}
+  template:
+    metadata:
+      labels: {app: chat}
+    spec:
+      containers:
+        - name: chat
+          image: shopflow-chat:1.0.0
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef: {name: chat-naive-config}
+            - secretRef: {name: chat-secrets}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chat
+  namespace: shopflow
+spec:
+  type: NodePort
+  selector: {app: chat}
+  ports:
+    - port: 80
+      targetPort: 8080
+      nodePort: 30120

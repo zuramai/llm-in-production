@@ -1,0 +1,88 @@
+# Chapter 20: the two services on one Docker host.
+#
+#   cd ch20/01_main-chapter-code
+#   docker compose --profile prod up -d --build      # production-like: built images, hardened
+#   docker compose --profile dev up                  # dev: source mounted, auto-reload, fake LLM
+#
+# Required environment (never committed; the notebook builds it from the repo .env):
+#   LLM_API_KEY                 provider key
+#   CH20_SESSIONS_DATABASE_URL  postgresql://ch20_app:...@host.docker.internal:5433/shopflow
+#   CH20_DATABASE_URL_RO        postgresql://shopflow_ro:...@host.docker.internal:5433/shopflow
+name: ch20
+
+x-prod: &prod
+  restart: unless-stopped
+  read_only: true
+  tmpfs: [/tmp]
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+  extra_hosts: ["host.docker.internal:host-gateway"]
+  stop_grace_period: 40s
+  logging:
+    driver: json-file
+    options: {max-size: "10m", max-file: "3"}
+  healthcheck:
+    test: ["CMD", "python", "-c",
+           "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/readyz', timeout=2)"]
+    interval: 10s
+    timeout: 3s
+    retries: 3
+    start_period: 20s
+
+services:
+  chat:
+    <<: *prod
+    profiles: [prod]
+    image: shopflow-chat:1.0.0
+    build: services/chat
+    ports: ["127.0.0.1:8120:8080"]
+    environment:
+      LLM_BASE_URL: https://openrouter.ai/api/v1
+      LLM_API_KEY: ${LLM_API_KEY:?set LLM_API_KEY}
+      LLM_MODEL: openai/gpt-6-luna
+      REASONING_EFFORT: none
+      SESSION_STORE: postgres
+      SESSIONS_DATABASE_URL: ${CH20_SESSIONS_DATABASE_URL:?set CH20_SESSIONS_DATABASE_URL}
+      PROMPT_STABLE: v1
+      PROMPT_CANARY: v2
+      CANARY_PERCENT: ${CH20_CANARY_PERCENT:-0}
+    deploy:
+      resources:
+        limits: {cpus: "1.0", memory: 384M}
+
+  sqlbot:
+    <<: *prod
+    profiles: [prod]
+    image: shopflow-sqlbot:1.0.0
+    build: services/sqlbot
+    ports: ["127.0.0.1:8020:8080"]
+    environment:
+      LLM_BASE_URL: https://openrouter.ai/api/v1
+      LLM_API_KEY: ${LLM_API_KEY:?set LLM_API_KEY}
+      LLM_MODEL: openai/gpt-6-luna
+      DATABASE_URL_RO: ${CH20_DATABASE_URL_RO:?set CH20_DATABASE_URL_RO}
+      BUSINESS_TIMEZONE: America/New_York
+    deploy:
+      resources:
+        limits: {cpus: "1.0", memory: 320M}
+
+  # --- dev profile: edit code on the host, uvicorn reloads; talks to the fake LLM -------------
+  chat-dev:
+    profiles: [dev]
+    image: shopflow-chat:1.0.0
+    build: services/chat
+    command: ["uvicorn", "--factory", "ch20_chat.app:create_app", "--host", "0.0.0.0",
+              "--port", "8080", "--reload", "--reload-dir", "/app/ch20_chat"]
+    volumes: ["./services/chat/ch20_chat:/app/ch20_chat"]
+    ports: ["127.0.0.1:8120:8080"]
+    environment:
+      LLM_BASE_URL: http://fakellm:8080/v1
+      LLM_API_KEY: not-needed
+      LLM_MODEL: fake
+      SESSION_STORE: memory
+    depends_on: [fakellm]
+
+  fakellm:
+    profiles: [dev]
+    image: shopflow-fakellm:1.0.0
+    build: services/fakellm

@@ -1,0 +1,8 @@
+# The first Dockerfile most of us write. It works, and Chapter 20 measures what it costs:
+# full base image, unpinned dependencies, code copied before dependencies (so every code change
+# reinstalls them), root user, and the tokenizer downloaded at runtime.
+FROM python:3.12
+WORKDIR /app
+COPY . .
+RUN pip install fastapi uvicorn sse-starlette openai tiktoken "psycopg[binary]"
+CMD ["uvicorn", "--factory", "ch20_chat.app:create_app", "--host", "0.0.0.0", "--port", "8080"]

@@ -1,0 +1,163 @@
+# Sample CI/CD for Chapter 20. Copy to .github/workflows/deploy.yml in your own repository.
+# It lives here, not in this book's .github/, because it deploys to a cluster we don't have.
+#
+#   test  ->  build + eval gate  ->  staging  ->  canary 10% (approval)  ->  promote (approval)
+#
+# Required repository secrets: OPENROUTER_API_KEY, KUBECONFIG_STAGING, KUBECONFIG_PRODUCTION.
+# Environments "staging", "production-canary" and "production" carry the approval rules.
+# The clusters already hold the chat-secrets / sqlbot-secrets Secrets (provisioned out of band,
+# e.g. by External Secrets from your vault); this workflow never handles them.
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  REGISTRY: ghcr.io/${{ github.repository_owner }}
+  TAG: ${{ github.sha }}
+  CODE: ch20/01_main-chapter-code
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+      - run: uv sync --frozen
+      - run: uv run ruff check ch20
+      - run: uv run pytest ch20 -q
+
+  build-and-gate:
+    needs: test
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    services:
+      shopflow-db:
+        image: pgvector/pgvector:0.8.7-pg18
+        env:
+          POSTGRES_USER: shopflow
+          POSTGRES_PASSWORD: shopflow
+          POSTGRES_DB: shopflow
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U shopflow" --health-interval 2s --health-retries 30
+    env:
+      LLM_BASE_URL: https://openrouter.ai/api/v1
+      LLM_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      LLM_MODEL: openai/gpt-6-luna
+      LLM_MODEL_STRONG: anthropic/claude-sonnet-5.5
+      EMBED_BASE_URL: http://unused.invalid/v1   # llmprod requires these; the gate never embeds
+      EMBED_API_KEY: unused
+      EMBED_MODEL: unused
+      DATABASE_URL: postgresql://shopflow:shopflow@localhost:5433/shopflow
+      DATABASE_URL_RO: postgresql://shopflow_ro:shopflow_ro@localhost:5433/shopflow
+      CH20_SESSIONS_DATABASE_URL: postgresql://ch20_app:${{ github.run_id }}@host.docker.internal:5433/shopflow
+      CH20_DATABASE_URL_RO: postgresql://shopflow_ro:shopflow_ro@host.docker.internal:5433/shopflow
+      CH20_APP_DB_PASSWORD: ${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+      - run: uv sync --frozen
+      - name: Seed ShopFlow and create the ch20 schema
+        run: |
+          uv run python datasets/shopflow/seed.py --reset
+          uv run python -c "import sys; sys.path.insert(0, '$CODE'); import ch20_ops; ch20_ops.setup_db()"
+      - name: Build images
+        run: |
+          docker build -t shopflow-chat:1.0.0 $CODE/services/chat
+          docker build -t shopflow-sqlbot:1.0.0 $CODE/services/sqlbot
+      - name: Start the prod profile
+        run: docker compose -f $CODE/compose.yaml --profile prod up -d --wait --wait-timeout 120
+      - name: Eval gate
+        run: >-
+          uv run python $CODE/ch20_eval_gate.py --chat-url http://localhost:8120
+          --sqlbot-url http://localhost:8020 --min-chat 1.0 --min-sql 0.9 --repeats 3
+          --baseline $CODE/eval/results/gate-sqlbot-baseline.json --out gate.json
+      - name: Keep the gate report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: eval-gate
+          path: gate.json
+      - name: Logs on failure
+        if: failure()
+        run: docker compose -f $CODE/compose.yaml --profile prod logs --no-color
+      - uses: docker/login-action@v4
+        if: github.ref == 'refs/heads/main'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push the images that passed the gate
+        if: github.ref == 'refs/heads/main'
+        run: |
+          for svc in chat sqlbot; do
+            docker tag shopflow-$svc:1.0.0 $REGISTRY/shopflow-$svc:$TAG
+            docker push $REGISTRY/shopflow-$svc:$TAG
+          done
+
+  staging:
+    needs: build-and-gate
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment: staging
+    steps:
+      - uses: actions/checkout@v7
+      - uses: azure/setup-kubectl@v5
+      - uses: astral-sh/setup-uv@v10
+      - name: Deploy the gated images (canary at 0%)
+        env:
+          KUBECONFIG_DATA: ${{ secrets.KUBECONFIG_STAGING }}
+          CH20_KUBE_CONTEXT: ""
+        run: |
+          echo "$KUBECONFIG_DATA" > "$RUNNER_TEMP/kubeconfig"
+          export KUBECONFIG="$RUNNER_TEMP/kubeconfig"
+          uv run python $CODE/ch20_canary.py set 0 --registry $REGISTRY --tag $TAG
+          kubectl -n shopflow rollout status deployment/sqlbot --timeout=300s
+
+  canary:
+    needs: staging
+    runs-on: ubuntu-24.04
+    environment: production-canary          # required reviewers approve the canary start
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+      - uses: azure/setup-kubectl@v5
+      - name: Send 10% of sessions to the canary prompt, wait, analyze
+        env:
+          KUBECONFIG_DATA: ${{ secrets.KUBECONFIG_PRODUCTION }}
+          CH20_KUBE_CONTEXT: ""
+        run: |
+          echo "$KUBECONFIG_DATA" > "$RUNNER_TEMP/kubeconfig"
+          export KUBECONFIG="$RUNNER_TEMP/kubeconfig"
+          uv run python $CODE/ch20_canary.py set 10 --registry $REGISTRY --tag $TAG
+          sleep 1800
+          uv run python $CODE/ch20_canary.py analyze --since 30m || {
+            uv run python $CODE/ch20_canary.py set 0 --registry $REGISTRY --tag $TAG
+            exit 1
+          }
+
+  promote:
+    needs: canary
+    runs-on: ubuntu-24.04
+    environment: production                 # a second approval before 100%
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+      - uses: azure/setup-kubectl@v5
+      - env:
+          KUBECONFIG_DATA: ${{ secrets.KUBECONFIG_PRODUCTION }}
+          CH20_KUBE_CONTEXT: ""
+        run: |
+          echo "$KUBECONFIG_DATA" > "$RUNNER_TEMP/kubeconfig"
+          export KUBECONFIG="$RUNNER_TEMP/kubeconfig"
+          uv run python $CODE/ch20_canary.py set 50 --registry $REGISTRY --tag $TAG
+          uv run python $CODE/ch20_canary.py set 100 --registry $REGISTRY --tag $TAG
