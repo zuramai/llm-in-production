@@ -22,11 +22,16 @@ from .db import _jsonable
 
 @cache
 def raw_ddl() -> str:
-    """Columns of every table, straight from information_schema."""
+    """Columns of every ShopFlow table, straight from information_schema.
+
+    Tables other chapters add to the shared database (``chNN_*``) are left out, so this prompt
+    stays the same no matter which chapters you've run.
+    """
     with psycopg.connect(get_settings().database_url) as conn:
         rows = conn.execute(
             "SELECT table_name, column_name, data_type FROM information_schema.columns "
-            "WHERE table_schema = 'public' ORDER BY table_name, ordinal_position"
+            "WHERE table_schema = 'public' AND table_name !~ '^ch[0-9]{2}_' "
+            "ORDER BY table_name, ordinal_position"
         ).fetchall()
     tables: dict[str, list[str]] = {}
     for table, col, typ in rows:

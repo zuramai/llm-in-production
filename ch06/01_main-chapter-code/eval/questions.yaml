@@ -93,7 +93,7 @@
   category: time_window
   question: What's our revenue today so far?
   gold_sql: |
-    SELECT sum(total_cents) / 100.0 FROM orders
+    SELECT coalesce(sum(total_cents), 0) / 100.0 FROM orders
     WHERE status IN ('paid', 'shipped', 'delivered')
       AND placed_at >= date_trunc('day', now() AT TIME ZONE '{tz}') AT TIME ZONE '{tz}'
 - id: t2
@@ -107,7 +107,7 @@
   category: time_window
   question: What is revenue this month?
   gold_sql: |
-    SELECT sum(total_cents) / 100.0 FROM orders
+    SELECT coalesce(sum(total_cents), 0) / 100.0 FROM orders
     WHERE status IN ('paid', 'shipped', 'delivered')
       AND placed_at >= date_trunc('month', now() AT TIME ZONE '{tz}') AT TIME ZONE '{tz}'
 - id: t4

@@ -193,7 +193,8 @@ def answer(
     else:
         return done(f"Sorry, I couldn't answer that: {error}", sql=sql, attempts=max_attempts)
 
-    as_of = now.strftime("%-I:%M %p %Z")
+    # Not strftime("%p"): it is locale-dependent and empty under e.g. LC_TIME=id_ID.UTF-8.
+    as_of = f"{now:%-I:%M} {'AM' if now.hour < 12 else 'PM'} {now:%Z}"
     phrase = client.chat.completions.create(
         model=model,
         max_tokens=ANSWER_MAX_TOKENS,
@@ -209,4 +210,9 @@ def answer(
         ],
     )
     _merge_usage(usage, phrase.usage)
-    return done(phrase.choices[0].message.content.strip(), sql=sql, rows=rows, attempts=attempt)
+    # content is None when the model returns no text (refusal, length cut, provider hiccup).
+    choice = phrase.choices[0]
+    text = (choice.message.content or "").strip()
+    if not text:
+        text = f"Sorry, I got the data but couldn't phrase an answer ({choice.finish_reason})."
+    return done(text, sql=sql, rows=rows, attempts=attempt)
