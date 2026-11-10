@@ -62,7 +62,8 @@ def index() -> FileResponse:
 
 
 @app.get("/healthz")
-def healthz() -> dict:
+async def healthz() -> dict:
+    # async: a plain `def` runs in the same thread pool as the chat streams and queues behind them.
     return {"status": "ok"}
 
 
