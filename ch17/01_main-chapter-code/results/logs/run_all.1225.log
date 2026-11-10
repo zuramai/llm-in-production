@@ -1,0 +1,32 @@
+=== 2026-11-09T12:25:24+07:00 phases: vllm_bf16 vllm_spec vllm_fp8
+NVIDIA GeForce RTX 3090, 24576 MiB, 595.99.02
+2093901, /home/t.estella/hd-face-gathering/venv/bin/python, 2324 MiB
+vllm 0.33.0
+torch 2.14.0+cu130 13.0
+version: 0.9.0-dev (build 12182, commit fd27b2034)
+ollama {"version":"0.40.15"}
+=== phase vllm_bf16 (12:25:28)
+GPU free: 21793 / 24576 MiB
+vllm-bf16        category  80.3% [75.5, 84.4]  priority  58.0%  hard 81.7%  parse fails 0  p50 1067 ms  decode 48.9 tok/s  memory {'weights_gib': 15.27, 'kv_cache_gib': 1.77, 'kv_cache_tokens': 12912}
+  concurrency   1:    48.2 tok/s total,  48.4 tok/s per stream
+  concurrency   8:   378.0 tok/s total,  47.6 tok/s per stream
+  concurrency  32:  1298.8 tok/s total,  41.5 tok/s per stream
+vllm | 12000 chars | cache on, stable prefix         prompt   2788 tok  first    700.9 ms  later median     39.2 ms
+vllm | 12000 chars | cache on, timestamp at start    prompt   2789 tok  first    702.0 ms  later median    703.2 ms
+vllm | 48000 chars | cache on, stable prefix         prompt  10883 tok  first   3112.3 ms  later median     64.9 ms
+vllm | 48000 chars | cache on, timestamp at start    prompt  10884 tok  first   3106.3 ms  later median   3056.0 ms
+vllm/baseline          c=1   median stream   48.8 tok/s  aggregate    47.4 tok/s  acceptance None
+vllm/baseline          c=8   median stream   47.9 tok/s  aggregate   366.5 tok/s  acceptance None
+=== phase vllm_spec (12:33:19)
+GPU free: 21793 / 24576 MiB
+vLLM ngram died, see /home/a.saugi/llm-in-production/ch17/01_main-chapter-code/results/logs/vllm-ngram.log
+vllm/eagle3            c=1   median stream  126.5 tok/s  aggregate   103.5 tok/s  acceptance 0.535
+vllm/eagle3            c=8   median stream  107.6 tok/s  aggregate   712.1 tok/s  acceptance 0.526
+vLLM draft-0.6b died, see /home/a.saugi/llm-in-production/ch17/01_main-chapter-code/results/logs/vllm-draft-0.6b.log
+=== phase vllm_fp8 (12:36:06)
+GPU free: 21793 / 24576 MiB
+vllm-fp8-w8a16   category  80.3% [75.5, 84.4]  priority  57.3%  hard 81.7%  parse fails 0  p50 586 ms  decode 87.0 tok/s  memory {'weights_gib': 8.8, 'kv_cache_gib': 8.23, 'kv_cache_tokens': 59920}
+  concurrency   1:    88.1 tok/s total,  88.4 tok/s per stream
+  concurrency   8:   665.1 tok/s total,  84.0 tok/s per stream
+  concurrency  32:  2196.2 tok/s total,  70.5 tok/s per stream
+=== done (12:40:35)

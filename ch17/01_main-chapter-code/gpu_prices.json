@@ -2,17 +2,29 @@
   "_note": "Every number here is dated and sourced. Prices go stale within weeks: re-check before you decide anything.",
   "accessed": "2026-11-07",
   "gpu_hourly_usd": {
-    "RunPod (on-demand pods; page updated 2026-11-04)": {
+    "RunPod Secure Cloud (on-demand; page updated 2026-11-04)": {
       "source": "https://www.runpod.io/pricing",
-      "H100 SXM 80GB": 3.99,
-      "H100 PCIe 80GB": 2.89,
-      "A100 80GB": 1.79,
+      "RTX 3090 24GB": 0.50,
+      "RTX 4090 24GB": 0.89,
       "L40S 48GB": 1.09,
+      "A100 SXM 80GB": 1.79,
+      "H100 PCIe 80GB": 2.89,
+      "H100 SXM 80GB": 3.99,
       "H200 141GB": 5.29,
       "B200 180GB": 7.99
     },
+    "RunPod Community Cloud (on-demand; page updated 2026-11-04)": {
+      "source": "https://www.runpod.io/pricing",
+      "RTX 3090 24GB": 0.22,
+      "RTX 4090 24GB": 0.34,
+      "L40S 48GB": 0.79,
+      "A100 SXM 80GB": 1.39,
+      "H100 SXM 80GB": 2.69,
+      "H200 141GB": 3.59,
+      "B200 180GB": 5.98
+    },
     "Lambda (per GPU; prices take effect 2026-11-16)": {
-      "source": "https://lambda.ai/instances",
+      "source": "https://lambda.ai/pricing",
       "H100 SXM 80GB (1x)": 4.89,
       "H100 SXM 80GB (8x HGX)": 4.59,
       "A100 80GB (8x HGX)": 3.19,
@@ -20,10 +32,10 @@
     }
   },
   "gpu_memory_bandwidth_gb_s": {
-    "_source": "H100 SXM: commonly quoted datasheet value (NVIDIA's H100 page rounds it to 'about 3 TB/s', https://www.nvidia.com/en-us/data-center/h100/). B200: 64 TB/s across 8 GPUs on https://www.nvidia.com/en-us/data-center/dgx-b200/. M2 Pro: https://www.apple.com/newsroom/2023/01/apple-unveils-m2-pro-and-m2-max-next-generation-chips-for-next-level-workflows/",
+    "_source": "RTX 3090: NVIDIA GA102 whitepaper ('936 GB/sec of peak memory bandwidth in the GeForce RTX 3090'), https://www.nvidia.com/content/PDF/nvidia-ampere-ga-102-gpu-architecture-whitepaper-v2.pdf. H100 SXM: commonly quoted datasheet value (NVIDIA's H100 page rounds it to 'about 3 TB/s', https://www.nvidia.com/en-us/data-center/h100/). B200: 64 TB/s across 8 GPUs on https://www.nvidia.com/en-us/data-center/dgx-b200/.",
+    "RTX 3090 24GB": 936,
     "H100 SXM 80GB": 3350,
-    "B200 180GB": 8000,
-    "M2 Pro": 200
+    "B200 180GB": 8000
   },
   "measured_throughput": {
     "gpt-oss-120b on 2x H100 SXM, vLLM 0.10.2, ShareGPT, saturated, defaults": {
@@ -44,7 +56,7 @@
   },
   "api_usd_per_million_tokens": {
     "_source": "https://openrouter.ai/api/v1/models, fetched 2026-11-07 (listed price; routed providers vary)",
-    "openai/gpt-oss-120b": {"input": 0.018, "output": 0.067},
+    "openai/gpt-oss-120b": {"input": 0.02, "output": 0.075},
     "meta-llama/llama-3.3-70b-instruct": {"input": 0.59, "output": 0.79},
     "qwen/qwen3-14b": {"input": 0.12, "output": 0.24},
     "openai/gpt-6-luna": {"input": 0.10, "output": 0.50}

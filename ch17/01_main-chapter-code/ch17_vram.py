@@ -41,13 +41,13 @@ KV_DTYPE_BYTES = {"fp32": 4.0, "fp16": 2.0, "bf16": 2.0, "fp8": 1.0, "int8": 1.0
 
 # Memory of common accelerators in GiB-ish marketing units (GB as printed on the spec sheet).
 GPU_MEMORY_GB = {
+    "RTX 3090": 24,
     "RTX 4090": 24,
     "L40S": 48,
     "A100 80GB": 80,
     "H100 80GB": 80,
     "H200": 141,
     "B200": 180,
-    "M2 Pro (unified)": 16,
 }
 
 

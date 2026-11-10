@@ -1,0 +1,19 @@
+=== 2026-11-09T13:37:40+07:00 phases: ollama vllm_awq
+NVIDIA GeForce RTX 3090, 24576 MiB, 595.99.02
+2093901, /home/t.estella/hd-face-gathering/venv/bin/python, 2324 MiB
+vllm 0.33.0
+torch 2.14.0+cu130 13.0
+version: 0.9.0-dev (build 12182, commit fd27b2034)
+ollama {"version":"0.40.15"}
+=== phase ollama (13:37:44)
+GPU free: 21793 / 24576 MiB
+ollama-q4_K_M    category  79.0% [74.0, 83.2]  priority  62.7%  hard 83.3%  parse fails 0  p50 421 ms  decode 130.1 tok/s  memory {'loaded_gb': 9.94, 'vram_gb': 9.94, 'context_length': 8192}
+ollama-q8_0      category  80.7% [75.8, 84.7]  priority  57.3%  hard 81.7%  parse fails 0  p50 596 ms  decode 89.0 tok/s  memory {'loaded_gb': 13.25, 'vram_gb': 13.25, 'context_length': 8192}
+ollama-fp16      category  79.3% [74.4, 83.5]  priority  57.7%  hard 81.7%  parse fails 0  p50 970 ms  decode 53.1 tok/s  memory {'loaded_gb': 20.09, 'vram_gb': 20.09, 'context_length': 8192}
+=== phase vllm_awq (13:48:27)
+GPU free: 21793 / 24576 MiB
+vllm-awq-int4    category  84.7% [80.2, 88.3]  priority  60.7%  hard 81.7%  parse fails 0  p50 421 ms  decode 128.3 tok/s  memory {'weights_gib': 5.71, 'kv_cache_gib': 12.17, 'kv_cache_tokens': 88624}
+  concurrency   1:   126.6 tok/s total, 127.0 tok/s per stream
+  concurrency   8:   944.2 tok/s total, 119.6 tok/s per stream
+  concurrency  32:  2411.6 tok/s total,  77.4 tok/s per stream
+=== done (13:51:28)

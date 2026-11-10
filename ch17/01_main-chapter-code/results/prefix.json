@@ -1,161 +1,582 @@
-[
-  {
+{
+  "llama | 12000 chars | cache off": {
+    "engine": "llama",
+    "prefix_chars": 12000,
     "scenario": "cache off",
-    "environment": {
-      "load_avg_1m": 44.4,
-      "other_ollama_models_loaded": [
-        "glm-ocr:latest",
-        "nomic-embed-text:latest"
-      ]
-    },
-    "first_ttft_ms": 19742.0,
-    "later_median_ttft_ms": 19634.9,
-    "later_min_ttft_ms": 14935.7,
+    "prompt_tokens": 2788,
+    "first_ttft_ms": 609.1,
+    "later_median_ttft_ms": 606.6,
+    "later_min_ttft_ms": 606.5,
     "rows": [
       {
-        "ttft_ms": 19742.0,
-        "prompt_tokens_processed": 2788,
-        "prompt_tokens_from_cache": 0,
-        "prefill_ms": 18389.451,
-        "request": 1
+        "request": 1,
+        "ttft_ms": 609.1,
+        "prompt_tokens": 2788,
+        "server_prefilled": 2788,
+        "server_cached": 0
       },
       {
-        "ttft_ms": 19634.9,
-        "prompt_tokens_processed": 2792,
-        "prompt_tokens_from_cache": 0,
-        "prefill_ms": 18763.982,
-        "request": 2
+        "request": 2,
+        "ttft_ms": 606.7,
+        "prompt_tokens": 2792,
+        "server_prefilled": 2792,
+        "server_cached": 0
       },
       {
-        "ttft_ms": 14935.7,
-        "prompt_tokens_processed": 2792,
-        "prompt_tokens_from_cache": 0,
-        "prefill_ms": 13804.587,
-        "request": 3
+        "request": 3,
+        "ttft_ms": 606.5,
+        "prompt_tokens": 2792,
+        "server_prefilled": 2792,
+        "server_cached": 0
       },
       {
-        "ttft_ms": 20726.4,
-        "prompt_tokens_processed": 2789,
-        "prompt_tokens_from_cache": 0,
-        "prefill_ms": 20180.837,
-        "request": 4
+        "request": 4,
+        "ttft_ms": 606.6,
+        "prompt_tokens": 2789,
+        "server_prefilled": 2789,
+        "server_cached": 0
       }
     ]
   },
-  {
+  "llama | 12000 chars | cache on, stable prefix": {
+    "engine": "llama",
+    "prefix_chars": 12000,
     "scenario": "cache on, stable prefix",
-    "environment": {
-      "load_avg_1m": 41.4,
-      "other_ollama_models_loaded": [
-        "qwen3:1.7b",
-        "qwen2.5-coder:0.5b",
-        "nomic-embed-text:latest"
-      ]
-    },
-    "first_ttft_ms": 20274.7,
-    "later_median_ttft_ms": 440.1,
-    "later_min_ttft_ms": 254.0,
+    "prompt_tokens": 2788,
+    "first_ttft_ms": 607.6,
+    "later_median_ttft_ms": 22.4,
+    "later_min_ttft_ms": 21.9,
     "rows": [
       {
-        "ttft_ms": 20274.7,
-        "prompt_tokens_processed": 2785,
-        "prompt_tokens_from_cache": 3,
-        "prefill_ms": 19911.603,
-        "request": 1
+        "request": 1,
+        "ttft_ms": 607.6,
+        "prompt_tokens": 2788,
+        "server_prefilled": 2788,
+        "server_cached": 0
       },
       {
-        "ttft_ms": 633.8,
-        "prompt_tokens_processed": 19,
-        "prompt_tokens_from_cache": 2773,
-        "prefill_ms": 256.561,
-        "request": 2
+        "request": 2,
+        "ttft_ms": 23.2,
+        "prompt_tokens": 2792,
+        "server_prefilled": 19,
+        "server_cached": 2773
       },
       {
-        "ttft_ms": 457.5,
-        "prompt_tokens_processed": 19,
-        "prompt_tokens_from_cache": 2773,
-        "prefill_ms": 375.299,
-        "request": 3
+        "request": 3,
+        "ttft_ms": 22.5,
+        "prompt_tokens": 2792,
+        "server_prefilled": 19,
+        "server_cached": 2773
       },
       {
-        "ttft_ms": 480.1,
-        "prompt_tokens_processed": 16,
-        "prompt_tokens_from_cache": 2773,
-        "prefill_ms": 350.174,
-        "request": 4
+        "request": 4,
+        "ttft_ms": 22.4,
+        "prompt_tokens": 2789,
+        "server_prefilled": 16,
+        "server_cached": 2773
       },
       {
-        "ttft_ms": 308.2,
-        "prompt_tokens_processed": 15,
-        "prompt_tokens_from_cache": 2773,
-        "prefill_ms": 246.39,
-        "request": 5
+        "request": 5,
+        "ttft_ms": 22.2,
+        "prompt_tokens": 2788,
+        "server_prefilled": 15,
+        "server_cached": 2773
       },
       {
-        "ttft_ms": 254.0,
-        "prompt_tokens_processed": 15,
-        "prompt_tokens_from_cache": 2773,
-        "prefill_ms": 189.932,
-        "request": 6
+        "request": 6,
+        "ttft_ms": 22.3,
+        "prompt_tokens": 2788,
+        "server_prefilled": 15,
+        "server_cached": 2773
       },
       {
-        "ttft_ms": 390.1,
-        "prompt_tokens_processed": 18,
-        "prompt_tokens_from_cache": 2773,
-        "prefill_ms": 344.353,
-        "request": 7
+        "request": 7,
+        "ttft_ms": 21.9,
+        "prompt_tokens": 2791,
+        "server_prefilled": 18,
+        "server_cached": 2773
       },
       {
-        "ttft_ms": 440.1,
-        "prompt_tokens_processed": 23,
-        "prompt_tokens_from_cache": 2773,
-        "prefill_ms": 378.173,
-        "request": 8
+        "request": 8,
+        "ttft_ms": 22.5,
+        "prompt_tokens": 2796,
+        "server_prefilled": 23,
+        "server_cached": 2773
       }
     ]
   },
-  {
+  "llama | 12000 chars | cache on, timestamp at start": {
+    "engine": "llama",
+    "prefix_chars": 12000,
     "scenario": "cache on, timestamp at start",
-    "environment": {
-      "load_avg_1m": 20.5,
-      "other_ollama_models_loaded": [
-        "qwen2.5-coder:0.5b",
-        "qwen3:1.7b",
-        "nomic-embed-text:latest"
-      ]
-    },
-    "first_ttft_ms": 21737.3,
-    "later_median_ttft_ms": 19791.9,
-    "later_min_ttft_ms": 17567.6,
+    "prompt_tokens": 2789,
+    "first_ttft_ms": 608.1,
+    "later_median_ttft_ms": 720.0,
+    "later_min_ttft_ms": 711.9,
     "rows": [
       {
-        "ttft_ms": 21737.3,
-        "prompt_tokens_processed": 2786,
-        "prompt_tokens_from_cache": 3,
-        "prefill_ms": 20887.175,
-        "request": 1
+        "request": 1,
+        "ttft_ms": 608.1,
+        "prompt_tokens": 2789,
+        "server_prefilled": 2789,
+        "server_cached": 0
       },
       {
-        "ttft_ms": 20057.3,
-        "prompt_tokens_processed": 2779,
-        "prompt_tokens_from_cache": 14,
-        "prefill_ms": 17938.082,
-        "request": 2
+        "request": 2,
+        "ttft_ms": 800.2,
+        "prompt_tokens": 2793,
+        "server_prefilled": 2793,
+        "server_cached": 0
       },
       {
-        "ttft_ms": 17567.6,
-        "prompt_tokens_processed": 2778,
-        "prompt_tokens_from_cache": 15,
-        "prefill_ms": 16286.928,
-        "request": 3
+        "request": 3,
+        "ttft_ms": 711.9,
+        "prompt_tokens": 2793,
+        "server_prefilled": 2793,
+        "server_cached": 0
       },
       {
-        "ttft_ms": 19791.9,
-        "prompt_tokens_processed": 2775,
-        "prompt_tokens_from_cache": 15,
-        "prefill_ms": 18235.086,
-        "request": 4
+        "request": 4,
+        "ttft_ms": 720.0,
+        "prompt_tokens": 2790,
+        "server_prefilled": 2790,
+        "server_cached": 0
+      }
+    ]
+  },
+  "llama | 48000 chars | cache off": {
+    "engine": "llama",
+    "prefix_chars": 48000,
+    "scenario": "cache off",
+    "prompt_tokens": 10883,
+    "first_ttft_ms": 2767.4,
+    "later_median_ttft_ms": 2775.4,
+    "later_min_ttft_ms": 2770.9,
+    "rows": [
+      {
+        "request": 1,
+        "ttft_ms": 2767.4,
+        "prompt_tokens": 10883,
+        "server_prefilled": 10883,
+        "server_cached": 0
+      },
+      {
+        "request": 2,
+        "ttft_ms": 2770.9,
+        "prompt_tokens": 10887,
+        "server_prefilled": 10887,
+        "server_cached": 0
+      },
+      {
+        "request": 3,
+        "ttft_ms": 2775.4,
+        "prompt_tokens": 10887,
+        "server_prefilled": 10887,
+        "server_cached": 0
+      },
+      {
+        "request": 4,
+        "ttft_ms": 2780.9,
+        "prompt_tokens": 10884,
+        "server_prefilled": 10884,
+        "server_cached": 0
+      }
+    ]
+  },
+  "llama | 48000 chars | cache on, stable prefix": {
+    "engine": "llama",
+    "prefix_chars": 48000,
+    "scenario": "cache on, stable prefix",
+    "prompt_tokens": 10883,
+    "first_ttft_ms": 2784.3,
+    "later_median_ttft_ms": 36.0,
+    "later_min_ttft_ms": 34.8,
+    "rows": [
+      {
+        "request": 1,
+        "ttft_ms": 2784.3,
+        "prompt_tokens": 10883,
+        "server_prefilled": 10883,
+        "server_cached": 0
+      },
+      {
+        "request": 2,
+        "ttft_ms": 36.0,
+        "prompt_tokens": 10887,
+        "server_prefilled": 19,
+        "server_cached": 10868
+      },
+      {
+        "request": 3,
+        "ttft_ms": 36.8,
+        "prompt_tokens": 10887,
+        "server_prefilled": 19,
+        "server_cached": 10868
+      },
+      {
+        "request": 4,
+        "ttft_ms": 34.8,
+        "prompt_tokens": 10884,
+        "server_prefilled": 16,
+        "server_cached": 10868
+      },
+      {
+        "request": 5,
+        "ttft_ms": 35.2,
+        "prompt_tokens": 10883,
+        "server_prefilled": 15,
+        "server_cached": 10868
+      },
+      {
+        "request": 6,
+        "ttft_ms": 35.3,
+        "prompt_tokens": 10883,
+        "server_prefilled": 15,
+        "server_cached": 10868
+      },
+      {
+        "request": 7,
+        "ttft_ms": 36.2,
+        "prompt_tokens": 10886,
+        "server_prefilled": 18,
+        "server_cached": 10868
+      },
+      {
+        "request": 8,
+        "ttft_ms": 36.0,
+        "prompt_tokens": 10891,
+        "server_prefilled": 23,
+        "server_cached": 10868
+      }
+    ]
+  },
+  "llama | 48000 chars | cache on, timestamp at start": {
+    "engine": "llama",
+    "prefix_chars": 48000,
+    "scenario": "cache on, timestamp at start",
+    "prompt_tokens": 10884,
+    "first_ttft_ms": 2789.7,
+    "later_median_ttft_ms": 3149.6,
+    "later_min_ttft_ms": 3135.7,
+    "rows": [
+      {
+        "request": 1,
+        "ttft_ms": 2789.7,
+        "prompt_tokens": 10884,
+        "server_prefilled": 10884,
+        "server_cached": 0
+      },
+      {
+        "request": 2,
+        "ttft_ms": 3135.7,
+        "prompt_tokens": 10888,
+        "server_prefilled": 10888,
+        "server_cached": 0
+      },
+      {
+        "request": 3,
+        "ttft_ms": 3149.6,
+        "prompt_tokens": 10888,
+        "server_prefilled": 10888,
+        "server_cached": 0
+      },
+      {
+        "request": 4,
+        "ttft_ms": 3190.8,
+        "prompt_tokens": 10885,
+        "server_prefilled": 10885,
+        "server_cached": 0
+      }
+    ]
+  },
+  "vllm | 12000 chars | cache off": {
+    "engine": "vllm",
+    "prefix_chars": 12000,
+    "scenario": "cache off",
+    "prompt_tokens": 2788,
+    "first_ttft_ms": 669.8,
+    "later_median_ttft_ms": 671.3,
+    "later_min_ttft_ms": 671.2,
+    "rows": [
+      {
+        "request": 1,
+        "ttft_ms": 669.8,
+        "prompt_tokens": 2788,
+        "server_prefilled": null,
+        "server_cached": 0
+      },
+      {
+        "request": 2,
+        "ttft_ms": 672.2,
+        "prompt_tokens": 2792,
+        "server_prefilled": null,
+        "server_cached": 0
+      },
+      {
+        "request": 3,
+        "ttft_ms": 671.2,
+        "prompt_tokens": 2792,
+        "server_prefilled": null,
+        "server_cached": 0
+      },
+      {
+        "request": 4,
+        "ttft_ms": 671.3,
+        "prompt_tokens": 2789,
+        "server_prefilled": null,
+        "server_cached": 0
+      }
+    ]
+  },
+  "vllm | 48000 chars | cache off": {
+    "engine": "vllm",
+    "prefix_chars": 48000,
+    "scenario": "cache off",
+    "prompt_tokens": 10883,
+    "first_ttft_ms": 2984.7,
+    "later_median_ttft_ms": 3004.5,
+    "later_min_ttft_ms": 2990.6,
+    "rows": [
+      {
+        "request": 1,
+        "ttft_ms": 2984.7,
+        "prompt_tokens": 10883,
+        "server_prefilled": null,
+        "server_cached": 0
+      },
+      {
+        "request": 2,
+        "ttft_ms": 2990.6,
+        "prompt_tokens": 10887,
+        "server_prefilled": null,
+        "server_cached": 0
+      },
+      {
+        "request": 3,
+        "ttft_ms": 3004.5,
+        "prompt_tokens": 10887,
+        "server_prefilled": null,
+        "server_cached": 0
+      },
+      {
+        "request": 4,
+        "ttft_ms": 3009.0,
+        "prompt_tokens": 10884,
+        "server_prefilled": null,
+        "server_cached": 0
+      }
+    ]
+  },
+  "vllm | 12000 chars | cache on, stable prefix": {
+    "engine": "vllm",
+    "prefix_chars": 12000,
+    "scenario": "cache on, stable prefix",
+    "prompt_tokens": 2788,
+    "first_ttft_ms": 700.9,
+    "later_median_ttft_ms": 39.2,
+    "later_min_ttft_ms": 36.4,
+    "rows": [
+      {
+        "request": 1,
+        "ttft_ms": 700.9,
+        "prompt_tokens": 2788,
+        "server_prefilled": null,
+        "server_cached": 0
+      },
+      {
+        "request": 2,
+        "ttft_ms": 39.2,
+        "prompt_tokens": 2792,
+        "server_prefilled": null,
+        "server_cached": 2768
+      },
+      {
+        "request": 3,
+        "ttft_ms": 39.8,
+        "prompt_tokens": 2792,
+        "server_prefilled": null,
+        "server_cached": 2768
+      },
+      {
+        "request": 4,
+        "ttft_ms": 39.1,
+        "prompt_tokens": 2789,
+        "server_prefilled": null,
+        "server_cached": 2768
+      },
+      {
+        "request": 5,
+        "ttft_ms": 53.6,
+        "prompt_tokens": 2788,
+        "server_prefilled": null,
+        "server_cached": 2768
+      },
+      {
+        "request": 6,
+        "ttft_ms": 39.0,
+        "prompt_tokens": 2788,
+        "server_prefilled": null,
+        "server_cached": 2768
+      },
+      {
+        "request": 7,
+        "ttft_ms": 39.8,
+        "prompt_tokens": 2791,
+        "server_prefilled": null,
+        "server_cached": 2768
+      },
+      {
+        "request": 8,
+        "ttft_ms": 36.4,
+        "prompt_tokens": 2796,
+        "server_prefilled": null,
+        "server_cached": 2768
+      }
+    ]
+  },
+  "vllm | 12000 chars | cache on, timestamp at start": {
+    "engine": "vllm",
+    "prefix_chars": 12000,
+    "scenario": "cache on, timestamp at start",
+    "prompt_tokens": 2789,
+    "first_ttft_ms": 702.0,
+    "later_median_ttft_ms": 703.2,
+    "later_min_ttft_ms": 703.0,
+    "rows": [
+      {
+        "request": 1,
+        "ttft_ms": 702.0,
+        "prompt_tokens": 2789,
+        "server_prefilled": null,
+        "server_cached": 0
+      },
+      {
+        "request": 2,
+        "ttft_ms": 703.2,
+        "prompt_tokens": 2793,
+        "server_prefilled": null,
+        "server_cached": 16
+      },
+      {
+        "request": 3,
+        "ttft_ms": 703.0,
+        "prompt_tokens": 2793,
+        "server_prefilled": null,
+        "server_cached": 16
+      },
+      {
+        "request": 4,
+        "ttft_ms": 703.3,
+        "prompt_tokens": 2790,
+        "server_prefilled": null,
+        "server_cached": 16
+      }
+    ]
+  },
+  "vllm | 48000 chars | cache on, stable prefix": {
+    "engine": "vllm",
+    "prefix_chars": 48000,
+    "scenario": "cache on, stable prefix",
+    "prompt_tokens": 10883,
+    "first_ttft_ms": 3112.3,
+    "later_median_ttft_ms": 64.9,
+    "later_min_ttft_ms": 63.1,
+    "rows": [
+      {
+        "request": 1,
+        "ttft_ms": 3112.3,
+        "prompt_tokens": 10883,
+        "server_prefilled": null,
+        "server_cached": 0
+      },
+      {
+        "request": 2,
+        "ttft_ms": 66.1,
+        "prompt_tokens": 10887,
+        "server_prefilled": null,
+        "server_cached": 10864
+      },
+      {
+        "request": 3,
+        "ttft_ms": 65.1,
+        "prompt_tokens": 10887,
+        "server_prefilled": null,
+        "server_cached": 10864
+      },
+      {
+        "request": 4,
+        "ttft_ms": 64.5,
+        "prompt_tokens": 10884,
+        "server_prefilled": null,
+        "server_cached": 10864
+      },
+      {
+        "request": 5,
+        "ttft_ms": 64.7,
+        "prompt_tokens": 10883,
+        "server_prefilled": null,
+        "server_cached": 10864
+      },
+      {
+        "request": 6,
+        "ttft_ms": 64.9,
+        "prompt_tokens": 10883,
+        "server_prefilled": null,
+        "server_cached": 10864
+      },
+      {
+        "request": 7,
+        "ttft_ms": 66.2,
+        "prompt_tokens": 10886,
+        "server_prefilled": null,
+        "server_cached": 10864
+      },
+      {
+        "request": 8,
+        "ttft_ms": 63.1,
+        "prompt_tokens": 10891,
+        "server_prefilled": null,
+        "server_cached": 10864
+      }
+    ]
+  },
+  "vllm | 48000 chars | cache on, timestamp at start": {
+    "engine": "vllm",
+    "prefix_chars": 48000,
+    "scenario": "cache on, timestamp at start",
+    "prompt_tokens": 10884,
+    "first_ttft_ms": 3106.3,
+    "later_median_ttft_ms": 3056.0,
+    "later_min_ttft_ms": 3037.8,
+    "rows": [
+      {
+        "request": 1,
+        "ttft_ms": 3106.3,
+        "prompt_tokens": 10884,
+        "server_prefilled": null,
+        "server_cached": 0
+      },
+      {
+        "request": 2,
+        "ttft_ms": 3056.0,
+        "prompt_tokens": 10888,
+        "server_prefilled": null,
+        "server_cached": 16
+      },
+      {
+        "request": 3,
+        "ttft_ms": 3107.9,
+        "prompt_tokens": 10888,
+        "server_prefilled": null,
+        "server_cached": 0
+      },
+      {
+        "request": 4,
+        "ttft_ms": 3037.8,
+        "prompt_tokens": 10885,
+        "server_prefilled": null,
+        "server_cached": 16
       }
     ]
   }
-]
+}

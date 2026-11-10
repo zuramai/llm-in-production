@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 470" font-family="Helvetica, Arial, sans-serif" font-size="13">
-  <rect width="720" height="470" rx="12" fill="#ffffff"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 482" font-family="Helvetica, Arial, sans-serif" font-size="13">
+  <rect width="720" height="482" rx="12" fill="#ffffff"/>
   <text x="360" y="28" text-anchor="middle" font-size="17" font-weight="bold" fill="#1f2937">Static batching vs continuous batching</text>
 
   <!-- Static -->
@@ -49,5 +49,6 @@
 
   <line x1="140" y1="408" x2="640" y2="408" stroke="#888" stroke-width="1.5"/>
   <text x="640" y="426" text-anchor="end" fill="#374151">time (one tick = one decode step for every active request)</text>
-  <text x="20" y="452" fill="#374151">The GPU stays busy because the scheduler admits work between steps, not between batches. (Orca, OSDI 2022; now default in vLLM, SGLang, llama.cpp.)</text>
+  <text x="20" y="446" fill="#374151">The GPU stays busy because the scheduler admits work between steps, not between batches.</text>
+  <text x="20" y="464" fill="#374151">(Orca, OSDI 2022; now the default in vLLM, SGLang and llama.cpp's server.)</text>
 </svg>

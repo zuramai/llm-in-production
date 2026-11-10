@@ -1,0 +1,15 @@
+=== 2026-11-09T12:00:04+07:00 phases: ollama llama vllm
+NVIDIA GeForce RTX 3090, 24576 MiB, 595.99.02
+2093901, /home/t.estella/hd-face-gathering/venv/bin/python, 2322 MiB
+vllm 0.33.0
+torch 2.14.0+cu130 13.0
+version: 0.9.0-dev (build 12182, commit fd27b2034)
+ollama {"version":"0.40.15"}
+=== phase ollama (12:00:09)
+GPU free: 21795 / 24576 MiB
+ollama-q4_K_M    category  79.0% [74.0, 83.2]  priority  62.7%  hard 81.7%  parse fails 0  p50 439 ms  decode 130.0 tok/s  memory {'loaded_gb': 9.94, 'vram_gb': 9.94, 'context_length': 8192}
+ollama-q8_0      category  80.3% [75.5, 84.4]  priority  57.0%  hard 83.3%  parse fails 0  p50 609 ms  decode 88.5 tok/s  memory {'loaded_gb': 13.25, 'vram_gb': 13.25, 'context_length': 8192}
+ollama-fp16      category  79.3% [74.4, 83.5]  priority  57.7%  hard 81.7%  parse fails 0  p50 985 ms  decode 53.0 tok/s  memory {'loaded_gb': 20.09, 'vram_gb': 20.09, 'context_length': 8192}
+=== phase llama (12:11:05)
+GPU free: 2309 / 24576 MiB
+not enough free GPU memory for VLLM_UTIL=0.80; stopping

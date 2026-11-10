@@ -25,9 +25,9 @@
     <rect x="630" y="250" width="110" height="52" rx="8" fill="#bfdbfe"/>
   </g>
   <g fill="#111827" text-anchor="middle">
-    <text x="75" y="272">Router</text><text x="75" y="290" font-size="12">(llm-d EPP)</text>
+    <text x="75" y="272">Router</text><text x="75" y="290" font-size="12">(KV-aware)</text>
     <text x="260" y="268" font-weight="bold">Prefill pool</text><text x="260" y="286" font-size="12">small TP, big token batches</text>
-    <text x="500" y="268" font-weight="bold">Decode pool</text><text x="500" y="286" font-size="12">larger TP, huge batches of streams</text>
+    <text x="500" y="268" font-weight="bold">Decode pool</text><text x="500" y="286" font-size="12">big batches of streams</text>
     <text x="685" y="272">Client</text><text x="685" y="290" font-size="12">streams tokens</text>
   </g>
   <g stroke="#1f2937" stroke-width="2" fill="none">
@@ -40,7 +40,7 @@
 
   <rect x="20" y="366" width="720" height="48" rx="8" fill="#f3f4f6" stroke="#9ca3af"/>
   <text x="34" y="386" fill="#111827">Pays off with long prompts, strict TTFT and inter-token SLOs, and enough traffic to keep both pools busy. For a small model</text>
-  <text x="34" y="404" fill="#111827">on one GPU it is pure overhead. llm-d 1.0 (Oct 2026) ships a DisaggregatedSet controller to run and upgrade both pools together.</text>
+  <text x="34" y="404" fill="#111827">on one GPU it is pure overhead: that is why this chapter only draws it.</text>
 
   <defs>
     <marker id="b" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#1f2937"/></marker>

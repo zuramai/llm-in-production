@@ -1,52 +1,2828 @@
 {
-  "baseline": [
-    {
-      "prompt": "json_triage_1",
-      "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached.\"\n}",
-      "completion_tokens": 40,
-      "decode_tok_s": 17.69,
-      "draft_n": null,
-      "draft_accepted": null
-    },
-    {
-      "prompt": "json_triage_2",
-      "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
-      "completion_tokens": 37,
-      "decode_tok_s": 20.73,
-      "draft_n": null,
-      "draft_accepted": null
-    },
-    {
-      "prompt": "json_triage_3",
-      "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package marked as delivered but not received. Order #5521.\"\n}",
-      "completion_tokens": 37,
-      "decode_tok_s": 17.34,
-      "draft_n": null,
-      "draft_accepted": null
-    },
-    {
-      "prompt": "freeform_1",
-      "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it interacts with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more effectively than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue light, and the sun emits more blue light than violet. Additionally, some of the violet light is absorbed by the upper atmosphere. As a result, blue light is scattered in all directions, making the sky appear blue to an observer on the ground. This effect is most noticeable on clear days when the atmosphere is relatively free of particles that might scatter light differently.",
-      "completion_tokens": 146,
-      "decode_tok_s": 16.22,
-      "draft_n": null,
-      "draft_accepted": null
-    },
-    {
-      "prompt": "freeform_2",
-      "text": "Subject: Apologies for the Delay \u2013 We\u2019re Here to Help  \n\nHi [Customer's Name],  \n\nWe\u2019re truly sorry for the delay in receiving your parcel. We understand how frustrating that can be, and we completely appreciate your patience.  \n\nPlease know that we\u2019re working closely with our delivery team to ensure this doesn\u2019t happen again. If you need any further assistance or have questions, don\u2019t hesitate to reach out \u2013 we\u2019re here to help!  \n\nThank you for your understanding and continued support.  \n\nBest regards,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
-      "completion_tokens": 121,
-      "decode_tok_s": 13.84,
-      "draft_n": null,
-      "draft_accepted": null
-    },
-    {
-      "prompt": "freeform_3",
-      "text": "1. Wrap each item individually in bubble wrap or packing paper to prevent breakage.  \n2. Use sturdy boxes that are appropriately sized to minimize movement inside.  \n3. Fill empty spaces with packing peanuts or crumpled paper to secure items in place.  \n4. Label all boxes as \"Fragile\" and \"This Side Up\" for clear handling instructions.  \n5. Consider using a shipping service that specializes in fragile or delicate items for added protection.",
-      "completion_tokens": 95,
-      "decode_tok_s": 11.8,
-      "draft_n": null,
-      "draft_accepted": null
+  "llama/baseline": {
+    "1": {
+      "concurrency": 1,
+      "median_stream_tok_s": 130.2,
+      "aggregate_tok_s": 121.7,
+      "wall_s": 5.1,
+      "vllm_spec_counters": {},
+      "rows": [
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked. Photos attached.\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 29.5,
+          "client_decode_tok_s": 134.02,
+          "server_decode_tok_s": 130.57,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 31.4,
+          "client_decode_tok_s": 133.98,
+          "server_decode_tok_s": 130.1,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 31.9,
+          "client_decode_tok_s": 132.0,
+          "server_decode_tok_s": 128.32,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list, shipping: float, coupon: dict = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 125,
+          "ttft_ms": 46.3,
+          "client_decode_tok_s": 127.15,
+          "server_decode_tok_s": 126.16,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it interacts with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue light, and the sun emits more blue light than violet. As a result, blue light is scattered in all directions, making the sky appear blue to us. This scattering effect is most noticeable during the day when the sun is high in the sky. At sunrise or sunset, the light travels through more of the atmosphere, scattering out the shorter wavelengths, leaving the longer red and orange hues to dominate the sky.",
+          "completion_tokens": 156,
+          "ttft_ms": 30.1,
+          "client_decode_tok_s": 130.2,
+          "server_decode_tok_s": 129.33,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delay \u2013 We\u2019re Here to Help  \n\nDear [Customer's Name],  \n\nWe\u2019re truly sorry for the delay in receiving your parcel. We understand how frustrating this can be, and we sincerely apologize for the inconvenience caused.  \n\nWe\u2019re currently working closely with our delivery team to resolve this issue and ensure that your package is delivered as soon as possible. If you need any further assistance or have any questions, please don\u2019t hesitate to reach out to us directly.  \n\nThank you for your patience and understanding. We value your business and are committed to making things right.  \n\nBest regards,  \n[Your Name]  \n[Your Position]  \n[Company Name]  \n[Contact Information]",
+          "completion_tokens": 144,
+          "ttft_ms": 28.8,
+          "client_decode_tok_s": 123.39,
+          "server_decode_tok_s": 122.49,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or packing paper.  \n2. Use sturdy boxes that are appropriately sized for the items.  \n3. Fill empty spaces with packing peanuts or crumpled paper to prevent movement.  \n4. Label the box as \"Fragile\" and include handling instructions.  \n5. Secure the lid with packing tape to ensure the box remains closed during transit.",
+          "completion_tokens": 81,
+          "ttft_ms": 32.5,
+          "client_decode_tok_s": 123.44,
+          "server_decode_tok_s": 121.8,
+          "draft_n": null,
+          "draft_accepted": null
+        }
+      ],
+      "acceptance": null
     }
-  ]
+  },
+  "llama/draft-0.6b": {
+    "1": {
+      "concurrency": 1,
+      "median_stream_tok_s": 125.9,
+      "aggregate_tok_s": 118.6,
+      "wall_s": 5.24,
+      "vllm_spec_counters": {},
+      "rows": [
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked. Photos attached.\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 32.0,
+          "client_decode_tok_s": 126.3,
+          "server_decode_tok_s": 122.55,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 32.6,
+          "client_decode_tok_s": 126.36,
+          "server_decode_tok_s": 122.89,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 34.2,
+          "client_decode_tok_s": 128.21,
+          "server_decode_tok_s": 124.65,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list, shipping: float, coupon: dict = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 125,
+          "ttft_ms": 49.7,
+          "client_decode_tok_s": 123.65,
+          "server_decode_tok_s": 122.57,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it interacts with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue light, and the sun emits more blue light than violet. As a result, blue light is scattered in all directions, making the sky appear blue to us. This scattering effect is most noticeable during the day when the sun is high in the sky. At sunrise or sunset, the light travels through more of the atmosphere, scattering out the shorter wavelengths, leaving the longer red and orange hues to dominate the sky.",
+          "completion_tokens": 156,
+          "ttft_ms": 30.3,
+          "client_decode_tok_s": 122.3,
+          "server_decode_tok_s": 121.57,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delay \u2013 We\u2019re Here to Help  \n\nDear [Customer's Name],  \n\nWe\u2019re truly sorry for the delay in receiving your parcel. We understand how frustrating this can be, and we sincerely apologize for the inconvenience caused.  \n\nWe\u2019re currently working closely with our delivery team to resolve this issue and ensure that your package is delivered as soon as possible. If you need any further assistance or have any questions, please don\u2019t hesitate to reach out to us directly.  \n\nThank you for your patience and understanding. We value your business and are committed to making things right.  \n\nBest regards,  \n[Your Name]  \n[Your Position]  \n[Company Name]  \n[Contact Information]",
+          "completion_tokens": 144,
+          "ttft_ms": 25.9,
+          "client_decode_tok_s": 123.28,
+          "server_decode_tok_s": 122.45,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or packing paper.  \n2. Use sturdy boxes that are appropriately sized for the items.  \n3. Fill empty spaces with packing peanuts or crumpled paper to prevent movement.  \n4. Label the box as \"Fragile\" and include handling instructions.  \n5. Secure the lid with packing tape to ensure the box remains closed during transit.",
+          "completion_tokens": 81,
+          "ttft_ms": 25.5,
+          "client_decode_tok_s": 125.89,
+          "server_decode_tok_s": 124.34,
+          "draft_n": null,
+          "draft_accepted": null
+        }
+      ],
+      "acceptance": null
+    }
+  },
+  "vllm/ngram": {
+    "1": {
+      "concurrency": 1,
+      "median_stream_tok_s": 57.5,
+      "aggregate_tok_s": 56.2,
+      "wall_s": 10.76,
+      "vllm_spec_counters": {
+        "vllm:spec_decode_num_drafts_total": 502.0,
+        "vllm:spec_decode_num_drafts_created": 0.0,
+        "vllm:spec_decode_num_draft_tokens_total": 2008.0,
+        "vllm:spec_decode_num_draft_tokens_created": 0.0,
+        "vllm:spec_decode_num_accepted_tokens_total": 95.0,
+        "vllm:spec_decode_num_accepted_tokens_created": 0.0,
+        "vllm:spec_decode_num_accepted_tokens_per_pos_total": 95.0,
+        "vllm:spec_decode_num_accepted_tokens_per_pos_created": 0.0
+      },
+      "rows": [
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 44.9,
+          "client_decode_tok_s": 58.94,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 52.8,
+          "client_decode_tok_s": 57.46,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 53.1,
+          "client_decode_tok_s": 63.01,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 72.5,
+          "client_decode_tok_s": 122.89,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it interacts with gas molecules and small particles in the air. Sunlight is made up of different colors, each with its own wavelength. Blue light has a shorter wavelength and is scattered more efficiently by the molecules in the atmosphere than longer wavelengths like red or yellow. This scattered blue light comes from all directions, making the sky appear blue to our eyes. During sunrise or sunset, the sun is lower on the horizon, and the light travels through more atmosphere, scattering out the shorter blue wavelengths and leaving the longer red and orange hues to dominate, which is why the sky appears reddish at those times.",
+          "completion_tokens": 141,
+          "ttft_ms": 46.0,
+          "client_decode_tok_s": 48.3,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 46.7,
+          "client_decode_tok_s": 48.64,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or packing paper.  \n2. Use sturdy boxes that are appropriately sized for the items.  \n3. Fill empty spaces with packing peanuts or crumpled paper to prevent movement.  \n4. Seal the box securely with strong packing tape.  \n5. Include a list of contents and fragile labels on the outside of the box.",
+          "completion_tokens": 76,
+          "ttft_ms": 45.7,
+          "client_decode_tok_s": 49.5,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        }
+      ],
+      "acceptance": 0.047
+    },
+    "8": {
+      "concurrency": 8,
+      "median_stream_tok_s": 39.2,
+      "aggregate_tok_s": 297.1,
+      "wall_s": 16.22,
+      "vllm_spec_counters": {
+        "vllm:spec_decode_num_drafts_total": 4004.0,
+        "vllm:spec_decode_num_drafts_created": 0.0,
+        "vllm:spec_decode_num_draft_tokens_total": 16016.0,
+        "vllm:spec_decode_num_draft_tokens_created": 0.0,
+        "vllm:spec_decode_num_accepted_tokens_total": 760.0,
+        "vllm:spec_decode_num_accepted_tokens_created": 0.0,
+        "vllm:spec_decode_num_accepted_tokens_per_pos_total": 760.0,
+        "vllm:spec_decode_num_accepted_tokens_per_pos_created": 0.0
+      },
+      "rows": [
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 32.1,
+          "client_decode_tok_s": 41.14,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 61.0,
+          "client_decode_tok_s": 41.07,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 60.7,
+          "client_decode_tok_s": 41.07,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 60.5,
+          "client_decode_tok_s": 41.08,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 60.2,
+          "client_decode_tok_s": 41.07,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 59.9,
+          "client_decode_tok_s": 41.07,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 59.8,
+          "client_decode_tok_s": 41.08,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 59.5,
+          "client_decode_tok_s": 41.08,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 74.6,
+          "client_decode_tok_s": 39.11,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 76.2,
+          "client_decode_tok_s": 39.16,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 76.1,
+          "client_decode_tok_s": 39.16,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 75.4,
+          "client_decode_tok_s": 39.15,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 75.0,
+          "client_decode_tok_s": 39.17,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 74.5,
+          "client_decode_tok_s": 39.17,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 74.2,
+          "client_decode_tok_s": 39.16,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 73.7,
+          "client_decode_tok_s": 39.18,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 75.3,
+          "client_decode_tok_s": 44.32,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 77.5,
+          "client_decode_tok_s": 44.35,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 77.5,
+          "client_decode_tok_s": 44.4,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 76.8,
+          "client_decode_tok_s": 44.38,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 77.1,
+          "client_decode_tok_s": 44.41,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 76.7,
+          "client_decode_tok_s": 44.39,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 75.9,
+          "client_decode_tok_s": 44.39,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 75.4,
+          "client_decode_tok_s": 44.39,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 74.9,
+          "client_decode_tok_s": 83.75,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 86.8,
+          "client_decode_tok_s": 84.27,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 86.2,
+          "client_decode_tok_s": 84.29,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 86.1,
+          "client_decode_tok_s": 84.27,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 85.6,
+          "client_decode_tok_s": 84.32,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 85.0,
+          "client_decode_tok_s": 84.3,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 85.2,
+          "client_decode_tok_s": 84.32,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 84.6,
+          "client_decode_tok_s": 84.28,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is less pronounced at sunrise or sunset, when the sun is lower on the horizon, and light travels through more atmosphere, scattering out the blue and leaving reds and oranges to dominate.",
+          "completion_tokens": 155,
+          "ttft_ms": 78.0,
+          "client_decode_tok_s": 33.64,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most pronounced on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 84.1,
+          "client_decode_tok_s": 33.63,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most pronounced on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 84.1,
+          "client_decode_tok_s": 33.63,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most pronounced on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 83.4,
+          "client_decode_tok_s": 33.63,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most pronounced on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 82.9,
+          "client_decode_tok_s": 33.62,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most pronounced on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 82.4,
+          "client_decode_tok_s": 33.62,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most pronounced on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 82.1,
+          "client_decode_tok_s": 33.62,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most pronounced on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 81.9,
+          "client_decode_tok_s": 33.62,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 88.0,
+          "client_decode_tok_s": 33.7,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 87.3,
+          "client_decode_tok_s": 33.7,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 87.6,
+          "client_decode_tok_s": 33.71,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 86.8,
+          "client_decode_tok_s": 33.7,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 86.6,
+          "client_decode_tok_s": 33.7,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 86.1,
+          "client_decode_tok_s": 33.7,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 85.8,
+          "client_decode_tok_s": 33.7,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 85.2,
+          "client_decode_tok_s": 33.65,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or packing paper.  \n2. Use sturdy boxes that are appropriately sized for the items.  \n3. Fill empty spaces with packing peanuts or crumpled paper to prevent movement.  \n4. Seal the box securely with strong packing tape.  \n5. Include a list of contents and fragile labels on the outside of the box.",
+          "completion_tokens": 76,
+          "ttft_ms": 87.9,
+          "client_decode_tok_s": 34.33,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or packing paper.  \n2. Use sturdy boxes that are appropriately sized for the items.  \n3. Fill empty spaces with packing peanuts or crumpled paper to prevent movement.  \n4. Seal the box securely with strong packing tape.  \n5. Include a list of contents and fragile labels on the outside of the box.",
+          "completion_tokens": 76,
+          "ttft_ms": 86.6,
+          "client_decode_tok_s": 34.32,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or packing paper.  \n2. Use sturdy boxes that are appropriately sized for the items.  \n3. Fill empty spaces with packing peanuts or crumpled paper to prevent movement.  \n4. Seal the box securely with strong packing tape.  \n5. Include a list of contents and fragile labels on the outside of the box.",
+          "completion_tokens": 76,
+          "ttft_ms": 86.5,
+          "client_decode_tok_s": 34.32,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or packing paper.  \n2. Use sturdy boxes that are appropriately sized for the items.  \n3. Fill empty spaces with packing peanuts or crumpled paper to prevent movement.  \n4. Seal the box securely with strong packing tape.  \n5. Include a list of contents and fragile labels on the outside of the box.",
+          "completion_tokens": 76,
+          "ttft_ms": 85.8,
+          "client_decode_tok_s": 34.32,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or packing paper.  \n2. Use sturdy boxes that are appropriately sized for the items.  \n3. Fill empty spaces with packing peanuts or crumpled paper to prevent movement.  \n4. Seal the box securely with strong packing tape.  \n5. Include a list of contents and fragile labels on the outside of the box.",
+          "completion_tokens": 76,
+          "ttft_ms": 86.0,
+          "client_decode_tok_s": 34.32,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or packing paper.  \n2. Use sturdy boxes that are appropriately sized for the items.  \n3. Fill empty spaces with packing peanuts or crumpled paper to prevent movement.  \n4. Seal the box securely with strong packing tape.  \n5. Include a list of contents and fragile labels on the outside of the box.",
+          "completion_tokens": 76,
+          "ttft_ms": 85.2,
+          "client_decode_tok_s": 34.32,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or packing paper.  \n2. Use sturdy boxes that are appropriately sized for the items.  \n3. Fill empty spaces with packing peanuts or crumpled paper to prevent movement.  \n4. Seal the box securely with strong packing tape.  \n5. Include a list of contents and fragile labels on the outside of the box.",
+          "completion_tokens": 76,
+          "ttft_ms": 85.3,
+          "client_decode_tok_s": 34.32,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or soft cloth to prevent scratches and breakage.  \n2. Use packing peanuts or foam to fill empty spaces and prevent shifting during transit.  \n3. Place fragile items in a sturdy, reinforced box with ample cushioning on all sides.  \n4. Label the box clearly as \"Fragile\" and \"This Side Up\" to ensure careful handling.  \n5. Consider using a shipping crate or custom box for added protection and stability.",
+          "completion_tokens": 99,
+          "ttft_ms": 90.9,
+          "client_decode_tok_s": 39.49,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        }
+      ],
+      "acceptance": 0.047
+    }
+  },
+  "vllm/baseline": {
+    "1": {
+      "concurrency": 1,
+      "median_stream_tok_s": 48.8,
+      "aggregate_tok_s": 47.4,
+      "wall_s": 12.65,
+      "vllm_spec_counters": {},
+      "rows": [
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 42.7,
+          "client_decode_tok_s": 49.74,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 53.9,
+          "client_decode_tok_s": 49.98,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 52.8,
+          "client_decode_tok_s": 49.72,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 72.1,
+          "client_decode_tok_s": 48.79,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most pronounced on clear days when there are fewer particles to interfere with the scattering process.",
+          "completion_tokens": 136,
+          "ttft_ms": 45.3,
+          "client_decode_tok_s": 48.8,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 44.9,
+          "client_decode_tok_s": 48.4,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or packing paper.  \n2. Use sturdy boxes that are appropriately sized for the items.  \n3. Fill empty spaces with packing peanuts or crumpled paper to prevent movement.  \n4. Seal the box securely with strong packing tape.  \n5. Include a list of contents and fragile labels on the outside of the box.",
+          "completion_tokens": 76,
+          "ttft_ms": 49.9,
+          "client_decode_tok_s": 47.78,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        }
+      ],
+      "acceptance": null
+    },
+    "8": {
+      "concurrency": 8,
+      "median_stream_tok_s": 47.9,
+      "aggregate_tok_s": 366.5,
+      "wall_s": 13.6,
+      "vllm_spec_counters": {},
+      "rows": [
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 33.3,
+          "client_decode_tok_s": 47.97,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 59.7,
+          "client_decode_tok_s": 48.14,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 59.4,
+          "client_decode_tok_s": 48.16,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 59.2,
+          "client_decode_tok_s": 48.17,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 59.0,
+          "client_decode_tok_s": 48.17,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 59.0,
+          "client_decode_tok_s": 48.2,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 58.4,
+          "client_decode_tok_s": 48.16,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 58.3,
+          "client_decode_tok_s": 48.17,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 60.2,
+          "client_decode_tok_s": 49.18,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 66.1,
+          "client_decode_tok_s": 49.26,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 65.0,
+          "client_decode_tok_s": 49.2,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 65.6,
+          "client_decode_tok_s": 49.29,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 65.0,
+          "client_decode_tok_s": 49.25,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 64.0,
+          "client_decode_tok_s": 49.22,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 64.2,
+          "client_decode_tok_s": 49.29,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 63.7,
+          "client_decode_tok_s": 49.24,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 69.4,
+          "client_decode_tok_s": 48.04,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 81.1,
+          "client_decode_tok_s": 48.9,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 80.1,
+          "client_decode_tok_s": 48.88,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 79.9,
+          "client_decode_tok_s": 48.9,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 79.7,
+          "client_decode_tok_s": 48.9,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 79.1,
+          "client_decode_tok_s": 48.92,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 78.9,
+          "client_decode_tok_s": 48.9,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 78.6,
+          "client_decode_tok_s": 48.92,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 64.8,
+          "client_decode_tok_s": 46.74,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 83.1,
+          "client_decode_tok_s": 47.04,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 82.5,
+          "client_decode_tok_s": 47.05,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 82.6,
+          "client_decode_tok_s": 47.05,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 82.2,
+          "client_decode_tok_s": 47.06,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 81.8,
+          "client_decode_tok_s": 47.06,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 81.7,
+          "client_decode_tok_s": 47.06,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 81.2,
+          "client_decode_tok_s": 47.05,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most pronounced on clear days when there are fewer particles to interfere with the scattering process.",
+          "completion_tokens": 136,
+          "ttft_ms": 65.8,
+          "client_decode_tok_s": 47.53,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most pronounced on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 88.3,
+          "client_decode_tok_s": 47.93,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most pronounced on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 87.0,
+          "client_decode_tok_s": 47.91,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most pronounced on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 88.5,
+          "client_decode_tok_s": 47.94,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most pronounced on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 87.4,
+          "client_decode_tok_s": 47.93,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most pronounced on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 85.9,
+          "client_decode_tok_s": 47.92,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most pronounced on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 87.4,
+          "client_decode_tok_s": 47.94,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most pronounced on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 86.0,
+          "client_decode_tok_s": 47.92,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 81.7,
+          "client_decode_tok_s": 47.77,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 81.3,
+          "client_decode_tok_s": 47.77,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 80.9,
+          "client_decode_tok_s": 47.77,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 80.7,
+          "client_decode_tok_s": 47.77,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 80.1,
+          "client_decode_tok_s": 47.77,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 79.9,
+          "client_decode_tok_s": 47.78,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 79.8,
+          "client_decode_tok_s": 47.78,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 85.9,
+          "client_decode_tok_s": 47.79,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or soft cloth to prevent scratches and breakage.  \n2. Use packing peanuts or crumpled paper to fill empty spaces and prevent shifting during transit.  \n3. Place fragile items in a sturdy, reinforced box with ample cushioning on all sides.  \n4. Label the box clearly as \"Fragile\" and \"This Side Up\" to ensure careful handling.  \n5. Consider using a shipping container designed for delicate items to provide extra protection.",
+          "completion_tokens": 102,
+          "ttft_ms": 79.7,
+          "client_decode_tok_s": 47.4,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or soft cloth to prevent scratches and breakage.  \n2. Use packing peanuts or crumpled paper to fill empty spaces and prevent shifting during transit.  \n3. Place fragile items in a sturdy, reinforced box with ample cushioning on all sides.  \n4. Label the box clearly as \"Fragile\" and \"This Side Up\" to ensure careful handling.  \n5. Consider using a shipping container designed for delicate items to provide extra protection.",
+          "completion_tokens": 102,
+          "ttft_ms": 79.4,
+          "client_decode_tok_s": 47.39,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or soft cloth to prevent scratches and breakage.  \n2. Use packing peanuts or crumpled paper to fill empty spaces and prevent shifting during transit.  \n3. Place fragile items in a sturdy, reinforced box with ample cushioning on all sides.  \n4. Label the box clearly as \"Fragile\" and \"This Side Up\" to ensure careful handling.  \n5. Consider using a shipping container designed for delicate items to provide extra protection.",
+          "completion_tokens": 102,
+          "ttft_ms": 79.2,
+          "client_decode_tok_s": 47.4,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or soft cloth to prevent scratches and breakage.  \n2. Use packing peanuts or crumpled paper to fill empty spaces and prevent shifting during transit.  \n3. Place fragile items in a sturdy, reinforced box with ample cushioning on all sides.  \n4. Label the box clearly as \"Fragile\" and \"This Side Up\" to ensure careful handling.  \n5. Consider using a shipping container designed for delicate items to provide extra protection.",
+          "completion_tokens": 102,
+          "ttft_ms": 78.4,
+          "client_decode_tok_s": 47.4,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or soft cloth to prevent scratches and breakage.  \n2. Use packing peanuts or crumpled paper to fill empty spaces and prevent shifting during transit.  \n3. Place fragile items in a sturdy, reinforced box with ample cushioning on all sides.  \n4. Label the box clearly as \"Fragile\" and \"This Side Up\" to ensure careful handling.  \n5. Consider using a shipping container designed for delicate items to provide extra protection.",
+          "completion_tokens": 102,
+          "ttft_ms": 78.3,
+          "client_decode_tok_s": 47.4,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or soft cloth to prevent scratches and breakage.  \n2. Use packing peanuts or crumpled paper to fill empty spaces and prevent shifting during transit.  \n3. Place fragile items in a sturdy, reinforced box with ample cushioning on all sides.  \n4. Label the box clearly as \"Fragile\" and \"This Side Up\" to ensure careful handling.  \n5. Consider using a shipping container designed for delicate items to provide extra protection.",
+          "completion_tokens": 102,
+          "ttft_ms": 77.7,
+          "client_decode_tok_s": 47.39,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or soft cloth to prevent scratches and breakage.  \n2. Use packing peanuts or crumpled paper to fill empty spaces and prevent shifting during transit.  \n3. Place fragile items in a sturdy, reinforced box with ample cushioning on all sides.  \n4. Label the box clearly as \"Fragile\" and \"This Side Up\" to ensure careful handling.  \n5. Consider using a shipping container designed for delicate items to provide extra protection.",
+          "completion_tokens": 102,
+          "ttft_ms": 77.6,
+          "client_decode_tok_s": 47.4,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or soft cloth to prevent scratches and breakage.  \n2. Use packing peanuts or crumpled paper to fill empty spaces and prevent shifting during transit.  \n3. Place fragile items in a sturdy, reinforced box with ample cushioning on all sides.  \n4. Label the box clearly as \"Fragile\" and \"This Side Up\" to ensure careful handling.  \n5. Consider using a shipping container designed for delicate items to provide extra protection.",
+          "completion_tokens": 102,
+          "ttft_ms": 84.1,
+          "client_decode_tok_s": 47.46,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        }
+      ],
+      "acceptance": null
+    }
+  },
+  "vllm/eagle3": {
+    "1": {
+      "concurrency": 1,
+      "median_stream_tok_s": 126.5,
+      "aggregate_tok_s": 103.5,
+      "wall_s": 5.84,
+      "vllm_spec_counters": {
+        "vllm:spec_decode_num_drafts_total": 233.0,
+        "vllm:spec_decode_num_drafts_created": 0.0,
+        "vllm:spec_decode_num_draft_tokens_total": 699.0,
+        "vllm:spec_decode_num_draft_tokens_created": 0.0,
+        "vllm:spec_decode_num_accepted_tokens_total": 374.0,
+        "vllm:spec_decode_num_accepted_tokens_created": 0.0,
+        "vllm:spec_decode_num_accepted_tokens_per_pos_total": 374.0,
+        "vllm:spec_decode_num_accepted_tokens_per_pos_created": 0.0
+      },
+      "rows": [
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 60.8,
+          "client_decode_tok_s": 128.71,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 55.3,
+          "client_decode_tok_s": 129.64,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 54.8,
+          "client_decode_tok_s": 144.36,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 77.2,
+          "client_decode_tok_s": 126.51,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it interacts with gas molecules and small particles in the air. Sunlight is made up of different colors, each with its own wavelength. Blue light has a shorter wavelength and is scattered more efficiently by the molecules in the atmosphere than longer wavelengths like red or yellow. This scattered blue light comes from all directions, making the sky appear blue to our eyes. During sunrise or sunset, the sun is lower on the horizon, and the light travels through more atmosphere, scattering out the shorter blue wavelengths and leaving the longer red and orange hues to dominate, which is why the sky appears reddish at those times.",
+          "completion_tokens": 141,
+          "ttft_ms": 49.3,
+          "client_decode_tok_s": 93.67,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 48.9,
+          "client_decode_tok_s": 106.83,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or packing paper.  \n2. Use sturdy boxes that are appropriately sized for the items.  \n3. Fill empty spaces with packing peanuts or crumpled paper to prevent movement.  \n4. Seal the box securely with strong packing tape.  \n5. Include a list of contents and fragile labels on the outside of the box.",
+          "completion_tokens": 76,
+          "ttft_ms": 49.0,
+          "client_decode_tok_s": 103.76,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        }
+      ],
+      "acceptance": 0.535
+    },
+    "8": {
+      "concurrency": 8,
+      "median_stream_tok_s": 107.6,
+      "aggregate_tok_s": 712.1,
+      "wall_s": 6.97,
+      "vllm_spec_counters": {
+        "vllm:spec_decode_num_drafts_total": 1936.0,
+        "vllm:spec_decode_num_drafts_created": 0.0,
+        "vllm:spec_decode_num_draft_tokens_total": 5808.0,
+        "vllm:spec_decode_num_draft_tokens_created": 0.0,
+        "vllm:spec_decode_num_accepted_tokens_total": 3056.0,
+        "vllm:spec_decode_num_accepted_tokens_created": 0.0,
+        "vllm:spec_decode_num_accepted_tokens_per_pos_total": 3056.0,
+        "vllm:spec_decode_num_accepted_tokens_per_pos_created": 0.0
+      },
+      "rows": [
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 45.9,
+          "client_decode_tok_s": 112.55,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 45.6,
+          "client_decode_tok_s": 112.49,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 45.5,
+          "client_decode_tok_s": 112.55,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 45.4,
+          "client_decode_tok_s": 112.65,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 45.0,
+          "client_decode_tok_s": 112.46,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 45.0,
+          "client_decode_tok_s": 112.55,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 44.7,
+          "client_decode_tok_s": 112.55,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 44.4,
+          "client_decode_tok_s": 112.55,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 53.9,
+          "client_decode_tok_s": 111.7,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 53.5,
+          "client_decode_tok_s": 111.84,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 53.5,
+          "client_decode_tok_s": 111.35,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 53.4,
+          "client_decode_tok_s": 111.73,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 52.7,
+          "client_decode_tok_s": 111.08,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 53.1,
+          "client_decode_tok_s": 111.59,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 52.8,
+          "client_decode_tok_s": 111.42,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 52.1,
+          "client_decode_tok_s": 111.01,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 60.7,
+          "client_decode_tok_s": 126.67,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 60.5,
+          "client_decode_tok_s": 126.67,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 60.4,
+          "client_decode_tok_s": 126.71,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 59.5,
+          "client_decode_tok_s": 126.67,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 59.7,
+          "client_decode_tok_s": 126.76,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 59.1,
+          "client_decode_tok_s": 126.76,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 58.8,
+          "client_decode_tok_s": 126.71,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 58.4,
+          "client_decode_tok_s": 126.76,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 68.3,
+          "client_decode_tok_s": 107.73,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 68.0,
+          "client_decode_tok_s": 107.63,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 67.8,
+          "client_decode_tok_s": 107.66,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 68.0,
+          "client_decode_tok_s": 107.74,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 67.4,
+          "client_decode_tok_s": 107.64,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 67.3,
+          "client_decode_tok_s": 107.64,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 66.5,
+          "client_decode_tok_s": 107.56,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 66.0,
+          "client_decode_tok_s": 107.51,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most noticeable on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 69.4,
+          "client_decode_tok_s": 89.86,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most noticeable on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 68.4,
+          "client_decode_tok_s": 89.82,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most noticeable on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 68.1,
+          "client_decode_tok_s": 89.84,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most noticeable on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 67.7,
+          "client_decode_tok_s": 89.83,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most noticeable on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 67.7,
+          "client_decode_tok_s": 89.84,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most noticeable on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 67.6,
+          "client_decode_tok_s": 89.83,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most noticeable on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 66.9,
+          "client_decode_tok_s": 89.85,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most noticeable on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 66.7,
+          "client_decode_tok_s": 89.85,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 68.7,
+          "client_decode_tok_s": 92.66,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 69.1,
+          "client_decode_tok_s": 92.66,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 68.2,
+          "client_decode_tok_s": 92.63,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 68.1,
+          "client_decode_tok_s": 92.6,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 68.0,
+          "client_decode_tok_s": 92.57,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 68.0,
+          "client_decode_tok_s": 92.57,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 67.0,
+          "client_decode_tok_s": 92.52,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 66.9,
+          "client_decode_tok_s": 92.59,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or soft cloth to prevent scratches and breakage.  \n2. Use packing peanuts or foam to fill empty spaces and prevent shifting during transit.  \n3. Place fragile items in a sturdy, reinforced box with ample cushioning on all sides.  \n4. Label the box clearly as \"Fragile\" and \"This Side Up\" to ensure careful handling.  \n5. Consider using a shipping container designed for delicate items to provide extra protection.",
+          "completion_tokens": 99,
+          "ttft_ms": 68.5,
+          "client_decode_tok_s": 77.96,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or soft cloth to prevent scratches and breakage.  \n2. Use packing peanuts or foam to fill empty spaces and prevent shifting during transit.  \n3. Place fragile items in a sturdy, reinforced box with ample cushioning on all sides.  \n4. Label the box clearly as \"Fragile\" and \"This Side Up\" to ensure careful handling.  \n5. Consider using a shipping container designed for delicate items to provide extra protection.",
+          "completion_tokens": 99,
+          "ttft_ms": 68.2,
+          "client_decode_tok_s": 77.96,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or soft cloth to prevent scratches and breakage.  \n2. Use packing peanuts or foam to fill empty spaces and prevent shifting during transit.  \n3. Place fragile items in a sturdy, reinforced box with ample cushioning on all sides.  \n4. Label the box clearly as \"Fragile\" and \"This Side Up\" to ensure careful handling.  \n5. Consider using a shipping container designed for delicate items to provide extra protection.",
+          "completion_tokens": 99,
+          "ttft_ms": 67.8,
+          "client_decode_tok_s": 77.96,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or soft cloth to prevent scratches and breakage.  \n2. Use packing peanuts or foam to fill empty spaces and prevent shifting during transit.  \n3. Place fragile items in a sturdy, reinforced box with ample cushioning on all sides.  \n4. Label the box clearly as \"Fragile\" and \"This Side Up\" to ensure careful handling.  \n5. Consider using a shipping container designed for delicate items to provide extra protection.",
+          "completion_tokens": 99,
+          "ttft_ms": 67.7,
+          "client_decode_tok_s": 77.97,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or soft cloth to prevent scratches and breakage.  \n2. Use packing peanuts or foam to fill empty spaces and prevent shifting during transit.  \n3. Place fragile items in a sturdy, reinforced box with ample cushioning on all sides.  \n4. Label the box clearly as \"Fragile\" and \"This Side Up\" to ensure careful handling.  \n5. Consider using a shipping container designed for delicate items to provide extra protection.",
+          "completion_tokens": 99,
+          "ttft_ms": 67.7,
+          "client_decode_tok_s": 77.98,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or soft cloth to prevent scratches and breakage.  \n2. Use packing peanuts or foam to fill empty spaces and prevent shifting during transit.  \n3. Place fragile items in a sturdy, reinforced box with ample cushioning on all sides.  \n4. Label the box clearly as \"Fragile\" and \"This Side Up\" to ensure careful handling.  \n5. Consider using a shipping container designed for delicate items to provide extra protection.",
+          "completion_tokens": 99,
+          "ttft_ms": 66.9,
+          "client_decode_tok_s": 77.96,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or soft cloth to prevent scratches and breakage.  \n2. Use packing peanuts or foam to fill empty spaces and prevent shifting during transit.  \n3. Place fragile items in a sturdy, reinforced box with ample cushioning on all sides.  \n4. Label the box clearly as \"Fragile\" and \"This Side Up\" to ensure careful handling.  \n5. Consider using a shipping container designed for delicate items to provide extra protection.",
+          "completion_tokens": 99,
+          "ttft_ms": 67.0,
+          "client_decode_tok_s": 77.99,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or soft cloth to prevent scratches and breakage.  \n2. Use packing peanuts or foam to fill empty spaces and prevent shifting during transit.  \n3. Place fragile items in a sturdy, reinforced box with ample cushioning on all sides.  \n4. Label the box clearly as \"Fragile\" and \"This Side Up\" to ensure careful handling.  \n5. Consider using a shipping container designed for delicate items to provide extra protection.",
+          "completion_tokens": 99,
+          "ttft_ms": 66.5,
+          "client_decode_tok_s": 77.98,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        }
+      ],
+      "acceptance": 0.526
+    }
+  },
+  "vllm/draft-0.6b": {
+    "1": {
+      "concurrency": 1,
+      "median_stream_tok_s": 122.1,
+      "aggregate_tok_s": 81.6,
+      "wall_s": 7.66,
+      "vllm_spec_counters": {
+        "vllm:spec_decode_num_drafts_total": 216.0,
+        "vllm:spec_decode_num_drafts_created": 0.0,
+        "vllm:spec_decode_num_draft_tokens_total": 864.0,
+        "vllm:spec_decode_num_draft_tokens_created": 0.0,
+        "vllm:spec_decode_num_accepted_tokens_total": 409.0,
+        "vllm:spec_decode_num_accepted_tokens_created": 0.0,
+        "vllm:spec_decode_num_accepted_tokens_per_pos_total": 409.0,
+        "vllm:spec_decode_num_accepted_tokens_per_pos_created": 0.0
+      },
+      "rows": [
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 126.6,
+          "client_decode_tok_s": 122.1,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 128.9,
+          "client_decode_tok_s": 127.21,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 75.0,
+          "client_decode_tok_s": 130.33,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 125.1,
+          "client_decode_tok_s": 137.74,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most pronounced on clear days when there are fewer particles to interfere with the scattering process.",
+          "completion_tokens": 136,
+          "ttft_ms": 132.1,
+          "client_decode_tok_s": 79.72,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 68.5,
+          "client_decode_tok_s": 76.83,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or soft cloth to prevent scratches and breakage.  \n2. Use packing peanuts or crumpled paper to fill empty spaces and prevent shifting during transit.  \n3. Place fragile items in a sturdy, reinforced box with ample cushioning on all sides.  \n4. Label the box clearly as \"Fragile\" and \"This Side Up\" to ensure careful handling.  \n5. Consider using a shipping container designed for delicate items to provide extra protection.",
+          "completion_tokens": 102,
+          "ttft_ms": 81.3,
+          "client_decode_tok_s": 64.49,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        }
+      ],
+      "acceptance": 0.473
+    },
+    "8": {
+      "concurrency": 8,
+      "median_stream_tok_s": 94.1,
+      "aggregate_tok_s": 500.8,
+      "wall_s": 9.9,
+      "vllm_spec_counters": {
+        "vllm:spec_decode_num_drafts_total": 1697.0,
+        "vllm:spec_decode_num_drafts_created": 0.0,
+        "vllm:spec_decode_num_draft_tokens_total": 6788.0,
+        "vllm:spec_decode_num_draft_tokens_created": 0.0,
+        "vllm:spec_decode_num_accepted_tokens_total": 3256.0,
+        "vllm:spec_decode_num_accepted_tokens_created": 0.0,
+        "vllm:spec_decode_num_accepted_tokens_per_pos_total": 3256.0,
+        "vllm:spec_decode_num_accepted_tokens_per_pos_created": 0.0
+      },
+      "rows": [
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 87.0,
+          "client_decode_tok_s": 93.39,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 128.7,
+          "client_decode_tok_s": 94.39,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 128.6,
+          "client_decode_tok_s": 94.04,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 128.2,
+          "client_decode_tok_s": 94.27,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 128.1,
+          "client_decode_tok_s": 93.89,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 127.9,
+          "client_decode_tok_s": 94.25,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 127.7,
+          "client_decode_tok_s": 94.02,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_1",
+          "text": "{\n  \"category\": \"product_defect\",\n  \"priority\": \"high\",\n  \"summary\": \"Max Cutting Board (order #370) arrived cracked with photos attached\"\n}",
+          "completion_tokens": 40,
+          "ttft_ms": 127.2,
+          "client_decode_tok_s": 94.2,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 117.0,
+          "client_decode_tok_s": 95.21,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 122.3,
+          "client_decode_tok_s": 96.21,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 121.7,
+          "client_decode_tok_s": 96.13,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 120.9,
+          "client_decode_tok_s": 96.18,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 120.7,
+          "client_decode_tok_s": 95.9,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 120.7,
+          "client_decode_tok_s": 95.8,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 120.1,
+          "client_decode_tok_s": 96.0,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_2",
+          "text": "{\n  \"category\": \"payment\",\n  \"priority\": \"high\",\n  \"summary\": \"Double charge for order #1182 and no response to emails\"\n}",
+          "completion_tokens": 37,
+          "ttft_ms": 119.8,
+          "client_decode_tok_s": 95.74,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 118.5,
+          "client_decode_tok_s": 98.14,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 122.5,
+          "client_decode_tok_s": 99.38,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 122.4,
+          "client_decode_tok_s": 99.28,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 122.3,
+          "client_decode_tok_s": 98.96,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 121.7,
+          "client_decode_tok_s": 99.06,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 121.0,
+          "client_decode_tok_s": 99.06,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 120.6,
+          "client_decode_tok_s": 99.28,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "json_triage_3",
+          "text": "{\n  \"category\": \"shipping\",\n  \"priority\": \"urgent\",\n  \"summary\": \"Package says delivered but I never got it. Order #5521\"\n}",
+          "completion_tokens": 38,
+          "ttft_ms": 120.7,
+          "client_decode_tok_s": 99.04,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 126.8,
+          "client_decode_tok_s": 100.53,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 135.2,
+          "client_decode_tok_s": 100.87,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 135.2,
+          "client_decode_tok_s": 100.8,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 134.4,
+          "client_decode_tok_s": 100.85,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 134.6,
+          "client_decode_tok_s": 100.76,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 133.6,
+          "client_decode_tok_s": 100.73,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 133.6,
+          "client_decode_tok_s": 100.83,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "code_edit",
+          "text": "```python\ndef order_total(items: list[dict], shipping: float, coupon: dict | None = None) -> float:\n    subtotal = sum(i['price'] * i['qty'] for i in items)\n    if coupon and coupon['kind'] == 'percent':\n        subtotal = subtotal * (100 - coupon['value']) / 100\n    elif coupon and coupon['kind'] == 'fixed':\n        subtotal = max(0, subtotal - coupon['value'])\n    free = subtotal >= 75\n    return round(subtotal + (0 if free else shipping), 2)\n```",
+          "completion_tokens": 129,
+          "ttft_ms": 133.4,
+          "client_decode_tok_s": 100.82,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most pronounced on clear days when there are fewer particles to interfere with the scattering process.",
+          "completion_tokens": 136,
+          "ttft_ms": 129.1,
+          "client_decode_tok_s": 58.83,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most noticeable on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 129.2,
+          "client_decode_tok_s": 63.81,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most noticeable on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 129.3,
+          "client_decode_tok_s": 63.79,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most noticeable on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 128.7,
+          "client_decode_tok_s": 63.77,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most noticeable on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 128.2,
+          "client_decode_tok_s": 63.78,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most noticeable on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 128.0,
+          "client_decode_tok_s": 63.8,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most noticeable on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 127.9,
+          "client_decode_tok_s": 63.75,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_1",
+          "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it collides with gas molecules and small particles in the air. Shorter wavelengths of light, such as blue and violet, are scattered more efficiently than longer wavelengths like red or yellow. Although violet light is scattered even more than blue, our eyes are more sensitive to blue, and some of the violet light is absorbed by the upper atmosphere. As a result, blue light dominates the scattered light that reaches our eyes from all directions, making the sky appear blue during the day. This effect is most noticeable on clear days when there are fewer particles to scatter the light.",
+          "completion_tokens": 134,
+          "ttft_ms": 127.6,
+          "client_decode_tok_s": 63.77,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 125.1,
+          "client_decode_tok_s": 57.6,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 124.8,
+          "client_decode_tok_s": 57.59,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 124.5,
+          "client_decode_tok_s": 57.54,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 124.5,
+          "client_decode_tok_s": 57.57,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 124.0,
+          "client_decode_tok_s": 57.55,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 123.9,
+          "client_decode_tok_s": 57.58,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 123.4,
+          "client_decode_tok_s": 57.59,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_2",
+          "text": "Subject: Apologies for the Delayed Delivery  \n\nDear [Customer's Name],  \n\nI want to sincerely apologize for the delay in receiving your parcel. We understand how frustrating this must have been, and we truly appreciate your patience and understanding.  \n\nWe\u2019re currently working closely with our delivery team to ensure this doesn\u2019t happen again and to make sure your future orders are handled with the care and speed they deserve.  \n\nIf there\u2019s anything else we can do to make this right, please don\u2019t hesitate to reach out. We value your business and want to ensure you have a positive experience with us.  \n\nThank you for your understanding,  \n[Your Name]  \n[Your Position]  \n[Company Name]",
+          "completion_tokens": 143,
+          "ttft_ms": 123.4,
+          "client_decode_tok_s": 57.52,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or soft cloth to prevent scratches and breakage.  \n2. Use packing peanuts or crumpled paper to fill empty spaces and prevent shifting during transit.  \n3. Place fragile items in a sturdy, reinforced box with ample cushioning on all sides.  \n4. Label the box clearly as \"Fragile\" and \"This Side Up\" to ensure careful handling.  \n5. Consider using a shipping container designed for delicate items to provide extra protection.",
+          "completion_tokens": 102,
+          "ttft_ms": 127.1,
+          "client_decode_tok_s": 49.67,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or soft cloth to prevent scratches and breakage.  \n2. Use packing peanuts or crumpled paper to fill empty spaces and prevent shifting during transit.  \n3. Place fragile items in a sturdy, reinforced box with ample cushioning on all sides.  \n4. Label the box clearly as \"Fragile\" and \"This Side Up\" to ensure careful handling.  \n5. Consider using a shipping container designed for delicate items to provide extra protection.",
+          "completion_tokens": 102,
+          "ttft_ms": 126.6,
+          "client_decode_tok_s": 49.67,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or soft cloth to prevent scratches and breakage.  \n2. Use packing peanuts or crumpled paper to fill empty spaces and prevent shifting during transit.  \n3. Place fragile items in a sturdy, reinforced box with ample cushioning on all sides.  \n4. Label the box clearly as \"Fragile\" and \"This Side Up\" to ensure careful handling.  \n5. Consider using a shipping container designed for delicate items to provide extra protection.",
+          "completion_tokens": 102,
+          "ttft_ms": 126.1,
+          "client_decode_tok_s": 49.66,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or soft cloth to prevent scratches and breakage.  \n2. Use packing peanuts or crumpled paper to fill empty spaces and prevent shifting during transit.  \n3. Place fragile items in a sturdy, reinforced box with ample cushioning on all sides.  \n4. Label the box clearly as \"Fragile\" and \"This Side Up\" to ensure careful handling.  \n5. Consider using a shipping container designed for delicate items to provide extra protection.",
+          "completion_tokens": 102,
+          "ttft_ms": 125.9,
+          "client_decode_tok_s": 49.66,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or soft cloth to prevent scratches and breakage.  \n2. Use packing peanuts or crumpled paper to fill empty spaces and prevent shifting during transit.  \n3. Place fragile items in a sturdy, reinforced box with ample cushioning on all sides.  \n4. Label the box clearly as \"Fragile\" and \"This Side Up\" to ensure careful handling.  \n5. Consider using a shipping container designed for delicate items to provide extra protection.",
+          "completion_tokens": 102,
+          "ttft_ms": 125.2,
+          "client_decode_tok_s": 49.66,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or soft cloth to prevent scratches and breakage.  \n2. Use packing peanuts or crumpled paper to fill empty spaces and prevent shifting during transit.  \n3. Place fragile items in a sturdy, reinforced box with ample cushioning on all sides.  \n4. Label the box clearly as \"Fragile\" and \"This Side Up\" to ensure careful handling.  \n5. Consider using a shipping container designed for delicate items to provide extra protection.",
+          "completion_tokens": 102,
+          "ttft_ms": 124.8,
+          "client_decode_tok_s": 49.65,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or soft cloth to prevent scratches and breakage.  \n2. Use packing peanuts or crumpled paper to fill empty spaces and prevent shifting during transit.  \n3. Place fragile items in a sturdy, reinforced box with ample cushioning on all sides.  \n4. Label the box clearly as \"Fragile\" and \"This Side Up\" to ensure careful handling.  \n5. Consider using a shipping container designed for delicate items to provide extra protection.",
+          "completion_tokens": 102,
+          "ttft_ms": 124.5,
+          "client_decode_tok_s": 49.65,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        },
+        {
+          "prompt": "freeform_3",
+          "text": "1. Wrap each item individually in bubble wrap or packing paper.  \n2. Use sturdy boxes that are appropriately sized for the items.  \n3. Fill empty spaces with packing peanuts or crumpled paper to prevent movement.  \n4. Seal the box securely with strong packing tape.  \n5. Include a list of contents and fragile labels on the outside of the box.",
+          "completion_tokens": 76,
+          "ttft_ms": 123.7,
+          "client_decode_tok_s": 48.34,
+          "server_decode_tok_s": null,
+          "draft_n": null,
+          "draft_accepted": null
+        }
+      ],
+      "acceptance": 0.48
+    }
+  }
 }
