@@ -5,23 +5,32 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from typing import Literal
-
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
 
 from ch04_rag import store
 from ch04_rag.answer import generate
 from ch04_rag.retrieve import Retriever
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
 
-app = FastAPI(title="ShopFlow docs assistant (chapter 4)")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    # Load the cross-encoder (to the GPU when there is one) before the first request, not in it.
+    Retriever.cross_encoder()
+    yield
+
+
+app = FastAPI(title="ShopFlow docs assistant (chapter 4)", lifespan=lifespan)
 
 
 class AskRequest(BaseModel):
     question: str = Field(min_length=3, max_length=1000)
     mode: Literal["vector", "fts", "hybrid", "hybrid_rerank"] = "hybrid_rerank"
     chunker: Literal["fixed", "heading"] = "heading"
-    k: int = Field(default=5, ge=1, le=10)
+    k: int = Field(default=10, ge=1, le=20)  # 10 heading chunks ≈ 1.7k prompt tokens
 
 
 class Source(BaseModel):

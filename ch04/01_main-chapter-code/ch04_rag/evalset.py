@@ -76,6 +76,36 @@ def reciprocal_rank(q: Question, hits: Sequence[Hit], k: int = 10) -> float:
     return 0.0
 
 
+def _norm(text: str) -> str:
+    return re.sub(r"\s+", " ", text)
+
+
+def evidence_slots(q: Question, hit: Hit) -> set[int]:
+    """Indexes of the slots this chunk proves: right document AND its text matches `verify`.
+    Stricter than the document-level metrics: the chunk must contain the fact itself."""
+    text = _norm(hit.embed_text)
+    return {
+        i for i, (slot, rx) in enumerate(zip(q.slots, q.verify, strict=True))
+        if hit.doc_path in slot and re.search(rx, text)
+    }
+
+
+def evidence_recall_at_k(q: Question, hits: Sequence[Hit], k: int = 5) -> float:
+    """Fraction of evidence slots proven by a chunk in the top k."""
+    got: set[int] = set()
+    for h in hits[:k]:
+        got |= evidence_slots(q, h)
+    return len(got) / len(q.slots)
+
+
+def evidence_reciprocal_rank(q: Question, hits: Sequence[Hit], k: int = 10) -> float:
+    """1 / rank of the first chunk (within the top k) that contains a gold fact."""
+    for rank, h in enumerate(hits[:k], start=1):
+        if evidence_slots(q, h):
+            return 1.0 / rank
+    return 0.0
+
+
 def audit(root: Path = DOCS_ROOT) -> tuple[list[str], list[str]]:
     """(errors, notes). Errors: a slot is empty, names a missing file, or lists a path that does
     not match its `verify` regex. Notes: documents that match `verify` but are not in the slot."""

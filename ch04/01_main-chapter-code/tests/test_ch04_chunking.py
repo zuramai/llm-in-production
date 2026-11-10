@@ -1,3 +1,4 @@
+import itertools
 import re
 import sys
 from pathlib import Path
@@ -25,7 +26,7 @@ def test_fixed_chunks_overlap_exactly_the_requested_tokens():
     chunks = fixed_chunks(text, "d.md", size=30, overlap=10, tok=TOK)
     # windows start at 0, 20, 40, 60, 80; the last one stops at the end of the document
     assert [c.token_count for c in chunks] == [30, 30, 30, 30, 20]
-    for a, b in zip(chunks, chunks[1:], strict=False):
+    for a, b in itertools.pairwise(chunks):
         assert a.content.split()[-10:] == b.content.split()[:10]
 
 

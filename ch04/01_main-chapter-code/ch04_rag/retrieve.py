@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 import threading
 import time
+import warnings
 from collections import defaultdict
 from collections.abc import Hashable, Sequence
 from dataclasses import dataclass, field
@@ -132,14 +133,56 @@ class Retriever:
         # Eval runs the same question under 8 configs; cache so we embed it once.
         self._qcache: dict[str, object] | None = {} if cache_queries else None
 
+    @staticmethod
+    def _load_cross_encoder(device: str):
+        from sentence_transformers import CrossEncoder
+
+        ce = CrossEncoder(RERANK_MODEL, max_length=512, device=device)
+        # Loading can succeed and the first matmul still fail (cuBLAS needs its own workspace),
+        # so a warm-up prediction is part of "loaded".
+        ce.predict([("warm-up", "warm-up")], show_progress_bar=False)
+        return ce
+
+    @classmethod
+    def _fall_back_to_cpu(cls, err: Exception) -> None:
+        import torch
+
+        warnings.warn(f"reranker: CUDA failed ({err}); falling back to CPU", stacklevel=3)
+        cls._ce = None  # drop the GPU copy before freeing its memory
+        torch.cuda.empty_cache()
+        cls._ce = cls._load_cross_encoder("cpu")
+
     @classmethod
     def cross_encoder(cls):
+        """The shared cross-encoder: on the GPU if there is one and it has room, else the CPU.
+        On an RTX 3090, 30 (question, chunk) pairs take ~30 ms; on 16 CPU cores ~0.5 s."""
         with cls._ce_lock:
             if cls._ce is None:
-                from sentence_transformers import CrossEncoder
+                import torch
 
-                cls._ce = CrossEncoder(RERANK_MODEL, max_length=512)
+                device = "cuda" if torch.cuda.is_available() else "cpu"
+                try:
+                    cls._ce = cls._load_cross_encoder(device)
+                except RuntimeError as e:  # torch.AcceleratorError / OutOfMemoryError
+                    if device == "cpu":
+                        raise
+                    cls._fall_back_to_cpu(e)
             return cls._ce
+
+    @classmethod
+    def rerank_scores(cls, pairs: list[tuple[str, str]]):
+        """Cross-encoder scores. A shared GPU can fill up *after* we loaded (another process
+        grabs the memory), so an OOM at predict time also moves the model to the CPU."""
+        ce = cls.cross_encoder()
+        try:
+            return ce.predict(pairs, show_progress_bar=False)
+        except RuntimeError as e:
+            if ce.model.device.type == "cpu":
+                raise
+            with cls._ce_lock:
+                if cls._ce is ce:  # another thread may have fallen back already
+                    cls._fall_back_to_cpu(e)
+            return cls._ce.predict(pairs, show_progress_bar=False)
 
     def embed_query(self, question: str):
         if self._qcache is not None and question in self._qcache:
@@ -184,9 +227,7 @@ class Retriever:
             return ranked[:k]
         t3 = time.perf_counter()
         candidates = ranked[: self.pool]
-        scores = self.cross_encoder().predict(
-            [(question, h.embed_text) for h in candidates], show_progress_bar=False
-        )
+        scores = self.rerank_scores([(question, h.embed_text) for h in candidates])
         order = sorted(zip(candidates, scores, strict=True), key=lambda p: -float(p[1]))
         timing["rerank_ms"] = (time.perf_counter() - t3) * 1000
         self.last_timing = timing

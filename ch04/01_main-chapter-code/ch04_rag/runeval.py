@@ -11,9 +11,17 @@ from concurrent.futures import ThreadPoolExecutor
 from itertools import product
 from pathlib import Path
 
+from llmprod import get_settings
+
 from .answer import generate
-from .evalset import Question, recall_at_k, reciprocal_rank
-from .judge import JUDGE_MODEL, NOT_IN_DOCS, judge
+from .evalset import (
+    Question,
+    evidence_recall_at_k,
+    evidence_reciprocal_rank,
+    recall_at_k,
+    reciprocal_rank,
+)
+from .judge import JUDGE_MODEL, judge
 from .retrieve import MODES, Retriever
 from .store import load_docs
 
@@ -27,7 +35,9 @@ def pct(x: float) -> float:
 
 
 def retrieval_eval(retriever: Retriever, questions: list[Question], k: int = 10) -> dict:
-    """{config: {per-question recall@5, rr@10, ms}} for answerable questions."""
+    """{config: per-question rows} for answerable questions. Two strictness levels:
+    doc-level (`recall5`, `rr`): a chunk from a gold document counts;
+    evidence-level (`ev_recall5`, `ev_rr`): the chunk must contain the gold fact itself."""
     out: dict = {}
     for mode, chunker in CONFIGS:
         rows = []
@@ -40,6 +50,8 @@ def retrieval_eval(retriever: Retriever, questions: list[Question], k: int = 10)
             rows.append({
                 "id": q.id, "category": q.category,
                 "recall5": recall_at_k(q, hits, 5), "rr": reciprocal_rank(q, hits, k),
+                "ev_recall5": evidence_recall_at_k(q, hits, 5),
+                "ev_rr": evidence_reciprocal_rank(q, hits, k),
                 "ms": ms, "top5": [h.citation for h in hits[:5]],
             })
         out[f"{mode}|{chunker}"] = rows
@@ -52,12 +64,14 @@ def summarize_retrieval(res: dict) -> list[dict]:
         mode, chunker = cfg.split("|")
         cats = defaultdict(list)
         for r in rows:
-            cats[r["category"]].append(r["recall5"])
+            cats[r["category"]].append(r["ev_recall5"])
         table.append({
             "mode": mode, "chunker": chunker,
             "recall5": pct(statistics.mean(r["recall5"] for r in rows)),
             "mrr": round(statistics.mean(r["rr"] for r in rows), 3),
-            **{f"recall5_{c}": pct(statistics.mean(v)) for c, v in sorted(cats.items())},
+            "ev_recall5": pct(statistics.mean(r["ev_recall5"] for r in rows)),
+            "ev_mrr": round(statistics.mean(r["ev_rr"] for r in rows), 3),
+            **{f"ev_r5_{c}": pct(statistics.mean(v)) for c, v in sorted(cats.items())},
         })
     return table
 
@@ -66,8 +80,9 @@ def full_corpus_context() -> str:
     return "\n\n---\n\n".join(f"[doc:{p}#0]\n{t}" for p, t in load_docs().items())
 
 
-def _answer_one(q: Question, hits, model: str | None, context: str | None) -> dict:
-    ans = generate(q.question, hits, model=model, context=context)
+def _answer_one(q: Question, hits, model: str | None, context: str | None,
+                prompt: str = "v2") -> dict:
+    ans = generate(q.question, hits, model=model, context=context, prompt=prompt)
     v = judge(q.question, q.reference, ans.context if context is None else "(whole corpus)",
               ans.text)
     return {
@@ -85,20 +100,27 @@ def _answer_one(q: Question, hits, model: str | None, context: str | None) -> di
 def answer_eval(
     retriever: Retriever, questions: list[Question], cache: Path, refresh: bool = False,
     workers: int = 6, model: str | None = None,
+    configs: list[tuple[str, str]] | None = None, whole_corpus: bool = True,
+    prompt: str = "v2", k: int = 5,
 ) -> dict:
-    """Answer all 40 questions under each retrieval config plus a whole-corpus baseline."""
+    """Answer every question under each retrieval config (default: all 8) with the top `k`
+    chunks, optionally plus a whole-corpus baseline (no retrieval: all 36 documents in the
+    prompt). Cached in `cache`."""
     if cache.exists() and not refresh:
         return json.loads(cache.read_text())
-    out: dict = {"judge": JUDGE_MODEL, "configs": {}}
+    out: dict = {"model": model or get_settings().llm_model, "prompt": prompt, "k": k,
+                 "judge": JUDGE_MODEL, "configs": {}}
     jobs = []
-    for mode, chunker in CONFIGS:
+    for mode, chunker in configs or CONFIGS:
         for q in questions:
-            hits = retriever.retrieve(q.question, mode, chunker, 5)
+            hits = retriever.retrieve(q.question, mode, chunker, k)
             jobs.append((f"{mode}|{chunker}", q, hits, None))
-    ctx = full_corpus_context()
-    jobs += [("whole_corpus", q, [], ctx) for q in questions]
+    if whole_corpus:
+        ctx = full_corpus_context()
+        jobs += [("whole_corpus", q, [], ctx) for q in questions]
     with ThreadPoolExecutor(workers) as ex:
-        futs = [(name, ex.submit(_answer_one, q, hits, model, c)) for name, q, hits, c in jobs]
+        futs = [(name, ex.submit(_answer_one, q, hits, model, c, prompt))
+                for name, q, hits, c in jobs]
         for name, f in futs:
             out["configs"].setdefault(name, []).append(f.result())
     cache.parent.mkdir(parents=True, exist_ok=True)

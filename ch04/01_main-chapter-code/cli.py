@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import argparse
+import time
 
 from ch04_rag import store
 from ch04_rag.answer import generate
@@ -17,10 +18,14 @@ def main() -> None:
     ap.add_argument("question")
     ap.add_argument("--mode", choices=MODES, default="hybrid_rerank")
     ap.add_argument("--chunker", choices=["fixed", "heading"], default="heading")
-    ap.add_argument("-k", type=int, default=5)
+    ap.add_argument("-k", type=int, default=10)
     args = ap.parse_args()
 
     retriever = Retriever(store.open_db())
+    if args.mode == "hybrid_rerank":  # load the model up front so its load time isn't "latency"
+        t0 = time.perf_counter()
+        ce = Retriever.cross_encoder()
+        print(f"reranker loaded on {ce.model.device} in {time.perf_counter() - t0:.1f} s\n")
     hits = retriever.retrieve(args.question, args.mode, args.chunker, args.k)
     ans = generate(args.question, hits)
     print(ans.text, "\n")

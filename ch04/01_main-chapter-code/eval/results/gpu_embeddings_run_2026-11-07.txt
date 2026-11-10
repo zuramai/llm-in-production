@@ -1,0 +1,24 @@
+Earlier full run of ch04.ipynb, 2026-11-07 ~20:35 (UTC+7), same host, while the RTX 3090 was idle and
+Ollama (embeddings) ran on the GPU. Headless nbconvert with --allow-errors; that run had two errors
+(a syntax error in an unrelated print cell and the qwen3:8b cell, model not yet pulled), both fixed
+before the committed run. Outputs below are copied verbatim from that run's saved notebook.
+The committed ch04.ipynb (2026-11-08) ran with embeddings on a CPU-only Ollama because another
+user's job held most of the GPU; the reranker still got the GPU in that run.
+
+# cell 8: store.setup(conn, reset=True)
+chunker  docs  chunks  tokens_min  tokens_mean  tokens_max  seconds
+  fixed    36      79          70        430.1         512      0.7
+heading    36     316          16         93.3         462      1.5
+rows: {'fixed': 79, 'heading': 316}
+[('ch04_chunks_fts', 'CREATE INDEX ch04_chunks_fts ON public.ch04_doc_chunks USING gin (tsv)'), ('ch04_chunks_hnsw', "CREATE INDEX ch04_chunks_hnsw ON public.ch04_doc_chunks USING hnsw (embedding vector_cosine_ops) WITH (m='16', ef_construction='64')"), ('ch04_doc_chunks_chunker_doc_path_chunk_idx_key', 'CREATE UNIQUE INDEX ch04_doc_chunks_chunker_doc_path_chunk_idx_key ON public.ch04_doc_chunks USING btree (chunker, doc_path, chunk_idx)'), ('ch04_doc_chunks_pkey', 'CREATE UNIQUE INDEX ch04_doc_chunks_pkey ON public.ch04_doc_chunks USING btree (id)')]
+
+# cell 20: ce = Retriever.cross_encoder()
+cross-encoder/ms-marco-MiniLM-L-6-v2 on cuda:0
+rerank 30 pairs on cuda: p50 31.5 ms, p95 32.3 ms
+rerank 30 pairs on cpu : p50 559.8 ms, p95 646.6 ms
+
+# cell 21: # Per-stage latency of the final pipeline (hybrid_rerank, heading chunks, k=10), 40 questi
+     embed_ms  vector_ms  fts_ms  rerank_ms  total_ms
+50%       5.8        1.7     2.9       35.9      47.5
+95%       6.9        2.1    12.2       48.1      66.1
+max       7.3        3.6    18.2       51.5      71.5
