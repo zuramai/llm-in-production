@@ -1,0 +1,1121 @@
+[
+ {
+  "scenario": "db-pool-exhaustion",
+  "model": "openai/gpt-6-luna",
+  "repeat": 1,
+  "summarize": false,
+  "steps": 4,
+  "cost_usd": 0.00351,
+  "latency_s": 18.8,
+  "prompt_tokens": 43570,
+  "completion_tokens": 1802,
+  "max_prompt_tokens": 9411,
+  "tool_chars": 22648,
+  "error": null,
+  "rank": 1,
+  "top_hypothesis": "DB connection pool exhaustion is the proximate cause of the elevated errors and latency.",
+  "tools": [
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route, status) (rate(http_requests_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 4345
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (le, route) (rate(http_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 1656
+   },
+   {
+    "tool": "get_deploys",
+    "args": {
+     "since": "24h"
+    },
+    "chars": 120
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json",
+     "range": "15m"
+    },
+    "chars": 10523
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "checkout elevated 5xx latency alert severity incident known causes"
+    },
+    "chars": 1313
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (job) (db_pool_connections_in_use{job=\"checkout\"}) / sum by (job) (db_pool_size{job=\"checkout\"})",
+     "range": "15m"
+    },
+    "chars": 348
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (le, job) (rate(db_pool_wait_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 530
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (provider) (rate(payment_provider_errors_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 1075
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "database pool exhausted connection pool checkout troubleshoot causes remediation"
+    },
+    "chars": 1438
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "checkout-db-pool-exhaustion steps investigation mitigations connection leak pool saturated deploy rollback"
+    },
+    "chars": 950
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (job) (db_pool_connections_in_use{job=\"checkout\"})",
+     "range": "15m"
+    },
+    "chars": 350
+   }
+  ],
+  "report": "reports/db-pool-exhaustion-gpt-6-luna-raw-r1.md",
+  "injected_at": "13:32:23Z",
+  "hypotheses": [
+   {
+    "hypothesis": "DB connection pool exhaustion is the proximate cause of the elevated errors and latency.",
+    "confidence": 0.99
+   },
+   {
+    "hypothesis": "The current deploy, v2026.11.07-1, may have triggered or contributed to the pool exhaustion.",
+    "confidence": 0.55
+   },
+   {
+    "hypothesis": "Payment-provider errors are the primary cause of the service-wide degradation.",
+    "confidence": 0.05
+   }
+  ],
+  "bad_version": null
+ },
+ {
+  "scenario": "db-pool-exhaustion",
+  "model": "openai/gpt-6-luna",
+  "repeat": 2,
+  "summarize": false,
+  "steps": 4,
+  "cost_usd": 0.0045,
+  "latency_s": 19.3,
+  "prompt_tokens": 50970,
+  "completion_tokens": 1600,
+  "max_prompt_tokens": 13780,
+  "tool_chars": 35558,
+  "error": null,
+  "rank": 1,
+  "top_hypothesis": "Database connection-pool exhaustion caused the elevated latency and 503s.",
+  "tools": [
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route,status) (rate(http_requests_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 4342
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (route,le) (rate(http_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 1639
+   },
+   {
+    "tool": "get_deploys",
+    "args": {
+     "since": "24h"
+    },
+    "chars": 120
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "checkout elevated 5xx latency severity database pool payment provider timeout"
+    },
+    "chars": 968
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (provider,reason) (rate(payment_provider_errors_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 2586
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (provider,le) (rate(payment_provider_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 1120
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route) (rate(db_pool_wait_seconds_bucket{job=\"checkout\",le=\"+Inf\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 518
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (state) (db_pool_connections_in_use{job=\"checkout\"}) or sum by (state) (db_pool_size{job=\"checkout\"})",
+     "range": "15m"
+    },
+    "chars": 333
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json",
+     "range": "15m"
+    },
+    "chars": 11247
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "checkout-db-pool-exhaustion recommended investigation recovery steps pool exhaustion"
+    },
+    "chars": 1438
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} |= \"db pool exhausted\" | json",
+     "range": "1h"
+    },
+    "chars": 11247
+   }
+  ],
+  "report": "reports/db-pool-exhaustion-gpt-6-luna-raw-r2.md",
+  "injected_at": "13:32:23Z",
+  "hypotheses": [
+   {
+    "hypothesis": "Database connection-pool exhaustion caused the elevated latency and 503s.",
+    "confidence": 0.99
+   },
+   {
+    "hypothesis": "The recent v2026.11.07-1 deploy caused or contributed to the pool exhaustion.",
+    "confidence": 0.45
+   },
+   {
+    "hypothesis": "Payment-provider degradation caused the checkout incident.",
+    "confidence": 0.01
+   }
+  ],
+  "bad_version": null
+ },
+ {
+  "scenario": "db-pool-exhaustion",
+  "model": "openai/gpt-6-luna",
+  "repeat": 3,
+  "summarize": false,
+  "steps": 5,
+  "cost_usd": 0.00373,
+  "latency_s": 20.2,
+  "prompt_tokens": 51841,
+  "completion_tokens": 1735,
+  "max_prompt_tokens": 10140,
+  "tool_chars": 24520,
+  "error": null,
+  "rank": 1,
+  "top_hypothesis": "Database connection pool exhaustion is the immediate cause of the latency and 503s.",
+  "tools": [
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route, status) (rate(http_requests_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 4248
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (route, le) (rate(http_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 1678
+   },
+   {
+    "tool": "get_deploys",
+    "args": {
+     "since": "24h"
+    },
+    "chars": 120
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json",
+     "range": "15m"
+    },
+    "chars": 10523
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (job) (db_pool_connections_in_use{job=\"checkout\"})",
+     "range": "15m"
+    },
+    "chars": 350
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (job) (db_pool_size{job=\"checkout\"})",
+     "range": "15m"
+    },
+    "chars": 357
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (le) (rate(db_pool_wait_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 499
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "checkout db pool exhausted PoolExhausted elevated latency severity mitigation"
+    },
+    "chars": 1209
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "runbooks/checkout-db-pool-exhaustion"
+    },
+    "chars": 1438
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "checkout-db-pool-exhaustion recovery steps check long running queries leak pool restart rollback"
+    },
+    "chars": 1494
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (provider, reason) (rate(payment_provider_errors_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 2604
+   }
+  ],
+  "report": "reports/db-pool-exhaustion-gpt-6-luna-raw-r3.md",
+  "injected_at": "13:32:23Z",
+  "hypotheses": [
+   {
+    "hypothesis": "Database connection pool exhaustion is the immediate cause of the latency and 503s.",
+    "confidence": 0.98
+   },
+   {
+    "hypothesis": "The gift-message deploy may have contributed to the pool exhaustion.",
+    "confidence": 0.35
+   },
+   {
+    "hypothesis": "Payment provider failures are causing the checkout incident.",
+    "confidence": 0.02
+   }
+  ],
+  "bad_version": null
+ },
+ {
+  "scenario": "bad-deploy",
+  "model": "openai/gpt-6-luna",
+  "repeat": 1,
+  "summarize": false,
+  "steps": 2,
+  "cost_usd": 0.00502,
+  "latency_s": 17.3,
+  "prompt_tokens": 37126,
+  "completion_tokens": 1673,
+  "max_prompt_tokens": 16519,
+  "tool_chars": 43269,
+  "error": null,
+  "rank": 1,
+  "top_hypothesis": "Regression in the latest checkout promo-discount deploy causes an unhandled exception on /checkout.",
+  "tools": [
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route, status) (rate(http_requests_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 4195
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (route, le) (rate(http_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 1674
+   },
+   {
+    "tool": "get_deploys",
+    "args": {
+     "since": "24h"
+    },
+    "chars": 244
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "checkout elevated 5xx latency p95 2s severity causes"
+    },
+    "chars": 1621
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json",
+     "range": "15m"
+    },
+    "chars": 31619
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (provider, reason) (rate(payment_provider_errors_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 2478
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (provider, le) (rate(payment_provider_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 1090
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (job) (db_pool_connections_in_use{job=\"checkout\"}) / sum by (job) (db_pool_size{job=\"checkout\"})",
+     "range": "15m"
+    },
+    "chars": 348
+   }
+  ],
+  "report": "reports/bad-deploy-gpt-6-luna-raw-r1.md",
+  "injected_at": "13:35:56Z",
+  "hypotheses": [
+   {
+    "hypothesis": "Regression in the latest checkout promo-discount deploy causes an unhandled exception on /checkout.",
+    "confidence": 0.97
+   },
+   {
+    "hypothesis": "Database pool exhaustion is causing checkout errors or degradation.",
+    "confidence": 0.01
+   },
+   {
+    "hypothesis": "Payment provider timeouts or errors are causing the checkout 500 increase.",
+    "confidence": 0.01
+   },
+   {
+    "hypothesis": "Elevated request latency is the primary cause of the alert.",
+    "confidence": 0.01
+   }
+  ],
+  "bad_version": "v2026.11.07-2"
+ },
+ {
+  "scenario": "bad-deploy",
+  "model": "openai/gpt-6-luna",
+  "repeat": 2,
+  "summarize": false,
+  "steps": 4,
+  "cost_usd": 0.00746,
+  "latency_s": 23.1,
+  "prompt_tokens": 99313,
+  "completion_tokens": 1956,
+  "max_prompt_tokens": 23782,
+  "tool_chars": 60448,
+  "error": null,
+  "rank": 1,
+  "top_hypothesis": "A bug in v2026.11.07-2's promo-pricing change causes /checkout exceptions when a value is None.",
+  "tools": [
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route,status) (rate(http_requests_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 4200
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (route,le) (rate(http_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 1675
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route) (rate(http_requests_total{job=\"checkout\",status=~\"5..\"}[1m])) / sum by (route) (rate(http_requests_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 1156
+   },
+   {
+    "tool": "get_deploys",
+    "args": {
+     "since": "24h"
+    },
+    "chars": 244
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (provider,reason) (rate(payment_provider_errors_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 2478
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route) (rate(db_pool_wait_seconds_bucket{job=\"checkout\",le=\"+Inf\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 525
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json | route=\"/checkout\"",
+     "range": "15m"
+    },
+    "chars": 33251
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (provider,le) (rate(payment_provider_request_duration_seconds_bucket{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 12103
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route) (rate(http_requests_total{job=\"checkout\",status=~\"5..\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 1187
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "checkout 5xx recent deploy pricing promo discounts exceptions rollback severity incident"
+    },
+    "chars": 1402
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (state) (db_pool_connections_in_use{job=\"checkout\"})",
+     "range": "15m"
+    },
+    "chars": 327
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "checkout bad deploy rollback verification recent release pricing promo"
+    },
+    "chars": 950
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "Runbook checkout bad deploy steps rollback deployment version notify monitor"
+    },
+    "chars": 950
+   }
+  ],
+  "report": "reports/bad-deploy-gpt-6-luna-raw-r2.md",
+  "injected_at": "13:35:56Z",
+  "hypotheses": [
+   {
+    "hypothesis": "A bug in v2026.11.07-2's promo-pricing change causes /checkout exceptions when a value is None.",
+    "confidence": 0.97
+   },
+   {
+    "hypothesis": "Database connection-pool exhaustion is driving the errors.",
+    "confidence": 0.02
+   },
+   {
+    "hypothesis": "A payment-provider outage or latency spike is causing the checkout failures.",
+    "confidence": 0.01
+   },
+   {
+    "hypothesis": "Elevated request latency is the primary alert cause.",
+    "confidence": 0.01
+   }
+  ],
+  "bad_version": "v2026.11.07-2"
+ },
+ {
+  "scenario": "bad-deploy",
+  "model": "openai/gpt-6-luna",
+  "repeat": 3,
+  "summarize": false,
+  "steps": 3,
+  "cost_usd": 0.00599,
+  "latency_s": 19.3,
+  "prompt_tokens": 70798,
+  "completion_tokens": 1734,
+  "max_prompt_tokens": 19124,
+  "tool_chars": 49169,
+  "error": null,
+  "rank": 1,
+  "top_hypothesis": "A bug in v2026.11.07-2 promo-pricing checkout code dereferences a null value, causing the /checkout 500 increase.",
+  "tools": [
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route,status) (rate(http_requests_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 4190
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (le,route) (rate(http_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 1674
+   },
+   {
+    "tool": "get_deploys",
+    "args": {
+     "since": "24h"
+    },
+    "chars": 244
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json",
+     "range": "15m"
+    },
+    "chars": 31415
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (provider,reason) (rate(payment_provider_errors_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 2478
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (provider) (rate(payment_provider_request_duration_seconds_bucket{job=\"checkout\",le=\"+Inf\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 1069
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route) (rate(http_requests_total{job=\"checkout\",status=~\"5..\"}[1m])) / sum by (route) (rate(http_requests_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 1156
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (le) (rate(db_pool_wait_seconds_bucket{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 4822
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "checkout promo discounts NoneType exception elevated 500 deploy rollback severity"
+    },
+    "chars": 1171
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "checkout-bad-deploy promo discount null pricing failure TypeError rollback instructions"
+    },
+    "chars": 950
+   }
+  ],
+  "report": "reports/bad-deploy-gpt-6-luna-raw-r3.md",
+  "injected_at": "13:35:56Z",
+  "hypotheses": [
+   {
+    "hypothesis": "A bug in v2026.11.07-2 promo-pricing checkout code dereferences a null value, causing the /checkout 500 increase.",
+    "confidence": 0.97
+   },
+   {
+    "hypothesis": "Payment-provider failure is the primary cause of the observed checkout 500s.",
+    "confidence": 0.01
+   },
+   {
+    "hypothesis": "Database connection-pool exhaustion is the primary cause of the observed checkout 500s.",
+    "confidence": 0.01
+   },
+   {
+    "hypothesis": "A broad service latency regression is causing the alert.",
+    "confidence": 0.01
+   }
+  ],
+  "bad_version": "v2026.11.07-2"
+ },
+ {
+  "scenario": "payment-provider-timeout",
+  "model": "openai/gpt-6-luna",
+  "repeat": 1,
+  "summarize": false,
+  "steps": 6,
+  "cost_usd": 0.00498,
+  "latency_s": 21.9,
+  "prompt_tokens": 84672,
+  "completion_tokens": 1803,
+  "max_prompt_tokens": 13983,
+  "tool_chars": 35915,
+  "error": null,
+  "rank": 1,
+  "top_hypothesis": "PayPal provider timeouts are causing checkout 504s and elevated latency.",
+  "tools": [
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route,status) (rate(http_requests_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 4152
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (route,le) (rate(http_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 1684
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route) (rate(http_requests_total{job=\"checkout\",status=~\"5..\"}[1m])) / sum by (route) (rate(http_requests_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 1172
+   },
+   {
+    "tool": "get_deploys",
+    "args": {
+     "since": "24h"
+    },
+    "chars": 120
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (le) (rate(db_pool_wait_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 475
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (provider,reason) (rate(payment_provider_errors_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 2527
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\",level=\"error\"} | json | route=\"/checkout\"",
+     "range": "15m"
+    },
+    "chars": 19401
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (provider,le) (rate(payment_provider_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 1066
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "checkout elevated latency payment provider timeouts 504 severity escalation"
+    },
+    "chars": 1189
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "runbooks/payment-provider-timeout.md payment timeout mitigation failover provider thresholds"
+    },
+    "chars": 946
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "payment provider timeout runbook SEV2 failover feature flag never retry charges blindly steps provider health"
+    },
+    "chars": 1452
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "payment provider timeout failover confirm current healthy provider payments.primary_provider feature flag severity payment failure >20%"
+    },
+    "chars": 1189
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route) (rate(http_requests_total{job=\"checkout\",route=\"/checkout\",status=~\"4..|5..\"}[1m])) / sum by (route) (rate(http_requests_total{job=\"checkout\",route=\"/checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 542
+   }
+  ],
+  "report": "reports/payment-provider-timeout-gpt-6-luna-raw-r1.md",
+  "injected_at": "13:39:33Z",
+  "hypotheses": [
+   {
+    "hypothesis": "PayPal provider timeouts are causing checkout 504s and elevated latency.",
+    "confidence": 0.98
+   },
+   {
+    "hypothesis": "DB pool exhaustion is causing checkout latency and errors.",
+    "confidence": 0.01
+   },
+   {
+    "hypothesis": "The recent checkout deploy caused a service regression.",
+    "confidence": 0.01
+   }
+  ],
+  "bad_version": null
+ },
+ {
+  "scenario": "payment-provider-timeout",
+  "model": "openai/gpt-6-luna",
+  "repeat": 2,
+  "summarize": false,
+  "steps": 3,
+  "cost_usd": 0.0039,
+  "latency_s": 16.2,
+  "prompt_tokens": 43982,
+  "completion_tokens": 1537,
+  "max_prompt_tokens": 11616,
+  "tool_chars": 30391,
+  "error": null,
+  "rank": 1,
+  "top_hypothesis": "PayPal upstream latency/timeouts are causing checkout latency and 504 responses.",
+  "tools": [
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route, status) (rate(http_requests_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 4129
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (route, le) (rate(http_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 1696
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json",
+     "range": "15m"
+    },
+    "chars": 18867
+   },
+   {
+    "tool": "get_deploys",
+    "args": {
+     "since": "24h"
+    },
+    "chars": 120
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "checkout elevated 5xx latency incident severity database pool payment provider deploy"
+    },
+    "chars": 968
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (provider) (rate(payment_provider_errors_total{job=\"checkout\",reason=\"timeout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 797
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (provider, le) (rate(payment_provider_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 1051
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (job) (db_pool_connections_in_use{job=\"checkout\"}) / sum by (job) (db_pool_size{job=\"checkout\"})",
+     "range": "15m"
+    },
+    "chars": 348
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "payment provider timeout PayPal diagnose failover alert checkout"
+    },
+    "chars": 1227
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "payment-provider-timeout steps verify failover primary provider notify payments platform never retry idempotency"
+    },
+    "chars": 1188
+   }
+  ],
+  "report": "reports/payment-provider-timeout-gpt-6-luna-raw-r2.md",
+  "injected_at": "13:39:33Z",
+  "hypotheses": [
+   {
+    "hypothesis": "PayPal upstream latency/timeouts are causing checkout latency and 504 responses.",
+    "confidence": 0.98
+   },
+   {
+    "hypothesis": "Checkout database pool exhaustion is causing the degradation.",
+    "confidence": 0.01
+   },
+   {
+    "hypothesis": "The recent checkout deploy caused the degradation.",
+    "confidence": 0.01
+   }
+  ],
+  "bad_version": null
+ },
+ {
+  "scenario": "payment-provider-timeout",
+  "model": "openai/gpt-6-luna",
+  "repeat": 3,
+  "summarize": false,
+  "steps": 8,
+  "cost_usd": 0.00664,
+  "latency_s": 27.2,
+  "prompt_tokens": 136570,
+  "completion_tokens": 1713,
+  "max_prompt_tokens": 19388,
+  "tool_chars": 49357,
+  "error": null,
+  "rank": 1,
+  "top_hypothesis": "PayPal provider latency/timeouts are the direct cause of elevated /checkout latency and 504s.",
+  "tools": [
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route,status) (rate(http_requests_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 4149
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (route,le) (rate(http_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 1634
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (provider) (rate(payment_provider_errors_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 945
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (provider,le) (rate(payment_provider_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 1064
+   },
+   {
+    "tool": "get_deploys",
+    "args": {
+     "since": "24h"
+    },
+    "chars": 120
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json",
+     "range": "15m"
+    },
+    "chars": 18867
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "checkout elevated 504 payment provider timeout PayPal latency severity"
+    },
+    "chars": 1189
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (reason,provider) (rate(payment_provider_errors_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 2527
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route,status) (rate(http_requests_total{job=\"checkout\"}[1m]))",
+     "range": "5m"
+    },
+    "chars": 10796
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (job) (db_pool_connections_in_use{job=\"checkout\"}) / sum by (job) (db_pool_size{job=\"checkout\"})",
+     "range": "15m"
+    },
+    "chars": 348
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "Payment Provider Timeout PayPal runbook primary provider failover idempotency alert"
+    },
+    "chars": 1232
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "payment-provider-timeout.md Triage continue severity failover validation"
+    },
+    "chars": 1194
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "Payment Provider Timeout remediation feature flag notify payments platform no retries blindly"
+    },
+    "chars": 1460
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "payment provider timeout rule out db pool recent deploy severity threshold p95 exceed"
+    },
+    "chars": 1194
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "runbooks payment provider timeout Rule out other causes DB pool deploy checkout bad deploy"
+    },
+    "chars": 973
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (provider,le) (rate(payment_provider_request_duration_seconds_bucket{job=\"checkout\"}[5m])))",
+     "range": "10m"
+    },
+    "chars": 1665
+   }
+  ],
+  "report": "reports/payment-provider-timeout-gpt-6-luna-raw-r3.md",
+  "injected_at": "13:39:33Z",
+  "hypotheses": [
+   {
+    "hypothesis": "PayPal provider latency/timeouts are the direct cause of elevated /checkout latency and 504s.",
+    "confidence": 0.99
+   },
+   {
+    "hypothesis": "The recent checkout deploy caused a regression.",
+    "confidence": 0.02
+   },
+   {
+    "hypothesis": "Database connection-pool exhaustion caused the incident.",
+    "confidence": 0.01
+   },
+   {
+    "hypothesis": "Stripe degradation or general checkout-service failure caused the alert.",
+    "confidence": 0.01
+   }
+  ],
+  "bad_version": null
+ }
+]

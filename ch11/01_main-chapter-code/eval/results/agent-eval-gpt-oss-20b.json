@@ -1,0 +1,798 @@
+[
+ {
+  "scenario": "db-pool-exhaustion",
+  "model": "gpt-oss:20b",
+  "repeat": 1,
+  "summarize": true,
+  "bad_version": null,
+  "steps": 8,
+  "cost_usd": 0.0,
+  "latency_s": 12.3,
+  "prompt_tokens": 11904,
+  "completion_tokens": 1147,
+  "max_prompt_tokens": 1780,
+  "tool_chars": 1338,
+  "error": null,
+  "rank": null,
+  "top_hypothesis": "Database connection pool exhaustion due to increased load after deployment.",
+  "tools": [
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "rate(http_requests_total{job=\"checkout\",status=~\"5..\"}[5m]) / rate(http_requests_total{job=\"checkout\"}[5m])",
+     "range": "5m"
+    },
+    "chars": 318
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"checkout\"}[5m])) by (route, le))",
+     "range": "5m"
+    },
+    "chars": 387
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "rate(http_requests_total{job=\"checkout\",route=\"/checkout\",status=~\"5..\"}[5m]) / rate(http_requests_total{job=\"checkout\",route=\"/checkout\"}[5m])",
+     "range": "5m"
+    },
+    "chars": 103
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | msg=\"unhandled exception\" | json | status=503 | route=\"/checkout\" | duration_ms=1000..2000",
+     "range": "5m"
+    },
+    "chars": 80
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json | msg=\"unhandled exception\" | status=\"503\" | route=\"/checkout\" | duration_ms=\"1000..2000\"",
+     "range": "5m"
+    },
+    "chars": 36
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json | route=\"/checkout\" | status=\"503\"",
+     "range": "5m"
+    },
+    "chars": 229
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.99, sum(rate(db_pool_wait_seconds_bucket{job=\"checkout\"}[5m])) by (le))",
+     "range": "5m"
+    },
+    "chars": 115
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "db_pool_connections_in_use{job=\"checkout\"}",
+     "range": "5m"
+    },
+    "chars": 70
+   }
+  ],
+  "hypotheses": [
+   {
+    "hypothesis": "Database connection pool exhaustion due to increased load after deployment.",
+    "confidence": 0.92
+   },
+   {
+    "hypothesis": "Deployment introduced a bug in the checkout handler causing synchronous blocking.",
+    "confidence": 0.06
+   },
+   {
+    "hypothesis": "External payment provider latency/ failure caused the errors.",
+    "confidence": 0.02
+   }
+  ],
+  "report": "reports/db-pool-exhaustion-gpt-oss-20b-r1.md",
+  "injected_at": "13:18:04Z"
+ },
+ {
+  "scenario": "db-pool-exhaustion",
+  "model": "gpt-oss:20b",
+  "repeat": 2,
+  "summarize": true,
+  "bad_version": null,
+  "steps": 8,
+  "cost_usd": 0.0,
+  "latency_s": 8.9,
+  "prompt_tokens": 10307,
+  "completion_tokens": 1185,
+  "max_prompt_tokens": 1693,
+  "tool_chars": 1084,
+  "error": "ValidationError: 5 validation errors for IncidentReport\nimpact\n  Field required [type=missing, input_value={'incident_id': 'checkout... transient DB errors.']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/missing\ntimeline\n  Input should be a valid array [type=list_type, inpu",
+  "rank": null,
+  "top_hypothesis": null,
+  "tools": [
+   {
+    "tool": "get_deploys",
+    "args": {
+     "since": "24h"
+    },
+    "chars": 120
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json | status=5xx | duration_ms > 2000 | linecount() by msg",
+     "range": "15m"
+    },
+    "chars": 74
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json | status >= 500 and duration_ms > 2000 | linecount() by msg",
+     "range": "15m"
+    },
+    "chars": 74
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json | status >= 500 | count_over_time(1m)",
+     "range": "15m"
+    },
+    "chars": 88
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum(rate(http_requests_total{job=\"checkout\",status=~\"5..\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 118
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum(rate(http_requests_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 105
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum(rate(http_requests_total{job=\"checkout\",status=~\"5..\"}[1m])) by (route)",
+     "range": "15m"
+    },
+    "chars": 392
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"checkout\",route=~\"/orders/.+|/products\"}[1m])) by (le))",
+     "range": "15m"
+    },
+    "chars": 113
+   }
+  ],
+  "injected_at": "13:18:04Z"
+ },
+ {
+  "scenario": "db-pool-exhaustion",
+  "model": "gpt-oss:20b",
+  "repeat": 3,
+  "summarize": true,
+  "bad_version": null,
+  "steps": 8,
+  "cost_usd": 0.0,
+  "latency_s": 9.2,
+  "prompt_tokens": 11928,
+  "completion_tokens": 1202,
+  "max_prompt_tokens": 1982,
+  "tool_chars": 2164,
+  "error": null,
+  "rank": 1,
+  "top_hypothesis": "Database connection pool exhaustion caused 503 responses",
+  "tools": [
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json | msg=\"unhandled exception\"",
+     "range": "5m"
+    },
+    "chars": 36
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json",
+     "range": "5m"
+    },
+    "chars": 586
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "max_over_time(db_pool_connections_in_use[5m])",
+     "range": "5m"
+    },
+    "chars": 70
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "max_over_time(db_pool_size[5m])",
+     "range": "5m"
+    },
+    "chars": 75
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "rate(http_requests_total[1m])",
+     "range": "5m"
+    },
+    "chars": 1050
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum(rate(http_requests_total{route=\"/checkout\",status=503}[1m])) / sum(rate(http_requests_total{route=\"/checkout\"}[1m]))",
+     "range": "5m"
+    },
+    "chars": 102
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum(rate(http_requests_total{route=\"/checkout\",status=\"503\"}[1m])) / sum(rate(http_requests_total{route=\"/checkout\"}[1m]))",
+     "range": "5m"
+    },
+    "chars": 125
+   },
+   {
+    "tool": "get_deploys",
+    "args": {
+     "since": "24h"
+    },
+    "chars": 120
+   }
+  ],
+  "hypotheses": [
+   {
+    "hypothesis": "Database connection pool exhaustion caused 503 responses",
+    "confidence": 0.95
+   },
+   {
+    "hypothesis": "Recent code change in the deploy introduced a resource leak",
+    "confidence": 0.75
+   },
+   {
+    "hypothesis": "External payment provider latency or errors caused checkout failures",
+    "confidence": 0.1
+   },
+   {
+    "hypothesis": "Network connectivity issues between service and database",
+    "confidence": 0.05
+   }
+  ],
+  "report": "reports/db-pool-exhaustion-gpt-oss-20b-r3.md",
+  "injected_at": "13:18:04Z"
+ },
+ {
+  "scenario": "bad-deploy",
+  "model": "gpt-oss:20b",
+  "repeat": 1,
+  "summarize": true,
+  "bad_version": "v2026.11.09-2",
+  "steps": 8,
+  "cost_usd": 0.0,
+  "latency_s": 9.6,
+  "prompt_tokens": 11583,
+  "completion_tokens": 1231,
+  "max_prompt_tokens": 2236,
+  "tool_chars": 2704,
+  "error": null,
+  "rank": 3,
+  "top_hypothesis": "Database connection pool exhaustion caused request failures",
+  "tools": [
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json | duration_ms > 2000",
+     "range": "5m"
+    },
+    "chars": 36
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum(rate(http_requests_total{status=~\"5..\"}[5m]))",
+     "range": "5m"
+    },
+    "chars": 90
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum(rate(http_requests_total[5m]))",
+     "range": "5m"
+    },
+    "chars": 109
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum(rate(http_requests_total{status=~\"5..\"}[5m])) by (route)",
+     "range": "5m"
+    },
+    "chars": 276
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{route=\"/checkout\"}[5m])) by (le))",
+     "range": "5m"
+    },
+    "chars": 113
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum(rate(payment_provider_errors_total[5m])) by (provider,reason)",
+     "range": "5m"
+    },
+    "chars": 652
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum(rate(http_requests_total{route=\"/checkout\"}[5m])) by (status)",
+     "range": "5m"
+    },
+    "chars": 448
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum(rate(db_pool_wait_seconds_bucket[5m])) by (le)",
+     "range": "5m"
+    },
+    "chars": 980
+   }
+  ],
+  "hypotheses": [
+   {
+    "hypothesis": "Database connection pool exhaustion caused request failures",
+    "confidence": 0.87
+   },
+   {
+    "hypothesis": "Payment provider timeout/decline caused the errors",
+    "confidence": 0.08
+   },
+   {
+    "hypothesis": "A recent deployment introduced a bug in the checkout logic",
+    "confidence": 0.05
+   }
+  ],
+  "report": "reports/bad-deploy-gpt-oss-20b-r1.md",
+  "injected_at": "13:21:48Z"
+ },
+ {
+  "scenario": "bad-deploy",
+  "model": "gpt-oss:20b",
+  "repeat": 2,
+  "summarize": true,
+  "bad_version": "v2026.11.09-2",
+  "steps": 8,
+  "cost_usd": 0.0,
+  "latency_s": 9.3,
+  "prompt_tokens": 12151,
+  "completion_tokens": 1241,
+  "max_prompt_tokens": 2050,
+  "tool_chars": 2002,
+  "error": "ValidationError: 9 validation errors for IncidentReport\nsummary\n  Field required [type=missing, input_value={'incident_id': 'checkout...g the identified bug.']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/missing\nimpact\n  Field required [type=missing, input_value={'incident",
+  "rank": null,
+  "top_hypothesis": null,
+  "tools": [
+   {
+    "tool": "get_deploys",
+    "args": {
+     "since": "24h"
+    },
+    "chars": 244
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | msg=~\".*\" | json | duration_ms > 2000",
+     "range": "15m"
+    },
+    "chars": 36
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "rate(http_requests_total{job=\"checkout\", status=~\"5..\"}[1m])",
+     "range": "15m"
+    },
+    "chars": 463
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"checkout\", route=\"/checkout\"}[1m])) by (le))",
+     "range": "15m"
+    },
+    "chars": 115
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "rate(payment_provider_errors_total{job=\"checkout\", provider=\"stripe\", reason=\"timeout\"}[1m])",
+     "range": "15m"
+    },
+    "chars": 95
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "rate(db_pool_wait_seconds_bucket{job=\"checkout\"}[1m])",
+     "range": "15m"
+    },
+    "chars": 948
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "db_pool_connections_in_use{job=\"checkout\"}",
+     "range": "5m"
+    },
+    "chars": 65
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json | msg=~\"database.*\" | duration_ms > 100",
+     "range": "15m"
+    },
+    "chars": 36
+   }
+  ],
+  "injected_at": "13:21:48Z"
+ },
+ {
+  "scenario": "bad-deploy",
+  "model": "gpt-oss:20b",
+  "repeat": 3,
+  "summarize": true,
+  "bad_version": "v2026.11.09-2",
+  "steps": 7,
+  "cost_usd": 0.0,
+  "latency_s": 11.8,
+  "prompt_tokens": 11791,
+  "completion_tokens": 1585,
+  "max_prompt_tokens": 2114,
+  "tool_chars": 2057,
+  "error": null,
+  "rank": 1,
+  "top_hypothesis": "Bad deploy introduced a None dereference in /checkout.",
+  "tools": [
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (status) (rate(http_requests_total{job=\"checkout\",status=~\"5..\"}[5m])) / sum by (status) (rate(http_requests_total{job=\"checkout\"}[5m]))",
+     "range": "5m"
+    },
+    "chars": 110
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum(rate(http_requests_total{job=\"checkout\",status=~\"5..\"}[5m])) / sum(rate(http_requests_total{job=\"checkout\"}[5m]))",
+     "range": "5m"
+    },
+    "chars": 90
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95,sum(rate(http_request_duration_seconds_bucket{job=\"checkout\"}[5m])) by (le))",
+     "range": "5m"
+    },
+    "chars": 115
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route) (rate(http_requests_total{job=\"checkout\",status=~\"5..\"}[5m])) / sum by (route) (rate(http_requests_total{job=\"checkout\"}[5m]))",
+     "range": "5m"
+    },
+    "chars": 276
+   },
+   {
+    "tool": "get_deploys",
+    "args": {
+     "since": "1h"
+    },
+    "chars": 123
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\",level=\"error\"} | json | msg=\"unhandled exception\" | route=\"/checkout\"",
+     "range": "5m"
+    },
+    "chars": 237
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "TypeError 'NoneType' object is not subscriptable checkout"
+    },
+    "chars": 1106
+   }
+  ],
+  "hypotheses": [
+   {
+    "hypothesis": "Bad deploy introduced a None dereference in /checkout.",
+    "confidence": 0.95
+   },
+   {
+    "hypothesis": "Database pool exhaustion caused 5xx errors.",
+    "confidence": 0.05
+   },
+   {
+    "hypothesis": "Payment provider timeout caused 5xx errors.",
+    "confidence": 0.03
+   }
+  ],
+  "report": "reports/bad-deploy-gpt-oss-20b-r3.md",
+  "injected_at": "13:21:48Z"
+ },
+ {
+  "scenario": "payment-provider-timeout",
+  "model": "gpt-oss:20b",
+  "repeat": 1,
+  "summarize": true,
+  "bad_version": null,
+  "steps": 8,
+  "cost_usd": 0.0,
+  "latency_s": 10.0,
+  "prompt_tokens": 10827,
+  "completion_tokens": 1355,
+  "max_prompt_tokens": 1776,
+  "tool_chars": 1093,
+  "error": "ValidationError: 8 validation errors for IncidentReport\nimpact\n  Field required [type=missing, input_value={'incident_id': 'CHK-2026... '2026-11-09T13:27:12Z'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/missing\ntimeline.0\n  Input should be a valid string [type=string_type,",
+  "rank": null,
+  "top_hypothesis": null,
+  "tools": [
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum(rate(http_requests_total{service=\"checkout\",status=~\"5..\"}[5m])) / sum(rate(http_requests_total{service=\"checkout\"}[5m]))",
+     "range": "5m"
+    },
+    "chars": 114
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum(rate(http_requests_total{service=\"checkout\"}[5m]))",
+     "range": "5m"
+    },
+    "chars": 114
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum(rate(http_requests_total{job=\"checkout\"}[5m]))",
+     "range": "5m"
+    },
+    "chars": 109
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum(rate(http_requests_total{job=\"checkout\",status=~\"5..\"}[5m])) / sum(rate(http_requests_total{job=\"checkout\"}[5m]))",
+     "range": "5m"
+    },
+    "chars": 91
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"checkout\"}[5m])) by (le))",
+     "range": "5m"
+    },
+    "chars": 110
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"checkout\"}[5m])) by (route, le))",
+     "range": "5m"
+    },
+    "chars": 399
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum(rate(http_requests_total{job=\"checkout\",status=~\"5..\",route=~\"/checkout\"}[5m])) / sum(rate(http_requests_total{job=\"checkout\",route=~\"/checkout\"}[5m]))",
+     "range": "5m"
+    },
+    "chars": 91
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum(rate(payment_provider_errors_total{job=\"checkout\",provider=~\"stripe|paypal\",reason=~\"timeout|declined|error\"}[5m])) / sum(rate(payment_provider_errors_total{job=\"checkout\"}[5m]))",
+     "range": "5m"
+    },
+    "chars": 65
+   }
+  ],
+  "injected_at": "13:25:32Z"
+ },
+ {
+  "scenario": "payment-provider-timeout",
+  "model": "gpt-oss:20b",
+  "repeat": 2,
+  "summarize": true,
+  "bad_version": null,
+  "steps": 5,
+  "cost_usd": 0.0,
+  "latency_s": 8.9,
+  "prompt_tokens": 7806,
+  "completion_tokens": 1217,
+  "max_prompt_tokens": 1583,
+  "tool_chars": 922,
+  "error": null,
+  "rank": 2,
+  "top_hypothesis": "New gift\u2011message field in checkout payload caused malformed requests to PayPal, leading to timeouts.",
+  "tools": [
+   {
+    "tool": "get_deploys",
+    "args": {
+     "since": "24h"
+    },
+    "chars": 120
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum(rate(http_requests_total{job=\"checkout\",status=~\"5..\"}[5m])) / sum(rate(http_requests_total{job=\"checkout\"}[5m]))",
+     "range": "5m"
+    },
+    "chars": 89
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95,sum(rate(http_request_duration_seconds_bucket{job=\"checkout\"}[5m])) by (route, le))",
+     "range": "5m"
+    },
+    "chars": 399
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json | route=\"/checkout\"",
+     "range": "5m"
+    },
+    "chars": 224
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum(rate(payment_provider_errors_total{job=\"checkout\",provider=\"paypal\",reason=\"timeout\"}[5m]))",
+     "range": "5m"
+    },
+    "chars": 90
+   }
+  ],
+  "hypotheses": [
+   {
+    "hypothesis": "New gift\u2011message field in checkout payload caused malformed requests to PayPal, leading to timeouts.",
+    "confidence": 0.85
+   },
+   {
+    "hypothesis": "External PayPal outage caused all payment timeouts.",
+    "confidence": 0.5
+   },
+   {
+    "hypothesis": "Misconfigured timeout settings in checkout service caused PayPal calls to exceed limits.",
+    "confidence": 0.3
+   }
+  ],
+  "report": "reports/payment-provider-timeout-gpt-oss-20b-r2.md",
+  "injected_at": "13:25:32Z"
+ },
+ {
+  "scenario": "payment-provider-timeout",
+  "model": "gpt-oss:20b",
+  "repeat": 3,
+  "summarize": true,
+  "bad_version": null,
+  "steps": 8,
+  "cost_usd": 0.0,
+  "latency_s": 9.7,
+  "prompt_tokens": 11797,
+  "completion_tokens": 1306,
+  "max_prompt_tokens": 1732,
+  "tool_chars": 1481,
+  "error": "ValidationError: 8 validation errors for IncidentReport\nimpact\n  Field required [type=missing, input_value={'incident_id': 'checkout...transaction behavior.']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/missing\ntimeline.0\n  Input should be a valid string [type=string_type,",
+  "rank": null,
+  "top_hypothesis": null,
+  "tools": [
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "rate(http_requests_total{job=\"checkout\",status=~\"5..\"}[1m]) / rate(http_requests_total{job=\"checkout\"}[1m])",
+     "range": "5m"
+    },
+    "chars": 362
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "rate(http_requests_total{job=\"checkout\",status=~\"5..\"}[5m]) / rate(http_requests_total{job=\"checkout\"}[5m]) * 100",
+     "range": "5m"
+    },
+    "chars": 382
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "rate(payment_provider_errors_total{job=\"checkout\",provider=\"stripe\",reason=~\"timeout|declined|error\"}[5m])",
+     "range": "5m"
+    },
+    "chars": 325
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"checkout\",route=~\"/checkout\"}[5m])) by (le))",
+     "range": "5m"
+    },
+    "chars": 101
+   },
+   {
+    "tool": "get_deploys",
+    "args": {
+     "since": "24h"
+    },
+    "chars": 120
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json | deploy_version=\"v2026.11.09-1\" | duration_ms>2000 | linecount",
+     "range": "1h"
+    },
+    "chars": 78
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\", deploy_version=\"v2026.11.09-1\"} | json | duration_ms>2000",
+     "range": "1h"
+    },
+    "chars": 36
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\", provider=\"stripe\"} | json | linecount",
+     "range": "1h"
+    },
+    "chars": 77
+   }
+  ],
+  "injected_at": "13:25:32Z"
+ }
+]

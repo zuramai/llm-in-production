@@ -1,0 +1,991 @@
+[
+ {
+  "scenario": "db-pool-exhaustion",
+  "model": "anthropic/claude-haiku-5.5",
+  "repeat": 1,
+  "summarize": true,
+  "bad_version": null,
+  "steps": 3,
+  "cost_usd": 0.00394,
+  "latency_s": 20.0,
+  "prompt_tokens": 19922,
+  "completion_tokens": 3903,
+  "max_prompt_tokens": 6011,
+  "tool_chars": 4503,
+  "error": null,
+  "rank": 2,
+  "top_hypothesis": "Deploy v2026.11.07-1 (gift-message change) causes DB connection pool exhaustion, either via added queries or connections held longer, or because pool size is insufficient for the new load.",
+  "tools": [
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route) (rate(http_requests_total{job=\"checkout\",status=~\"5..\"}[1m])) / sum by (route) (rate(http_requests_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 325
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (le, route) (rate(http_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 382
+   },
+   {
+    "tool": "get_deploys",
+    "args": {
+     "since": "6h"
+    },
+    "chars": 120
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (le, provider) (rate(payment_provider_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 256
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (provider, reason) (rate(payment_provider_errors_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 627
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "db_pool_connections_in_use{job=\"checkout\"} / db_pool_size{job=\"checkout\"}",
+     "range": "15m"
+    },
+    "chars": 73
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (le) (rate(db_pool_wait_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 115
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json | msg=\"unhandled exception\"",
+     "range": "15m"
+    },
+    "chars": 36
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "db pool exhaustion checkout"
+    },
+    "chars": 1438
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} |= \"db pool exhausted\"",
+     "range": "15m"
+    },
+    "chars": 583
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route, status) (rate(http_requests_total{job=\"checkout\",status=~\"5..\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 548
+   }
+  ],
+  "hypotheses": [
+   {
+    "hypothesis": "Deploy v2026.11.07-1 (gift-message change) causes DB connection pool exhaustion, either via added queries or connections held longer, or because pool size is insufficient for the new load.",
+    "confidence": 0.85
+   },
+   {
+    "hypothesis": "Traffic surge or dependency-side slowdown is starving the DB pool without a code change.",
+    "confidence": 0.1
+   },
+   {
+    "hypothesis": "Payment provider latency or failures are driving checkout errors and latency.",
+    "confidence": 0.05
+   },
+   {
+    "hypothesis": "Errors are a generic 500-class application fault rather than pool exhaustion.",
+    "confidence": 0.05
+   }
+  ],
+  "report": "reports/db-pool-exhaustion-claude-haiku-5.5-r1.md",
+  "injected_at": "22:40:51Z"
+ },
+ {
+  "scenario": "db-pool-exhaustion",
+  "model": "anthropic/claude-haiku-5.5",
+  "repeat": 2,
+  "summarize": true,
+  "bad_version": null,
+  "steps": 3,
+  "cost_usd": 0.00401,
+  "latency_s": 22.0,
+  "prompt_tokens": 19288,
+  "completion_tokens": 4164,
+  "max_prompt_tokens": 5663,
+  "tool_chars": 4050,
+  "error": null,
+  "rank": null,
+  "top_hypothesis": "Database connection pool exhaustion caused by deploy v2026.11.07-1 (gift-message change holding connections longer or adding load), producing 503 PoolExhausted across checkout routes",
+  "tools": [
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route) (rate(http_requests_total{job=\"checkout\",status=~\"5..\"}[1m])) / sum by (route) (rate(http_requests_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 325
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (le, route) (rate(http_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 382
+   },
+   {
+    "tool": "get_deploys",
+    "args": {
+     "since": "6h"
+    },
+    "chars": 120
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (le, provider) (rate(payment_provider_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 256
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (provider, reason) (rate(payment_provider_errors_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 626
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "db_pool_connections_in_use{job=\"checkout\"} / db_pool_size{job=\"checkout\"}",
+     "range": "15m"
+    },
+    "chars": 73
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json | msg=\"unhandled exception\"",
+     "range": "15m"
+    },
+    "chars": 36
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (le) (rate(db_pool_wait_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 115
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "checkout db pool exhaustion latency 5xx"
+    },
+    "chars": 1438
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} |= \"db pool exhausted\"",
+     "range": "15m"
+    },
+    "chars": 583
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum(rate(http_requests_total{job=\"checkout\",status=~\"5..\"}[1m])) / sum(rate(http_requests_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 96
+   }
+  ],
+  "hypotheses": [
+   {
+    "hypothesis": "Database connection pool exhaustion caused by deploy v2026.11.07-1 (gift-message change holding connections longer or adding load), producing 503 PoolExhausted across checkout routes",
+    "confidence": 0.85
+   },
+   {
+    "hypothesis": "Deploy v2026.11.07-1 is the triggering change (correlation with timing), but the specific mechanism inside the gift-message change has not been identified",
+    "confidence": 0.7
+   },
+   {
+    "hypothesis": "Payment provider latency or outage (Stripe or PayPal) causing requests to hold connections open",
+    "confidence": 0.05
+   },
+   {
+    "hypothesis": "Route-specific bug in /checkout code path",
+    "confidence": 0.05
+   }
+  ],
+  "report": "reports/db-pool-exhaustion-claude-haiku-5.5-r2.md",
+  "injected_at": "22:40:51Z"
+ },
+ {
+  "scenario": "db-pool-exhaustion",
+  "model": "anthropic/claude-haiku-5.5",
+  "repeat": 3,
+  "summarize": true,
+  "bad_version": null,
+  "steps": 4,
+  "cost_usd": 0.00443,
+  "latency_s": 23.3,
+  "prompt_tokens": 23306,
+  "completion_tokens": 4191,
+  "max_prompt_tokens": 6344,
+  "tool_chars": 5389,
+  "error": null,
+  "rank": 1,
+  "top_hypothesis": "Checkout DB connection pool exhausted (connections held too long or too many concurrent requests), causing queueing and PoolExhausted 503s. This is the confirmed proximate cause.",
+  "tools": [
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route) (rate(http_requests_total{job=\"checkout\",status=~\"5..\"}[1m])) / sum by (route) (rate(http_requests_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 325
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (route, le) (rate(http_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 382
+   },
+   {
+    "tool": "get_deploys",
+    "args": {
+     "since": "24h"
+    },
+    "chars": 120
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (provider, le) (rate(payment_provider_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 258
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (provider, reason) (rate(payment_provider_errors_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 621
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (le) (rate(db_pool_wait_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 115
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum(db_pool_connections_in_use{job=\"checkout\"}) / sum(db_pool_size{job=\"checkout\"})",
+     "range": "15m"
+    },
+    "chars": 73
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json | msg=\"unhandled exception\"",
+     "range": "15m"
+    },
+    "chars": 36
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "db pool exhaustion checkout latency"
+    },
+    "chars": 1438
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} |= \"db pool exhausted\"",
+     "range": "30m"
+    },
+    "chars": 583
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "checkout db pool exhaustion mitigation"
+    },
+    "chars": 1438
+   }
+  ],
+  "hypotheses": [
+   {
+    "hypothesis": "Checkout DB connection pool exhausted (connections held too long or too many concurrent requests), causing queueing and PoolExhausted 503s. This is the confirmed proximate cause.",
+    "confidence": 0.9
+   },
+   {
+    "hypothesis": "Bad deploy v2026.11.07-1 (gift-message field) introduced a slow query or excess DB usage on the checkout path.",
+    "confidence": 0.35
+   },
+   {
+    "hypothesis": "Traffic surge or load spike exhausting a fixed-size pool.",
+    "confidence": 0.25
+   },
+   {
+    "hypothesis": "Application unhandled exception or general error spike causing failures.",
+    "confidence": 0.05
+   },
+   {
+    "hypothesis": "Upstream checkout ingress or infrastructure (network, node) degradation.",
+    "confidence": 0.05
+   },
+   {
+    "hypothesis": "Payment provider latency or outage (Stripe or PayPal) causing slow /checkout requests that hold connections.",
+    "confidence": 0.03
+   }
+  ],
+  "report": "reports/db-pool-exhaustion-claude-haiku-5.5-r3.md",
+  "injected_at": "22:40:51Z"
+ },
+ {
+  "scenario": "bad-deploy",
+  "model": "anthropic/claude-haiku-5.5",
+  "repeat": 1,
+  "summarize": true,
+  "bad_version": "v2026.11.07-2",
+  "steps": 3,
+  "cost_usd": 0.0036,
+  "latency_s": 19.9,
+  "prompt_tokens": 16908,
+  "completion_tokens": 3825,
+  "max_prompt_tokens": 4906,
+  "tool_chars": 3486,
+  "error": null,
+  "rank": 1,
+  "top_hypothesis": "Bad deploy v2026.11.07-2: promo-discount pricing change introduced a null-dereference on the /checkout path (leading cause)",
+  "tools": [
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route) (rate(http_requests_total{job=\"checkout\",status=~\"5..\"}[1m])) / sum by (route) (rate(http_requests_total{job=\"checkout\"}[1m]))",
+     "range": "30m"
+    },
+    "chars": 276
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (le, route) (rate(http_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "30m"
+    },
+    "chars": 416
+   },
+   {
+    "tool": "get_deploys",
+    "args": {
+     "since": "6h"
+    },
+    "chars": 244
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (provider, reason) (rate(payment_provider_errors_total{job=\"checkout\"}[1m]))",
+     "range": "30m"
+    },
+    "chars": 603
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "db_pool_connections_in_use{job=\"checkout\"} / db_pool_size{job=\"checkout\"}",
+     "range": "30m"
+    },
+    "chars": 69
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json | msg=\"unhandled exception\"",
+     "range": "15m"
+    },
+    "chars": 237
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (status) (rate(http_requests_total{job=\"checkout\",route=\"/checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 470
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "checkout 5xx rollback deploy severity"
+    },
+    "chars": 1171
+   }
+  ],
+  "hypotheses": [
+   {
+    "hypothesis": "Bad deploy v2026.11.07-2: promo-discount pricing change introduced a null-dereference on the /checkout path (leading cause)",
+    "confidence": 0.95
+   },
+   {
+    "hypothesis": "Latency-driven failure (p95 above 2s causing timeouts or upstream errors)",
+    "confidence": 0.03
+   },
+   {
+    "hypothesis": "Earlier deploy v2026.11.07-1 (gift-message field) as the cause",
+    "confidence": 0.03
+   },
+   {
+    "hypothesis": "Payment provider outage or degradation (Stripe or PayPal) causing checkout failures",
+    "confidence": 0.02
+   },
+   {
+    "hypothesis": "Database connection pool exhaustion causing checkout failures",
+    "confidence": 0.02
+   }
+  ],
+  "report": "reports/bad-deploy-claude-haiku-5.5-r1.md",
+  "injected_at": "22:44:28Z"
+ },
+ {
+  "scenario": "bad-deploy",
+  "model": "anthropic/claude-haiku-5.5",
+  "repeat": 2,
+  "summarize": true,
+  "bad_version": "v2026.11.07-2",
+  "steps": 2,
+  "cost_usd": 0.00265,
+  "latency_s": 15.7,
+  "prompt_tokens": 11066,
+  "completion_tokens": 3081,
+  "max_prompt_tokens": 4072,
+  "tool_chars": 2250,
+  "error": null,
+  "rank": 1,
+  "top_hypothesis": "Null dereference introduced by deploy v2026.11.07-2 (promo-discount pricing logic indexes a None value)",
+  "tools": [
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route) (rate(http_requests_total{job=\"checkout\",status=~\"5..\"}[1m])) / sum by (route) (rate(http_requests_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 276
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (route, le) (rate(http_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 420
+   },
+   {
+    "tool": "get_deploys",
+    "args": {
+     "since": "6h"
+    },
+    "chars": 244
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json | msg=\"unhandled exception\"",
+     "range": "10m"
+    },
+    "chars": 237
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (provider, reason) (rate(payment_provider_errors_total{job=\"checkout\"}[1m]))",
+     "range": "10m"
+    },
+    "chars": 603
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (status) (rate(http_requests_total{job=\"checkout\",route=\"/checkout\"}[1m]))",
+     "range": "10m"
+    },
+    "chars": 470
+   }
+  ],
+  "hypotheses": [
+   {
+    "hypothesis": "Null dereference introduced by deploy v2026.11.07-2 (promo-discount pricing logic indexes a None value)",
+    "confidence": 0.9
+   },
+   {
+    "hypothesis": "Latency or resource saturation in checkout (DB pool exhaustion, slow dependencies)",
+    "confidence": 0.05
+   },
+   {
+    "hypothesis": "Payment provider outage or degradation (Stripe or PayPal)",
+    "confidence": 0.03
+   },
+   {
+    "hypothesis": "Platform-wide failure affecting all routes",
+    "confidence": 0.02
+   }
+  ],
+  "report": "reports/bad-deploy-claude-haiku-5.5-r2.md",
+  "injected_at": "22:44:28Z"
+ },
+ {
+  "scenario": "bad-deploy",
+  "model": "anthropic/claude-haiku-5.5",
+  "repeat": 3,
+  "summarize": true,
+  "bad_version": "v2026.11.07-2",
+  "steps": 2,
+  "cost_usd": 0.00265,
+  "latency_s": 15.8,
+  "prompt_tokens": 11385,
+  "completion_tokens": 3025,
+  "max_prompt_tokens": 4236,
+  "tool_chars": 2730,
+  "error": null,
+  "rank": 1,
+  "top_hypothesis": "Bad deploy v2026.11.07-2 introduced a TypeError in the checkout promo-discount pricing path, causing 500s on /checkout",
+  "tools": [
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route) (rate(http_requests_total{job=\"checkout\",status=~\"5..\"}[1m])) / sum by (route) (rate(http_requests_total{job=\"checkout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 276
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (route, le) (rate(http_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "15m"
+    },
+    "chars": 420
+   },
+   {
+    "tool": "get_deploys",
+    "args": {
+     "since": "6h"
+    },
+    "chars": 244
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json | msg=\"unhandled exception\"",
+     "range": "10m"
+    },
+    "chars": 237
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (provider, reason) (rate(payment_provider_errors_total{job=\"checkout\"}[1m]))",
+     "range": "10m"
+    },
+    "chars": 603
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "checkout 5xx errors deploy rollback"
+    },
+    "chars": 950
+   }
+  ],
+  "hypotheses": [
+   {
+    "hypothesis": "Bad deploy v2026.11.07-2 introduced a TypeError in the checkout promo-discount pricing path, causing 500s on /checkout",
+    "confidence": 0.95
+   },
+   {
+    "hypothesis": "DB connection pool exhaustion",
+    "confidence": 0.05
+   },
+   {
+    "hypothesis": "Previous deploy v2026.11.07-1 (gift-message field) caused the errors",
+    "confidence": 0.03
+   },
+   {
+    "hypothesis": "Payment provider outage or timeouts (stripe or paypal) causing checkout failures",
+    "confidence": 0.03
+   },
+   {
+    "hypothesis": "Latency-driven overload causing failures",
+    "confidence": 0.02
+   }
+  ],
+  "report": "reports/bad-deploy-claude-haiku-5.5-r3.md",
+  "injected_at": "22:44:28Z"
+ },
+ {
+  "scenario": "payment-provider-timeout",
+  "model": "anthropic/claude-haiku-5.5",
+  "repeat": 1,
+  "summarize": true,
+  "bad_version": null,
+  "steps": 3,
+  "cost_usd": 0.0032,
+  "latency_s": 17.6,
+  "prompt_tokens": 15163,
+  "completion_tokens": 3358,
+  "max_prompt_tokens": 4578,
+  "tool_chars": 2535,
+  "error": null,
+  "rank": 1,
+  "top_hypothesis": "PayPal provider timeout outage causing /checkout 5xx and latency",
+  "tools": [
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route) (rate(http_requests_total{job=\"checkout\",status=~\"5..\"}[1m])) / sum by (route) (rate(http_requests_total{job=\"checkout\"}[1m]))",
+     "range": "30m"
+    },
+    "chars": 276
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (le, route) (rate(http_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "30m"
+    },
+    "chars": 413
+   },
+   {
+    "tool": "get_deploys",
+    "args": {
+     "since": "6h"
+    },
+    "chars": 120
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (provider) (rate(payment_provider_errors_total{job=\"checkout\"}[1m]))",
+     "range": "30m"
+    },
+    "chars": 214
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (le, provider) (rate(payment_provider_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "30m"
+    },
+    "chars": 249
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "max(db_pool_connections_in_use{job=\"checkout\"}) / max(db_pool_size{job=\"checkout\"})",
+     "range": "30m"
+    },
+    "chars": 71
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json | route=\"/checkout\"",
+     "range": "30m"
+    },
+    "chars": 224
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "paypal provider timeout checkout"
+    },
+    "chars": 968
+   }
+  ],
+  "hypotheses": [
+   {
+    "hypothesis": "PayPal provider timeout outage causing /checkout 5xx and latency",
+    "confidence": 0.93
+   },
+   {
+    "hypothesis": "Regression from deploy v2026.11.07-1 (gift-message field)",
+    "confidence": 0.04
+   },
+   {
+    "hypothesis": "Checkout DB connection pool exhaustion",
+    "confidence": 0.03
+   },
+   {
+    "hypothesis": "Stripe provider degradation",
+    "confidence": 0.02
+   }
+  ],
+  "report": "reports/payment-provider-timeout-claude-haiku-5.5-r1.md",
+  "injected_at": "22:48:02Z"
+ },
+ {
+  "scenario": "payment-provider-timeout",
+  "model": "anthropic/claude-haiku-5.5",
+  "repeat": 2,
+  "summarize": true,
+  "bad_version": null,
+  "steps": 3,
+  "cost_usd": 0.00328,
+  "latency_s": 17.0,
+  "prompt_tokens": 16198,
+  "completion_tokens": 3326,
+  "max_prompt_tokens": 5003,
+  "tool_chars": 3177,
+  "error": null,
+  "rank": 1,
+  "top_hypothesis": "PayPal provider timeouts/outage causing /checkout latency and 5xx errors",
+  "tools": [
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route) (rate(http_requests_total{job=\"checkout\",status=~\"5..\"}[1m])) / sum by (route) (rate(http_requests_total{job=\"checkout\"}[1m]))",
+     "range": "30m"
+    },
+    "chars": 276
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (le, route) (rate(http_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "30m"
+    },
+    "chars": 413
+   },
+   {
+    "tool": "get_deploys",
+    "args": {
+     "since": "24h"
+    },
+    "chars": 120
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (le, provider) (rate(payment_provider_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "30m"
+    },
+    "chars": 249
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (reason, provider) (rate(payment_provider_errors_total{job=\"checkout\"}[1m]))",
+     "range": "30m"
+    },
+    "chars": 632
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "max(db_pool_connections_in_use{job=\"checkout\"}) / max(db_pool_size{job=\"checkout\"})",
+     "range": "30m"
+    },
+    "chars": 71
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json | route=\"/checkout\"",
+     "range": "30m"
+    },
+    "chars": 224
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "paypal provider timeout checkout"
+    },
+    "chars": 968
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json | msg=\"payment provider timeout\"",
+     "range": "2h"
+    },
+    "chars": 224
+   }
+  ],
+  "hypotheses": [
+   {
+    "hypothesis": "PayPal provider timeouts/outage causing /checkout latency and 5xx errors",
+    "confidence": 0.9
+   },
+   {
+    "hypothesis": "Bad deploy v2026.11.07-1 (gift-message field) causing checkout failures",
+    "confidence": 0.15
+   },
+   {
+    "hypothesis": "Database connection pool exhaustion on checkout",
+    "confidence": 0.03
+   },
+   {
+    "hypothesis": "Stripe provider degradation",
+    "confidence": 0.02
+   },
+   {
+    "hypothesis": "Platform-wide issue affecting all routes",
+    "confidence": 0.02
+   }
+  ],
+  "report": "reports/payment-provider-timeout-claude-haiku-5.5-r2.md",
+  "injected_at": "22:48:02Z"
+ },
+ {
+  "scenario": "payment-provider-timeout",
+  "model": "anthropic/claude-haiku-5.5",
+  "repeat": 3,
+  "summarize": true,
+  "bad_version": null,
+  "steps": 3,
+  "cost_usd": 0.00348,
+  "latency_s": 18.7,
+  "prompt_tokens": 16325,
+  "completion_tokens": 3701,
+  "max_prompt_tokens": 5066,
+  "tool_chars": 3137,
+  "error": null,
+  "rank": 1,
+  "top_hypothesis": "PayPal provider-side degradation (external latency/timeouts) causing /checkout failures",
+  "tools": [
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (route) (rate(http_requests_total{job=\"checkout\",status=~\"5..\"}[1m])) / sum by (route) (rate(http_requests_total{job=\"checkout\"}[1m]))",
+     "range": "30m"
+    },
+    "chars": 276
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (le, route) (rate(http_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "30m"
+    },
+    "chars": 413
+   },
+   {
+    "tool": "get_deploys",
+    "args": {
+     "since": "6h"
+    },
+    "chars": 120
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "histogram_quantile(0.95, sum by (le, provider) (rate(payment_provider_request_duration_seconds_bucket{job=\"checkout\"}[1m])))",
+     "range": "30m"
+    },
+    "chars": 249
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (provider, reason) (rate(payment_provider_errors_total{job=\"checkout\"}[1m]))",
+     "range": "30m"
+    },
+    "chars": 632
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "max(db_pool_connections_in_use{job=\"checkout\"}) / max(db_pool_size{job=\"checkout\"})",
+     "range": "30m"
+    },
+    "chars": 71
+   },
+   {
+    "tool": "query_loki",
+    "args": {
+     "logql": "{service=\"checkout\", level=\"error\"} | json | route=\"/checkout\"",
+     "range": "30m"
+    },
+    "chars": 224
+   },
+   {
+    "tool": "query_prometheus",
+    "args": {
+     "promql": "sum by (provider) (rate(payment_provider_errors_total{job=\"checkout\",reason=\"timeout\"}[1m]))",
+     "range": "15m"
+    },
+    "chars": 184
+   },
+   {
+    "tool": "search_runbooks",
+    "args": {
+     "query": "paypal provider timeout checkout"
+    },
+    "chars": 968
+   }
+  ],
+  "hypotheses": [
+   {
+    "hypothesis": "PayPal provider-side degradation (external latency/timeouts) causing /checkout failures",
+    "confidence": 0.8
+   },
+   {
+    "hypothesis": "Bad deploy v2026.11.07-1 (gift-message field) causing checkout failures",
+    "confidence": 0.15
+   },
+   {
+    "hypothesis": "DB connection pool exhaustion in checkout",
+    "confidence": 0.03
+   },
+   {
+    "hypothesis": "Stripe provider failure or degradation",
+    "confidence": 0.03
+   },
+   {
+    "hypothesis": "Platform-wide issue affecting all routes (infrastructure, network)",
+    "confidence": 0.03
+   }
+  ],
+  "report": "reports/payment-provider-timeout-claude-haiku-5.5-r3.md",
+  "injected_at": "22:48:02Z"
+ }
+]

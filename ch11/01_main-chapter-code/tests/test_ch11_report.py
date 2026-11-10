@@ -74,3 +74,42 @@ def test_scoring_requires_all_groups_and_the_right_provider():
 ])
 def test_rank_of_root_cause_uses_confidence_order_not_list_order(hyps, rank):
     assert rank_of_root_cause(report(*hyps), "db-pool-exhaustion") == rank
+
+
+def test_bad_deploy_counts_the_named_culprit_and_rejects_the_distractor_release():
+    bad = "v2026.11.07-2"
+    # the real raw-tools run that the first keyword rule scored as a miss
+    assert matches("A bug in v2026.11.07-2's promo-pricing change causes /checkout exceptions",
+                   "bad-deploy", bad_version=bad)
+    assert not matches("Deploy v2026.11.07-1 (gift-message field) broke checkout", "bad-deploy",
+                       bad_version=bad)
+    assert matches("Bad deploy of the promo-pricing change", "bad-deploy", bad_version=bad)
+
+
+@pytest.mark.parametrize(("text", "scenario", "hit"), [
+    # real gpt-oss:20b top hypotheses, 2026-11-09, judged by reading the full reports
+    (("New discount logic introduced a null reference when applying promo codes, causing "
+      "TypeError in pricing calculation."), "bad-deploy", True),
+    ("Bad deploy introduced a None dereference in /checkout.", "bad-deploy", True),
+    (("The recent deploy introduced a new code path that increases database contention, leading "
+      "to higher pool wait times and downstream request timeouts manifested as 5xx errors."),
+     "db-pool-exhaustion", False),
+    ("Database connection pool exhaustion due to increased load after deployment.",
+     "db-pool-exhaustion", False),
+    ("Database connection pool exhaustion caused 503 responses", "db-pool-exhaustion", True),
+    (("New gift\u2011message field in checkout payload caused malformed requests to PayPal, "
+      "leading to timeouts."), "payment-provider-timeout", False),
+])
+def test_the_injected_release_counts_without_deploy_and_blaming_a_healthy_one_does_not(
+        text, scenario, hit):
+    assert matches(text, scenario, bad_version="v2026.11.09-2") is hit
+
+
+def test_right_mechanism_blamed_on_an_innocent_release_does_not_count():
+    # a real claude-haiku-5.5 top hypothesis in the db-pool scenario; it proposed rolling back
+    blames_distractor = ("Deploy v2026.11.07-1 (gift-message change) causes DB connection pool "
+                         "exhaustion")
+    assert not matches(blames_distractor, "db-pool-exhaustion")
+    assert matches("Checkout DB connection pool exhausted", "db-pool-exhaustion")
+    assert rank_of_root_cause(report((blames_distractor, 0.85), ("DB pool exhausted", 0.5)),
+                              "db-pool-exhaustion") == 2

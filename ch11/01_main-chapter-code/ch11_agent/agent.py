@@ -13,6 +13,8 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
+import openai
+
 from llmprod import chat_client
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -20,6 +22,21 @@ from previous_chapters import extract_json, usage_cost
 
 from .report import IncidentReport, response_format
 from .tools import TOOL_SPECS, dispatch
+
+OLLAMA_URL = "http://localhost:11434/v1"
+
+
+def client_for(model: str) -> openai.OpenAI:
+    """'vendor/model' goes to LLM_BASE_URL (OpenRouter); a bare 'name:tag' goes to local Ollama."""
+    if "/" in model:
+        return chat_client(timeout=90, max_retries=2)
+    return openai.OpenAI(base_url=OLLAMA_URL, api_key="ollama", timeout=600, max_retries=0)
+
+
+def reasoning_for(model: str) -> str:
+    """gpt-oss can't switch reasoning off (low/medium/high only); the others take 'none'."""
+    return "low" if model.startswith("gpt-oss") else "none"
+
 
 SYSTEM = """You are an on-call incident analysis agent for ShopFlow's `checkout` service.
 You investigate with read-only tools, then report. You NEVER change anything: you propose
@@ -67,7 +84,8 @@ class RunResult:
 
 def run_agent(alert: str, model: str, *, max_steps: int = 8, summarize: bool = True,
               now: datetime | None = None) -> RunResult:
-    client = chat_client(timeout=90, max_retries=2)
+    client = client_for(model)
+    effort = reasoning_for(model)
     now = now or datetime.now(UTC)
     messages = [{"role": "system", "content": SYSTEM.format(now=now.strftime("%Y-%m-%d %H:%M:%S"))},
                 {"role": "user", "content": f"ALERT: {alert}\nInvestigate."}]
@@ -85,7 +103,7 @@ def run_agent(alert: str, model: str, *, max_steps: int = 8, summarize: bool = T
         for step in range(max_steps):
             resp = client.chat.completions.create(
                 model=model, messages=messages, tools=TOOL_SPECS, max_tokens=1200,
-                reasoning_effort="none")
+                reasoning_effort=effort)
             track(resp)
             msg = resp.choices[0].message
             if not msg.tool_calls:
@@ -107,7 +125,7 @@ def run_agent(alert: str, model: str, *, max_steps: int = 8, summarize: bool = T
         messages.append({"role": "user", "content": FINAL})
         resp = client.chat.completions.create(
             model=model, messages=messages, max_tokens=2500, response_format=response_format(),
-            reasoning_effort="none")
+            reasoning_effort=effort)
         track(resp)
         res.report = IncidentReport.model_validate_json(
             extract_json(resp.choices[0].message.content or ""))
