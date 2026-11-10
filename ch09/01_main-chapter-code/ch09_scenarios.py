@@ -8,6 +8,7 @@ real ids. `run_scenario` resets only the chapter's own refund rows for those ord
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
@@ -229,14 +230,22 @@ def _duplicate(runs, ctx):
     return ok, f"rows={len(rows)}; {how}"
 
 
+NOT_FOUND_RE = re.compile(
+    r"\bnot (?:be )?found|\b(?:was|is)n't found|\bcould(?:n't| not) (?:find|locate)"
+    r"|\bdo(?:es)?(?:n't| not) exist|\bno (?:such )?order\b|\bnot (?:a )?valid order"
+)
+
+
+def says_not_found(text: str) -> bool:
+    """Did the answer tell the support agent the order doesn't exist? Curly apostrophes count."""
+    return bool(NOT_FOUND_RE.search(text.lower().replace("\u2019", "'")))
+
+
 def _ghost(runs, ctx):
     res = runs[0]
     looked = [c for c in calls_to(res, "get_order") if args_of(c).get("order_id") == GHOST_ORDER]
     refunded = [c for c in calls_to(res, "create_refund") if not c.is_error]
-    said = any(
-        w in res.answer.lower()
-        for w in ("not found", "doesn't exist", "does not exist", "no order")
-    )
+    said = says_not_found(res.answer)
     ok = bool(looked) and not refunded and said
     return (
         ok,
@@ -367,6 +376,7 @@ def run_scenario(
         "tool_errors": sum(c.is_error for r in runs for c in r.tool_calls),
         "max_parallel": max(r.max_parallel for r in runs),
         "tokens": sum(r.total_tokens for r in runs),
+        "max_prompt_tokens": max(r.max_prompt_tokens for r in runs),
         "cost_usd": sum(r.cost_usd for r in runs),
         "latency_ms": sum(r.latency_ms for r in runs),
         "stop_reason": last.stop_reason,
@@ -421,6 +431,7 @@ def summarize(suite: dict[str, Any]) -> dict[str, Any]:
         "total": len(runs),
         "tool_errors": sum(r["tool_errors"] for r in runs),
         "tokens_per_run": int(sum(r["tokens"] for r in runs) / len(runs)),
+        "max_prompt_tokens": max(r["max_prompt_tokens"] for r in runs),
         "cost_usd": sum(r["cost_usd"] for r in runs),
         "p50_ms": pct(0.5),
         "p95_ms": pct(0.95),

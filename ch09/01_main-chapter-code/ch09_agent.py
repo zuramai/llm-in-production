@@ -15,6 +15,8 @@ from typing import Any
 
 from ch09_tools import Toolbox, error_json
 
+CHARS_PER_TOKEN = 4  # rough, for budgeting tool results before the model has counted them
+
 SYSTEM_V0 = "You are ShopFlow's support assistant. Use the tools to help the support agent."
 
 SYSTEM_PROMPT = """You are ShopFlow's support assistant. You help human support agents (not
@@ -54,6 +56,7 @@ class AgentResult:
     cost_usd: float = 0.0
     latency_ms: int = 0
     max_parallel: int = 0  # most tool calls the model requested in a single turn
+    max_prompt_tokens: int = 0  # largest single prompt: what must fit in the context window
     messages: list[dict[str, Any]] = field(default_factory=list)
 
     @property
@@ -86,9 +89,11 @@ def run_agent(
     ]
     res = AgentResult(answer="", stop_reason="done", messages=messages)
     t0 = time.perf_counter()
+    last_prompt = 0  # the conversation only grows, so the next prompt costs at least this much
+    new_tokens = 0  # plus the tool results appended since: ~4 characters per token
 
     for step in range(1, max_steps + 1):
-        if res.total_tokens >= token_budget:
+        if res.total_tokens + last_prompt + new_tokens >= token_budget:
             res.stop_reason = "token_budget"
             break
         try:
@@ -104,8 +109,11 @@ def run_agent(
             res.answer = f"LLM call failed: {type(exc).__name__}: {exc}"
             break
         res.steps = step
+        new_tokens = 0  # now inside `last_prompt`
         if resp.usage is not None:
+            last_prompt = resp.usage.prompt_tokens
             res.prompt_tokens += resp.usage.prompt_tokens
+            res.max_prompt_tokens = max(res.max_prompt_tokens, resp.usage.prompt_tokens)
             res.completion_tokens += resp.usage.completion_tokens
             res.cost_usd += _usage_cost(resp.usage)
         msg = resp.choices[0].message
@@ -131,9 +139,10 @@ def run_agent(
         )
         res.max_parallel = max(res.max_parallel, len(msg.tool_calls))
 
-        # Stop BEFORE executing if this response already blew the budget or the step limit:
-        # unexecuted side effects are better than unbounded ones. Still answer every tool_call_id.
-        over_budget = res.total_tokens >= token_budget
+        # Stop BEFORE executing if the budget can't pay for the call that would read the results
+        # (it costs at least `last_prompt`), or at the step limit: unexecuted side effects are
+        # better than unbounded ones. Still answer every tool_call_id, or the next request 400s.
+        over_budget = res.total_tokens + last_prompt >= token_budget
         if over_budget or step == max_steps:
             res.stop_reason = "token_budget" if over_budget else "max_steps"
             for tc in msg.tool_calls:
@@ -165,6 +174,7 @@ def run_agent(
                     ms=ms,
                 )
             )
+        new_tokens = sum(len(out) for _, out, _ in outcomes) // CHARS_PER_TOKEN
 
     if not res.answer and res.stop_reason in {"max_steps", "token_budget"}:
         res.answer = f"Stopped without a final answer: {res.stop_reason.replace('_', ' ')} reached."

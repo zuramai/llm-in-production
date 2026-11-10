@@ -40,15 +40,44 @@ def test_step_cap_stops_and_does_not_execute_the_last_requested_tools():
     assert res.answer  # the caller always gets a string back
 
 
-def test_token_budget_stops_before_running_tools_that_blew_the_budget():
+def test_token_budget_stops_before_running_tools_it_cannot_afford_to_read():
     log: list[str] = []
-    step = response(tool_calls=[tool_call("c", "ping", '{"n": 2}')], tokens=600)
+    step = response(tool_calls=[tool_call("c", "ping", '{"n": 2}')], tokens=600)  # prompt 590
+    client = FakeClient([step])
+    res = run_agent("go", make_toolbox(log), client=client, model="m", token_budget=2000)
+    assert res.stop_reason == "token_budget"
+    # step 1: 600 spent + next prompt >= 590 = 1190 < 2000 -> run the tool
+    # step 2: 1200 + 590 = 1790 < 2000 -> run the tool
+    # step 3: 1800 + 590 = 2390 >= 2000 -> the call that reads the result can't be paid: stop
+    assert log == ["ping2", "ping2"]
+    assert len(client.calls) == 3
+    assert res.total_tokens == 1800  # under the budget: never overshoots by a whole extra call
+    assert "not executed" in res.messages[-1]["content"]
+
+
+def test_budget_counts_the_next_prompt_not_only_what_was_spent():
+    """600 < 1000 already spent, but reading the tool result needs >= 590 more: don't run it."""
+    log: list[str] = []
+    step = response(tool_calls=[tool_call("c", "ping", '{"n": 3}')], tokens=600)
     client = FakeClient([step])
     res = run_agent("go", make_toolbox(log), client=client, model="m", token_budget=1000)
     assert res.stop_reason == "token_budget"
-    assert res.total_tokens == 1200
-    assert log == ["ping2"]  # step 1 ran (600 < 1000); step 2 overshot, so its tool did not
-    assert len(client.calls) == 2  # and no third model call was made
+    assert log == []
+    assert len(client.calls) == 1
+
+
+def test_large_tool_results_count_against_the_budget_before_the_next_call():
+    """The tool ran, but reading its ~6,000-character (clipped) result can't fit: no 2nd call."""
+
+    def big(n: int) -> dict:
+        """Returns a lot."""
+        return {"blob": "z" * 8_000}
+
+    client = FakeClient([response(tool_calls=[tool_call("c", "big", '{"n": 1}')], tokens=600)])
+    res = run_agent("go", LocalToolbox({"big": big}), client=client, model="m", token_budget=2500)
+    assert len(res.tool_calls) == 1  # 600 + 590 < 2500, so the tool ran
+    assert res.stop_reason == "token_budget"
+    assert len(client.calls) == 1  # 600 + 590 + ~1,500 (6,000-char cap / 4) >= 2500
 
 
 def test_budget_exhausted_up_front_makes_no_model_call():
@@ -107,3 +136,17 @@ def test_max_tokens_is_always_sent():
     client = FakeClient([response(content="ok")])
     run_agent("go", make_toolbox([]), client=client, model="m", max_tokens=321)
     assert client.calls[0]["max_tokens"] == 321
+
+
+def test_largest_single_prompt_is_tracked_separately_from_the_sum():
+    """The budget uses the sum; the context-window check needs the largest single prompt."""
+    client = FakeClient(
+        [
+            response(tool_calls=[tool_call("a", "ping", '{"n": 1}')], tokens=500),
+            response(tool_calls=[tool_call("b", "ping", '{"n": 2}')], tokens=900),
+            response(content="done", tokens=700),
+        ]
+    )
+    res = run_agent("go", make_toolbox([]), client=client, model="m")
+    assert res.prompt_tokens == 490 + 890 + 690
+    assert res.max_prompt_tokens == 890

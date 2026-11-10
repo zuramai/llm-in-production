@@ -6,20 +6,28 @@ and forwards calls over an MCP client session (stdio subprocess or streamable HT
 
 The agent loop is synchronous and the MCP client is async, so the session lives on its own
 event loop in a background thread and `call` hops onto it.
+
+    uv run python ch09_mcp_client.py "Is order 2 delivered?"                       # stdio
+    uv run python ch09_mcp_client.py --url http://127.0.0.1:8009/mcp "Is order 2 delivered?"
 """
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import json
+import sys
 import threading
 from pathlib import Path
 from typing import Any, Self
 
+from ch09_agent import run_agent
 from ch09_tools import MAX_RESULT_CHARS, _strip_titles, error_json
 from mcp.client.client import Client
 from mcp.client.stdio import StdioServerParameters
 from mcp.shared.exceptions import MCPError
+
+from llmprod import chat_client, get_settings
 
 HERE = Path(__file__).resolve().parent
 
@@ -39,10 +47,13 @@ def mcp_tool_to_openai(tool: Any) -> dict[str, Any]:
 
 
 def stdio_server() -> StdioServerParameters:
-    """Spawn our own server as a subprocess, the way Claude Desktop or an IDE would."""
+    """Spawn our own server as a subprocess, the way Claude Desktop or an IDE would.
+
+    We reuse this interpreter (the project venv). A desktop client would run
+    `uv run python ch09_mcp_server.py` instead; same server, slower start."""
     return StdioServerParameters(
-        command="uv",
-        args=["run", "python", "ch09_mcp_server.py", "--transport", "stdio"],
+        command=sys.executable,
+        args=["ch09_mcp_server.py", "--transport", "stdio"],
         cwd=HERE,
     )
 
@@ -119,3 +130,28 @@ class McpToolbox:
 
     def __exit__(self, *exc: object) -> None:
         self.close()
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Ask one question; the tools are reached via MCP.")
+    parser.add_argument("question")
+    parser.add_argument("--url", help="streamable HTTP endpoint; default: spawn the stdio server")
+    parser.add_argument("--model", help="default: LLM_MODEL from .env")
+    parser.add_argument("--reasoning-effort", default="none", help="'' to omit the parameter")
+    args = parser.parse_args(argv)
+    model = args.model or get_settings().llm_model
+    extra = {"reasoning_effort": args.reasoning_effort} if args.reasoning_effort else None
+    with McpToolbox(args.url or stdio_server()) as toolbox:
+        res = run_agent(args.question, toolbox, client=chat_client(), model=model, extra=extra)
+        transport = "streamable HTTP" if args.url else "stdio"
+        print(res.answer)
+        print(
+            f"\n[{model} | MCP {transport}, protocol {toolbox.protocol_version} | "
+            f"tools: {', '.join(c.name for c in res.tool_calls) or '-'} | steps={res.steps} "
+            f"tokens={res.total_tokens} cost=${res.cost_usd:.5f} latency={res.latency_ms} ms]"
+        )
+    return 0 if res.stop_reason == "done" else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
