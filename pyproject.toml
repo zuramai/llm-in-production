@@ -29,7 +29,7 @@ build-backend = "hatchling.build"
 packages = ["src/llmprod"]
 
 [dependency-groups]
-dev = ["pytest>=9", "nbmake>=1.5", "ruff>=0.17", "playwright"]
+dev = ["pytest>=9", "nbmake>=1.5", "ruff>=0.17", "playwright", "markdown-it-py>=3"]
 ch01 = ["fastapi>=0.162", "uvicorn>=0.54", "sse-starlette>=3.6"]
 ch06 = ["sqlglot>=30.30", "slack-bolt>=1.30", "pytest-timeout"]
 ch02 = ["scikit-learn"]

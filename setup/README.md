@@ -95,9 +95,50 @@ uv run jupyter lab
 ```
 
 Open a chapter notebook and choose the **`.venv`** (Python 3.12) kernel. In VS Code, select
-the interpreter at `.venv/bin/python`.
+the interpreter at `.venv/bin/python`. Headless, saving outputs in place:
 
-## 5. Screenshots (optional)
+```bash
+uv run jupyter nbconvert --to notebook --execute --inplace ch01/01_main-chapter-code/ch01.ipynb
+```
+
+**Hardware.** Parts I–IV run on any laptop with Docker; model calls go to a hosted API
+(OpenRouter by default) or to a local Ollama. Part V (chapters 16–19) needs an NVIDIA GPU; it was
+tested on one RTX 3090 (24 GB) under Ubuntu 22.04. Those chapters keep their CUDA-only packages
+in a chapter-local `requirements-cuda.txt`. Cloud code (SageMaker, Vertex) is marked **Not
+executed by the author** wherever that applies.
+
+## 5. Tests
+
+```bash
+uv run pytest                              # unit tests; never calls a model, never re-seeds the DB
+uv run pytest -m "docker and not reseed"   # tests that need the ShopFlow Postgres container
+uv run pytest -m llm                       # tests that call the configured model (costs money)
+uv run pytest -m reseed datasets           # seed invariants: re-seed the DB, drop chapter tables
+```
+
+## 6. Build the PDF
+
+```bash
+uv run playwright install chromium         # once
+uv run python tools/build_pdf.py           # writes dist/llm-in-production.pdf
+```
+
+## Repository layout
+
+```
+chNN/
+  README.md                  # the chapter
+  01_main-chapter-code/      # notebook + scripts used in the chapter
+  02_bonus_*/                # optional extras
+  images/                    # SVG diagrams and PNG screenshots
+appendix-{A,B,C}/            # model snapshot, glossary, references
+datasets/shopflow/           # shared database, seeder, docs corpus
+src/llmprod/                 # tiny shared helpers: settings, clients, DB connection
+docs/                        # style guide and chapter template
+tools/                       # screenshot and PDF build scripts
+```
+
+## 7. Screenshots (optional)
 
 The chapters' UI screenshots were made with Playwright. To reproduce them:
 
