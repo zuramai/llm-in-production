@@ -25,12 +25,13 @@ GOOD = {"category": "refund", "priority": "high", "sentiment": "negative",
         "order_id": 42, "summary": "Refund is overdue."}
 
 
-def reply(content=None, *, tool_args=None, finish="stop", pt=100, ct=20, cost=None):
+def reply(content=None, *, tool_args=None, finish="stop", pt=100, ct=20, cost=None,
+          refusal=None):
     """A fake Chat Completions response."""
     tool_calls = None
     if tool_args is not None:
         tool_calls = [SimpleNamespace(function=SimpleNamespace(arguments=tool_args))]
-    message = SimpleNamespace(content=content, tool_calls=tool_calls)
+    message = SimpleNamespace(content=content, tool_calls=tool_calls, refusal=refusal)
     extra = {"cost": cost} if cost is not None else {}
     usage = SimpleNamespace(prompt_tokens=pt, completion_tokens=ct, model_extra=extra)
     return SimpleNamespace(choices=[SimpleNamespace(message=message, finish_reason=finish)],
@@ -207,6 +208,20 @@ def test_truncation_wins_even_when_the_cut_text_is_valid_json():
     c = FakeClient([reply(json.dumps(GOOD), finish="length")])
     r = run(triage_one(c, ticket(), "json_schema", model="m"))
     assert r.final_error == "truncated" and r.triage is None
+
+
+def test_content_filter_is_not_retried():
+    # Haiku returned an empty reply with finish_reason=content_filter on the same ticket
+    # three times in a row; retrying a refusal only triples the cost.
+    c = FakeClient([reply("", finish="content_filter", ct=0)] * 3)
+    r = run(triage_one(c, ticket(), "json_schema", model="m"))
+    assert r.final_error == "refused" and r.attempts == 1 and len(c.calls) == 1
+
+
+def test_refusal_field_wins_over_parseable_content():
+    c = FakeClient([reply(json.dumps(GOOD), refusal="I can't help with that.")])
+    r = run(triage_one(c, ticket(), "json_schema", model="m"))
+    assert r.triage is None and r.final_error == "refused"
 
 
 def test_tool_call_arguments_are_parsed():

@@ -161,7 +161,7 @@ def build_request(
 class TriageError(ValueError):
     """The model's reply could not be turned into a ``TicketTriage``.
 
-    ``kind`` is one of: ``no_output``, ``truncated``, ``not_json``, ``invalid``.
+    ``kind`` is one of: ``no_output``, ``truncated``, ``refused``, ``not_json``, ``invalid``.
     """
 
     def __init__(self, kind: str, message: str):
@@ -268,7 +268,9 @@ async def triage_one(
     """Triage one ticket. On a validation error, show the model its error and ask again.
 
     A reply cut off by ``max_tokens`` is *not* retried: the same prompt would be cut off
-    in the same place, so we report ``truncated`` and let the caller decide.
+    in the same place, so we report ``truncated`` and let the caller decide. A reply blocked by
+    the provider's safety filter (``finish_reason == "content_filter"``, or a ``refusal`` field)
+    is not retried either: in our runs the same ticket was refused on every attempt.
     """
     kwargs = build_request(
         method, subject=ticket.subject, body=ticket.body, channel=ticket.channel, model=model,
@@ -299,11 +301,13 @@ async def triage_one(
         try:
             if choice.finish_reason == "length":
                 raise TriageError("truncated", "the reply hit max_tokens before the JSON ended")
+            if choice.finish_reason == "content_filter" or getattr(choice.message, "refusal", None):
+                raise TriageError("refused", "the provider refused or filtered the reply")
             triage = parse_triage(text)
         except TriageError as err:
             res.errors.append(f"{err.kind}: {err}")
             res.final_error = err.kind
-            if err.kind == "truncated" or attempt == max_retries:
+            if err.kind in ("truncated", "refused") or attempt == max_retries:
                 break
             kwargs["messages"] = [
                 *kwargs["messages"][:2],
