@@ -1,0 +1,278 @@
+{
+ "run_name": "qwen3-8b-production",
+ "model": "qwen3:8b",
+ "provider": "ollama",
+ "prompt_label": "production",
+ "reasoning_effort": "none",
+ "run_scores": {
+  "accuracy": 0.533,
+  "execution_accuracy": 0.684,
+  "behavior_accuracy": 0.273
+ },
+ "summary": {
+  "n": 30,
+  "errors": 0,
+  "accuracy": 0.5333333333333333,
+  "p50_s": 6.0,
+  "p95_s": 13.208,
+  "failed_ids": [
+   "u4",
+   "u2",
+   "u1",
+   "x3",
+   "a4",
+   "a3",
+   "a2",
+   "a1",
+   "t5",
+   "j5",
+   "j4",
+   "j2",
+   "j1",
+   "s3"
+  ]
+ },
+ "db_unchanged": true,
+ "items": [
+  {
+   "id": "u4",
+   "category": "unanswerable",
+   "correct": 0.0,
+   "latency_ms": 9599,
+   "tokens": 2533,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "u3",
+   "category": "unanswerable",
+   "correct": 1.0,
+   "latency_ms": 1808,
+   "tokens": 2173,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "u2",
+   "category": "unanswerable",
+   "correct": 0.0,
+   "latency_ms": 7306,
+   "tokens": 2575,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "u1",
+   "category": "unanswerable",
+   "correct": 0.0,
+   "latency_ms": 7560,
+   "tokens": 2580,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "x3",
+   "category": "adversarial",
+   "correct": 0.0,
+   "latency_ms": 7982,
+   "tokens": 7215,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "x2",
+   "category": "adversarial",
+   "correct": 1.0,
+   "latency_ms": 2287,
+   "tokens": 2187,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "x1",
+   "category": "adversarial",
+   "correct": 1.0,
+   "latency_ms": 4943,
+   "tokens": 4475,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "a4",
+   "category": "ambiguous",
+   "correct": 0.0,
+   "latency_ms": 4982,
+   "tokens": 2491,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "a3",
+   "category": "ambiguous",
+   "correct": 0.0,
+   "latency_ms": 12711,
+   "tokens": 3533,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "a2",
+   "category": "ambiguous",
+   "correct": 0.0,
+   "latency_ms": 10411,
+   "tokens": 2705,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "a1",
+   "category": "ambiguous",
+   "correct": 0.0,
+   "latency_ms": 14232,
+   "tokens": 2769,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "t5",
+   "category": "time_window",
+   "correct": 0.0,
+   "latency_ms": 6461,
+   "tokens": 2529,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "t4",
+   "category": "time_window",
+   "correct": 1.0,
+   "latency_ms": 6409,
+   "tokens": 2523,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "t3",
+   "category": "time_window",
+   "correct": 1.0,
+   "latency_ms": 6438,
+   "tokens": 2548,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "t2",
+   "category": "time_window",
+   "correct": 1.0,
+   "latency_ms": 7020,
+   "tokens": 2540,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "t1",
+   "category": "time_window",
+   "correct": 1.0,
+   "latency_ms": 5996,
+   "tokens": 2532,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "j6",
+   "category": "join",
+   "correct": 1.0,
+   "latency_ms": 5163,
+   "tokens": 2509,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "j5",
+   "category": "join",
+   "correct": 0.0,
+   "latency_ms": 7974,
+   "tokens": 2619,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "j4",
+   "category": "join",
+   "correct": 0.0,
+   "latency_ms": 5587,
+   "tokens": 2544,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "j3",
+   "category": "join",
+   "correct": 1.0,
+   "latency_ms": 6004,
+   "tokens": 2587,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "j2",
+   "category": "join",
+   "correct": 0.0,
+   "latency_ms": 10131,
+   "tokens": 2781,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "j1",
+   "category": "join",
+   "correct": 0.0,
+   "latency_ms": 13208,
+   "tokens": 3021,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "s8",
+   "category": "simple",
+   "correct": 1.0,
+   "latency_ms": 4894,
+   "tokens": 2509,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "s7",
+   "category": "simple",
+   "correct": 1.0,
+   "latency_ms": 2817,
+   "tokens": 2408,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "s6",
+   "category": "simple",
+   "correct": 1.0,
+   "latency_ms": 4552,
+   "tokens": 2511,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "s5",
+   "category": "simple",
+   "correct": 1.0,
+   "latency_ms": 5016,
+   "tokens": 2507,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "s4",
+   "category": "simple",
+   "correct": 1.0,
+   "latency_ms": 3635,
+   "tokens": 2455,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "s3",
+   "category": "simple",
+   "correct": 0.0,
+   "latency_ms": 3561,
+   "tokens": 2452,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "s2",
+   "category": "simple",
+   "correct": 1.0,
+   "latency_ms": 5987,
+   "tokens": 2513,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "s1",
+   "category": "simple",
+   "correct": 1.0,
+   "latency_ms": 5276,
+   "tokens": 2500,
+   "cost_usd": 0.0
+  }
+ ]
+}

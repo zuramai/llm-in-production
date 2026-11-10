@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 470" font-family="Helvetica, Arial, sans-serif" font-size="14">
+  <rect x="0" y="0" width="900" height="470" rx="16" fill="#ffffff"/>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#888"/>
+    </marker>
+  </defs>
+  <text x="450" y="34" text-anchor="middle" font-size="19" font-weight="bold" fill="#222">Self-hosted Langfuse v4 (docker compose, 7 containers)</text>
+
+  <!-- clients -->
+  <rect x="30" y="80" width="190" height="120" rx="10" fill="#cfe3f7" stroke="#5b8fc7"/>
+  <text x="125" y="108" text-anchor="middle" font-weight="bold" fill="#1d3557">ShopFlow data bot</text>
+  <text x="125" y="132" text-anchor="middle" fill="#1d3557">langfuse SDK v5</text>
+  <text x="125" y="152" text-anchor="middle" fill="#1d3557">(OpenTelemetry inside)</text>
+  <text x="125" y="176" text-anchor="middle" font-size="12" fill="#1d3557">spans batched, gzip, async</text>
+
+  <rect x="30" y="300" width="190" height="80" rx="10" fill="#cfe3f7" stroke="#5b8fc7"/>
+  <text x="125" y="330" text-anchor="middle" font-weight="bold" fill="#1d3557">Browser</text>
+  <text x="125" y="354" text-anchor="middle" fill="#1d3557">localhost:3014</text>
+
+  <!-- web + worker -->
+  <rect x="300" y="80" width="200" height="120" rx="10" fill="#fde2b8" stroke="#d99a3a"/>
+  <text x="400" y="108" text-anchor="middle" font-weight="bold" fill="#5a3a00">langfuse-web</text>
+  <text x="400" y="132" text-anchor="middle" fill="#5a3a00">UI + public API</text>
+  <text x="400" y="152" text-anchor="middle" fill="#5a3a00">/api/public/otel</text>
+  <text x="400" y="176" text-anchor="middle" font-size="12" fill="#5a3a00">host :3014 → :3000</text>
+
+  <rect x="300" y="300" width="200" height="110" rx="10" fill="#fde2b8" stroke="#d99a3a"/>
+  <text x="400" y="328" text-anchor="middle" font-weight="bold" fill="#5a3a00">langfuse-worker</text>
+  <text x="400" y="352" text-anchor="middle" fill="#5a3a00">ingestion, evals,</text>
+  <text x="400" y="372" text-anchor="middle" fill="#5a3a00">exports, retention</text>
+
+  <!-- stores -->
+  <rect x="620" y="60" width="250" height="62" rx="10" fill="#d4edda" stroke="#4f9a5f"/>
+  <text x="745" y="86" text-anchor="middle" font-weight="bold" fill="#1e4620">MinIO (S3)</text>
+  <text x="745" y="106" text-anchor="middle" font-size="12" fill="#1e4620">raw event batches, media, exports</text>
+
+  <rect x="620" y="140" width="250" height="62" rx="10" fill="#d4edda" stroke="#4f9a5f"/>
+  <text x="745" y="166" text-anchor="middle" font-weight="bold" fill="#1e4620">Redis</text>
+  <text x="745" y="186" text-anchor="middle" font-size="12" fill="#1e4620">queue (BullMQ) + API key cache</text>
+
+  <rect x="620" y="220" width="250" height="62" rx="10" fill="#d4edda" stroke="#4f9a5f"/>
+  <text x="745" y="246" text-anchor="middle" font-weight="bold" fill="#1e4620">ClickHouse</text>
+  <text x="745" y="266" text-anchor="middle" font-size="12" fill="#1e4620">observations, scores (OLAP)</text>
+
+  <rect x="620" y="300" width="250" height="62" rx="10" fill="#d4edda" stroke="#4f9a5f"/>
+  <text x="745" y="326" text-anchor="middle" font-weight="bold" fill="#1e4620">Postgres 17</text>
+  <text x="745" y="346" text-anchor="middle" font-size="12" fill="#1e4620">users, prompts, datasets, keys</text>
+
+  <rect x="620" y="380" width="250" height="62" rx="10" fill="#e6e0f3" stroke="#7d6bb0"/>
+  <text x="745" y="406" text-anchor="middle" font-weight="bold" fill="#33275c">ai-gateway (optional)</text>
+  <text x="745" y="426" text-anchor="middle" font-size="12" fill="#33275c">playground, LLM-judge calls</text>
+
+  <!-- arrows -->
+  <line x1="220" y1="140" x2="298" y2="140" stroke="#888" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="259" y="130" text-anchor="middle" font-size="12" fill="#444">OTLP</text>
+  <line x1="220" y1="320" x2="330" y2="202" stroke="#888" stroke-width="2" marker-end="url(#arr)"/>
+
+  <line x1="500" y1="100" x2="618" y2="92" stroke="#888" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="530" y="88" font-size="12" fill="#444">① store batch</text>
+  <line x1="500" y1="160" x2="618" y2="170" stroke="#888" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="530" y="155" font-size="12" fill="#444">② enqueue</text>
+  <line x1="640" y1="202" x2="480" y2="298" stroke="#888" stroke-width="2" stroke-dasharray="5,4" marker-end="url(#arr)"/>
+  <text x="520" y="232" font-size="12" fill="#444">③ job</text>
+  <line x1="500" y1="330" x2="618" y2="258" stroke="#888" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="530" y="318" font-size="12" fill="#444">④ write</text>
+  <line x1="500" y1="380" x2="618" y2="335" stroke="#888" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="450" y="458" text-anchor="middle" font-size="12" fill="#444">Queued ingestion: the worker reads each batch back from S3 (①) and writes ClickHouse (④) in the background.</text>
+</svg>

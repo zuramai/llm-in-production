@@ -1,0 +1,186 @@
+# What the model needs to know about ShopFlow that the DDL alone doesn't say.
+# `{tz}` is replaced with the business time zone at load time.
+
+conventions:
+  - "All money columns are INTEGER CENTS. Divide by 100.0 for USD. 4599 means $45.99."
+  - "All timestamps are timestamptz stored in UTC. The business time zone is {tz}."
+  - "Calendar periods (today, yesterday, this week, this month) are calendar periods in {tz}.
+    Compute boundaries with date_trunc on now() converted to {tz}, then convert back, e.g.
+    placed_at >= date_trunc('day', now() AT TIME ZONE '{tz}') AT TIME ZONE '{tz}'."
+  - "Weeks start on Monday (Postgres date_trunc('week', ...))."
+  - "Customer emails are PII and are NOT available. Never select customers.email."
+
+tables:
+  orders:
+    description: "One row per order placed by a customer, whatever happened to it afterwards."
+    columns:
+      id: "order id"
+      customer_id: "-> customers.id"
+      status: "pending (no successful payment yet) | paid | shipped | delivered | cancelled
+        (cancelled after payment, fully refunded) | refunded (returned after delivery)"
+      channel: "web | ios | android"
+      currency: "always USD"
+      subtotal_cents: "sum of line items, cents"
+      discount_cents: "discount applied, cents"
+      shipping_cents: "shipping charged, cents"
+      total_cents: "subtotal - discount + shipping, cents. This is what the customer pays."
+      placed_at: "when the order was placed (UTC timestamptz)"
+  order_items:
+    description: "Line items of an order."
+    columns:
+      order_id: "-> orders.id"
+      product_id: "-> products.id"
+      quantity: "units"
+      unit_price_cents: "price per unit at time of order, cents"
+  products:
+    description: "Catalog of 200 products."
+    columns:
+      sku: "e.g. SF-ELE-0001"
+      name: "product name"
+      category_id: "-> categories.id"
+      price_cents: "current list price, cents"
+      cost_cents: "unit cost to ShopFlow, cents"
+      active: "false = discontinued"
+  categories:
+    description: "12 product categories (Electronics, Apparel, ...)."
+    columns:
+      name: "category name"
+  customers:
+    description: "Registered customers. email is PII and not readable."
+    columns:
+      full_name: "name"
+      country: "ISO-2 country code (US, CA, GB, DE, AU, ID)"
+      city: "city"
+      segment: "consumer | business | vip"
+      created_at: "signup time"
+  payments:
+    description: "Payment ATTEMPTS. An order can have failed attempts before a success."
+    columns:
+      order_id: "-> orders.id"
+      provider: "stripe | paypal"
+      status: "succeeded | failed"
+      amount_cents: "amount attempted, cents"
+      created_at: "attempt time"
+  refunds:
+    description: "Money returned to customers (cancellations and returns)."
+    columns:
+      order_id: "-> orders.id"
+      amount_cents: "refunded amount, cents"
+      reason: "free text"
+      created_at: "refund time"
+  shipments:
+    description: "Shipments of orders."
+    columns:
+      order_id: "-> orders.id"
+      carrier: "UPS | FedEx | USPS | DHL"
+      status: "in_transit | delivered"
+      shipped_at: "when handed to carrier"
+      delivered_at: "null until delivered"
+  inventory:
+    description: "Stock on hand per product per warehouse (NJ-01, TX-01, CA-01)."
+    columns:
+      product_id: "-> products.id"
+      warehouse: "warehouse code"
+      on_hand: "units in stock now"
+  support_tickets:
+    description: "Customer support tickets with labels."
+    columns:
+      customer_id: "-> customers.id"
+      order_id: "-> orders.id, nullable"
+      channel: "email | chat | web_form"
+      subject: "subject"
+      created_at: "creation time"
+      label_category: "shipping | refund | product_defect | account | payment | other"
+      label_priority: "low | medium | high | urgent"
+
+joins:
+  - "orders.customer_id = customers.id"
+  - "order_items.order_id = orders.id"
+  - "order_items.product_id = products.id"
+  - "products.category_id = categories.id"
+  - "payments.order_id = orders.id"
+  - "refunds.order_id = orders.id"
+  - "shipments.order_id = orders.id"
+  - "inventory.product_id = products.id"
+  - "support_tickets.customer_id = customers.id"
+
+glossary:
+  transaction: "A transaction is any order row placed in the period, whatever its status. Count
+    orders, not payments. When some of those orders were later cancelled, say how many."
+  revenue: "Revenue (gross revenue, sales) = sum(total_cents)/100.0 over orders with status in
+    ('paid', 'shipped', 'delivered') placed in the period."
+  net revenue: "Net revenue = revenue minus sum(refunds.amount_cents)/100.0 of refunds created in
+    the period."
+  today: "placed_at within the current calendar day in {tz}."
+  active customer: "A customer with at least one order placed in the last 90 days."
+  AOV: "Average order value = revenue / number of orders counted in revenue."
+
+examples:
+  - question: "How many transactions are there today?"
+    sql: |
+      SELECT count(*) AS transactions,
+             count(*) FILTER (WHERE status = 'cancelled') AS cancelled
+      FROM orders
+      WHERE placed_at >= date_trunc('day', now() AT TIME ZONE '{tz}') AT TIME ZONE '{tz}'
+  - question: "What was revenue yesterday?"
+    sql: |
+      SELECT sum(total_cents) / 100.0 AS revenue_usd
+      FROM orders
+      WHERE status IN ('paid', 'shipped', 'delivered')
+        AND placed_at >= date_trunc('day', now() AT TIME ZONE '{tz}') AT TIME ZONE '{tz}'
+                         - interval '1 day'
+        AND placed_at <  date_trunc('day', now() AT TIME ZONE '{tz}') AT TIME ZONE '{tz}'
+  - question: "Top 5 products by units sold this month"
+    sql: |
+      SELECT p.name, sum(oi.quantity) AS units
+      FROM order_items oi
+      JOIN orders o ON o.id = oi.order_id
+      JOIN products p ON p.id = oi.product_id
+      WHERE o.status IN ('paid', 'shipped', 'delivered')
+        AND o.placed_at >= date_trunc('month', now() AT TIME ZONE '{tz}') AT TIME ZONE '{tz}'
+      GROUP BY p.name
+      ORDER BY units DESC
+      LIMIT 5
+  - question: "How many payment attempts failed today?"
+    sql: |
+      SELECT count(*) AS failed_attempts
+      FROM payments
+      WHERE status = 'failed'
+        AND created_at >= date_trunc('day', now() AT TIME ZONE '{tz}') AT TIME ZONE '{tz}'
+  - question: "Net revenue last week"
+    sql: |
+      WITH bounds AS (
+        SELECT date_trunc('week', now() AT TIME ZONE '{tz}') AT TIME ZONE '{tz}'
+                 - interval '1 week' AS start_at,
+               date_trunc('week', now() AT TIME ZONE '{tz}') AT TIME ZONE '{tz}' AS end_at
+      )
+      SELECT
+        (SELECT coalesce(sum(total_cents), 0) FROM orders, bounds
+          WHERE status IN ('paid', 'shipped', 'delivered')
+            AND placed_at >= start_at AND placed_at < end_at) / 100.0
+        - (SELECT coalesce(sum(amount_cents), 0) FROM refunds, bounds
+          WHERE created_at >= start_at AND created_at < end_at) / 100.0 AS net_revenue_usd
+  - question: "How many active customers do we have?"
+    sql: |
+      SELECT count(DISTINCT customer_id) AS active_customers
+      FROM orders
+      WHERE placed_at >= now() - interval '90 days'
+  - question: "Revenue by country for VIP customers in the last 30 days"
+    sql: |
+      SELECT c.country, sum(o.total_cents) / 100.0 AS revenue_usd
+      FROM orders o
+      JOIN customers c ON c.id = o.customer_id
+      WHERE c.segment = 'vip'
+        AND o.status IN ('paid', 'shipped', 'delivered')
+        AND o.placed_at >= now() - interval '30 days'
+      GROUP BY c.country
+      ORDER BY revenue_usd DESC
+  - question: "Which products are out of stock in every warehouse?"
+    sql: |
+      SELECT p.sku, p.name
+      FROM products p
+      JOIN inventory i ON i.product_id = p.id
+      WHERE p.active
+      GROUP BY p.sku, p.name
+      HAVING sum(i.on_hand) = 0
+      ORDER BY p.sku
